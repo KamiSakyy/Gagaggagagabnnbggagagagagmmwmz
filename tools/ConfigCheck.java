@@ -141,7 +141,7 @@ public final class ConfigCheck {
                         + "&sni=example.com#%F0%9F%87%A9%F0%9F%87%AA%20Germany%20Reality",
                 "vmess://" + B64.encode(vmessJson().getBytes(StandardCharsets.UTF_8)),
                 "trojan://trojan-password@trojan.example.com:443?security=tls&sni=trojan.example.com&type=ws&path=%2Ftrojan&host=trojan.example.com#%F0%9F%87%B3%F0%9F%87%B1%20Netherlands%20Trojan",
-                "ss://" + B64.encode("2022-blake3-aes-128-gcm:ss-password".getBytes(StandardCharsets.UTF_8))
+                "ss://" + B64.encode(("2022-blake3-aes-128-gcm:" + SS2022_KEY).getBytes(StandardCharsets.UTF_8))
                         + "@ss.example.com:8388#%F0%9F%87%AB%F0%9F%87%AE%20Finland%20SS",
                 "ssr://" + B64.encode(("ssr.example.com:8388:auth_aes128_md5:aes-256-cfb:tls1.2_ticket_auth:"
                         + B64.encode("ssr-password".getBytes(StandardCharsets.UTF_8))
@@ -274,6 +274,8 @@ public final class ConfigCheck {
         list.add(wireguard());
         list.add(socks());
         list.add(httpProxy());
+        list.add(naive());
+        list.add(hysteria());
         return list;
     }
 
@@ -348,9 +350,13 @@ public final class ConfigCheck {
     private static Outbound shadowsocks() {
         Outbound outbound = base("shadowsocks", "Shadowsocks", "ss.example.com", 8388);
         outbound.method = "2022-blake3-aes-128-gcm";
-        outbound.password = "ss-password";
+        // 2022 methods require a base64 pre-shared key (16 bytes for aes-128-gcm)
+        outbound.password = SS2022_KEY;
         return outbound;
     }
+
+    /** base64("0123456789abcdef") - a valid shadowsocks-2022 key. */
+    private static final String SS2022_KEY = "MDEyMzQ1Njc4OWFiY2RlZg==";
 
     private static Outbound shadowsocksR() {
         Outbound outbound = base("shadowsocksr", "SSR", "ssr.example.com", 8388);
@@ -430,6 +436,27 @@ public final class ConfigCheck {
         outbound.wgPeerPublicKey = "ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0A=";
         outbound.wgLocalAddress = "10.10.0.2/32";
         outbound.wgMtu = 1408;
+        return outbound;
+    }
+
+    private static Outbound naive() {
+        Outbound outbound = base("naive", "Naive", "naive.example.com", 443);
+        outbound.username = "user";
+        outbound.password = "naive-password";
+        outbound.tls = true;
+        outbound.sni = outbound.server;
+        return outbound;
+    }
+
+    private static Outbound hysteria() {
+        Outbound outbound = base("hysteria", "Hysteria", "hysteria.example.com", 443);
+        outbound.password = "hysteria-auth";
+        outbound.tls = true;
+        outbound.sni = outbound.server;
+        outbound.upMbps = 100;
+        outbound.downMbps = 200;
+        outbound.obfsType = "xplus";
+        outbound.obfsPassword = "obfs-password";
         return outbound;
     }
 
