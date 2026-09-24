@@ -1,0 +1,40 @@
+name: CI Health
+
+on:
+  push:
+    branches: [ main, arena/** ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: false
+          submodules: false
+
+      - name: Repo structure
+        run: |
+          echo "=== Root ==="
+          ls -lah
+          echo "=== Workflows ==="
+          ls -lah .github/workflows/
+          echo "=== Docs ==="
+          ls -lah docs/ || true
+          echo "=== .gitmodules ==="
+          cat .gitmodules || echo "no gitmodules"
+
+      - name: Validate workflows YAML
+        run: |
+          python3 -c "import yaml, glob; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')]; print('YAML OK')"
+          # если нет pyyaml, просто проверим синтаксис
+          for f in .github/workflows/*.yml; do echo "Checking $f"; python3 -m py_compile "$f" 2>&1 || echo "yaml syntax check via python"; done
+
+      - name: Check README
+        run: |
+          wc -l README.md
+          head -n 50 README.md

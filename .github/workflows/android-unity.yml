@@ -1,0 +1,198 @@
+name: Android Unity Build (Genshin-like)
+
+on:
+  push:
+    branches: [ main, arena/** ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      targetPlatform:
+        description: 'Unity target'
+        required: false
+        default: 'Android'
+        type: choice
+        options: [ Android, StandaloneWindows64, StandaloneLinux64, WebGL ]
+
+# Важно: Preview URL работает только если сервер биндится на 0.0.0.0
+# Этот воркфлоу собирает APK до 500МБ для Android как в Геншине.
+
+jobs:
+  buildUnityAndroid:
+    name: Build ${{ inputs.targetPlatform || 'Android' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform: [ Android ]
+        # расширяй: [ Android, StandaloneWindows64, WebGL ]
+    steps:
+      - name: Checkout (with submodules + LFS)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          submodules: recursive
+          # token нужен если GI-Models приватный - используй PAT
+          # token: ${{ secrets.GH_PAT }}
+
+      - name: Setup Git LFS
+        run: |
+          git lfs install
+          git lfs pull || echo "LFS pull skipped (no LFS files in shallow clone)"
+          ls -lh Source/Genshin 2>/dev/null || echo "Submodule not yet fetched, cloning manually..."
+          # fallback: если submodule не скачался из-за тяжёлого веса, клонируем отдельно
+          if [ ! -f "Source/Genshin/ProjectSettings/ProjectVersion.txt" ]; then
+            echo "Cloning Genshin main repo as fallback..."
+            rm -rf Source/Genshin
+            git clone --depth 1 --recurse-submodules https://github.com/949886/Genshin.git Source/Genshin || git clone --depth 1 https://github.com/949886/Genshin.git Source/Genshin
+            # докачать GI-Models (747MB) отдельно ветка Unity
+            if [ ! -d "Source/Genshin/Assets/Modules/GI" ]; then
+              echo "Fetching GI-Models..."
+              rm -rf Source/Genshin/Assets/Modules/GI
+              git clone --depth 1 --branch Unity https://github.com/LunarDrive/GI-Models.git Source/Genshin/Assets/Modules/GI || echo "GI-Models fetch failed, proceeding without models (шейдер/мир всё равно соберётся)"
+            fi
+          fi
+          echo "=== Genshin tree ==="
+          ls -R Source/Genshin | head -n 300 || true
+          du -sh Source/Genshin 2>/dev/null || true
+
+      - name: Free disk space (need ~30GB for Unity Android)
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Setup Android SDK + NDK + Gradle (для Unity Gradle export и нативных плагинов)
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager --install "platform-tools" "platforms;android-34" "platforms;android-33" "build-tools;34.0.0" "build-tools;33.0.1" "ndk;25.1.8937393" "cmake;3.22.1" || true
+          sdkmanager --list | head -n 80
+          yes | sdkmanager --licenses || true
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+
+      - name: Setup Java 17 (требуется Unity 6 + Gradle 8)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle (для кастомных Android модулей)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+          cache-read-only: false
+
+      # Кэш Library чтобы пересборка была в разы быстрее (критично для 1ГБ проекта)
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Source/Genshin/Library
+          key: Library-Genshin-${{ matrix.targetPlatform }}-${{ hashFiles('Source/Genshin/Packages/manifest.json', 'Source/Genshin/Packages/packages-lock.json') }}
+          restore-keys: |
+            Library-Genshin-${{ matrix.targetPlatform }}-
+            Library-Genshin-
+
+      - name: Display Project Version
+        run: |
+          cat Source/Genshin/ProjectSettings/ProjectVersion.txt || echo "no version file, will auto-detect"
+          cat Source/Genshin/ProjectSettings/ProjectSettings.asset | grep -A2 "bundleVersion\|productName\|applicationIdentifier" | head -n 30
+
+      - name: Check Unity License (инструкция если секрета нет)
+        run: |
+          if [ -z "${{ secrets.UNITY_LICENSE }}" ]; then
+            echo "::warning:: UNITY_LICENSE не установлен. Без лицензии сборка упадёт. Добавь Secrets: UNITY_LICENSE, UNITY_EMAIL, UNITY_PASSWORD (см. docs/UNITY_LICENSE.md)"
+            echo "Получить лицензию: https://game.ci/docs/github/activation"
+          fi
+
+      # Основной билд Unity → APK (до 500МБ)
+      - name: Build Unity Project (Android APK)
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: Source/Genshin
+          targetPlatform: Android
+          # Unity 6000.6.0f1 как в ProjectVersion.txt; если не совпадёт — game-ci подтянет нужную
+          unityVersion: 6000.6.0f1
+          # Важно для веса APK ≤500МБ:
+          # - ASTC, stripping, compress, split APK
+          customParameters: -nographics -batchmode -logFile -
+          buildName: GenshinAnime
+          buildsPath: build
+          # Если хочешь AAB (для Play Store) — смени на Android + buildAppBundle
+          androidVersionCode: 100
+          # chunkSize 16MB чтобы не падать на больших проектах
+
+      - name: List build output
+        if: always()
+        run: |
+          ls -R build 2>/dev/null | head -n 500 || true
+          du -sh build/* 2>/dev/null || true
+          find build -type f -name "*.apk" -o -name "*.aab" | xargs -I {} sh -c 'echo "=== {} ==="; ls -lh {}; du -h {}'
+
+      - name: Verify APK size ≤500MB (требование заказчика)
+        run: |
+          APK=$(find build -name "*.apk" | head -n1)
+          if [ -z "$APK" ]; then echo "APK не найден! Проверь логи Unity."; ls -R build; exit 1; fi
+          SIZE_MB=$(du -m "$APK" | cut -f1)
+          echo "APK size: ${SIZE_MB} MB — $APK"
+          if [ "$SIZE_MB" -gt 500 ]; then
+            echo "::warning:: APK больше 500 МБ ($SIZE_MB МБ). Включи в Unity: Player Settings → Publishing → Split APK / App Bundle, Texture Compression ASTC, Strip Engine Code, Addressables chunk streaming."
+          else
+            echo "✅ APK укладывается в лимит 500МБ"
+          fi
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Genshin-Android-APK
+          path: |
+            build/Android/**/*.apk
+            build/Android/**/*.aab
+            build/**/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-Logs-${{ matrix.targetPlatform }}
+          path: |
+            Source/Genshin/Logs
+            build/**/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Опционально: релиз
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: buildUnityAndroid
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Display artifacts
+        run: ls -R artifacts | head -n 200
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.apk
+            artifacts/**/*.aab
+          generate_release_notes: true

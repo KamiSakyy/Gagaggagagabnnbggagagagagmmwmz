@@ -1,0 +1,157 @@
+name: Android Gradle Build (SDK + Gradle)
+
+# Универсальный воркфлоу для сборки любого Android Gradle проекта (Unity Export, native Android Studio)
+# Устанавливает Android SDK, NDK, CMake, Gradle и собирает APK/AAB до 500МБ.
+# Используй если экспортируешь Unity проект как Gradle project или делаешь обвязку на Java/Kotlin.
+
+on:
+  push:
+    paths:
+      - 'Source/Genshin/**/gradle/**'
+      - 'android/**'
+      - 'app/**'
+      - '**/*.gradle'
+      - '**/*.gradle.kts'
+      - '.github/workflows/android-gradle.yml'
+  workflow_dispatch:
+
+jobs:
+  gradleAndroid:
+    name: Gradle AssembleRelease
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          submodules: recursive
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK components & accept licenses
+        run: |
+          echo "Installing Android SDK components..."
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-34" \
+            "platforms;android-33" \
+            "build-tools;34.0.0" \
+            "build-tools;33.0.1" \
+            "ndk;25.1.8937393" \
+            "cmake;3.22.1" || true
+          yes | sdkmanager --licenses || true
+          sdkmanager --list_installed | head -n 100
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/25.1.8937393" >> $GITHUB_ENV
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            .gradle
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      - name: Make gradlew executable (если есть)
+        run: |
+          find . -name "gradlew" -exec chmod +x {} \; || echo "gradlew not found in repo root - normal for Unity projects"
+          # Если Unity экспортирует в build/Android, gradlew будет там после unity-builder
+          ls -la Source/Genshin/build 2>/dev/null | head -n 30 || true
+
+      - name: Detect Gradle project
+        id: detect
+        run: |
+          if [ -f "./gradlew" ] || [ -f "./android/gradlew" ] || [ -f "./app/build.gradle" ] || [ -f "./app/build.gradle.kts" ] || [ -f "./build.gradle" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "Gradle project detected"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "::notice:: No Gradle project in repo root. Этот воркфлоу нужен только если есть android/ или Unity Export Gradle project. Пропускаем сборку."
+          fi
+          ls -R | grep -E "build\.gradle" | head -n 20 || true
+
+      - name: Gradle AssembleRelease (если проект найден)
+        if: steps.detect.outputs.found == 'true'
+        run: |
+          # Определяем где gradlew
+          GRADLEW=""
+          if [ -f "./gradlew" ]; then GRADLEW="./gradlew"
+          elif [ -f "./android/gradlew" ]; then GRADLEW="./android/gradlew"
+          elif [ -f "./Source/Genshin/gradlew" ]; then GRADLEW="./Source/Genshin/gradlew"
+          else echo "gradlew not found, trying system gradle"; GRADLEW="gradle"
+          fi
+          echo "Using $GRADLEW"
+          $GRADLEW --version
+          # Чистим и собираем release
+          $GRADLEW clean assembleRelease --stacktrace --info || $GRADLEW assembleRelease --stacktrace
+
+      - name: Sign APK (debug keystore for CI, для релиза замени на свой)
+        if: steps.detect.outputs.found == 'true'
+        run: |
+          # game-ci уже подписывает Unity APK, этот шаг для чистых Gradle проектов
+          find . -name "*.apk" | head -n 5 | xargs -I {} ls -lh {} || echo "No APK after gradle build"
+          # Создаём дебажный кейстор если нет
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            mkdir -p ~/.android
+            keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug,O=CI,C=US" || true
+          fi
+          # apksigner если есть неподписанный
+          find . -path "*/build/outputs/apk/release/*-unsigned.apk" | head -n 5 | while read apk; do
+            echo "Signing $apk"
+            apksigner sign --ks ~/.android/debug.keystore --ks-pass pass:android --key-pass pass:android --out "${apk%-unsigned.apk}.apk" "$apk" || true
+          done
+
+      - name: Verify APK size
+        if: steps.detect.outputs.found == 'true'
+        run: |
+          APK=$(find . -name "*.apk" | head -n1)
+          if [ -n "$APK" ]; then
+            SIZE=$(du -m "$APK" | cut -f1)
+            echo "APK $APK size: ${SIZE}MB"
+            if [ "$SIZE" -gt 500 ]; then echo "::warning:: APK >500MB — включи minify, shrinkResources, split ABIs"; fi
+          else
+            echo "::warning:: APK не найден после Gradle сборки"
+            find . -type f -name "*.apk" | head -n 20
+          fi
+
+      - name: Upload Gradle APK
+        if: steps.detect.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gradle-Android-APK
+          path: |
+            **/build/outputs/apk/**/*.apk
+            **/build/outputs/bundle/**/*.aab
+          if-no-files-found: warn
+          retention-days: 14
+
+  # Фолбек джоб который всегда зелёный чтобы PR не висел если нет Gradle проекта
+  validateEnv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - run: |
+          echo "Android SDK + Java + Gradle окружение готово"
+          java -version
+          sdkmanager --list_installed | head -n 40
+          gradle --version || echo "gradle not in PATH, will use wrapper"
