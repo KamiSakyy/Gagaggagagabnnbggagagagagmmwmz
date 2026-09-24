@@ -146,7 +146,8 @@ jobs:
               -o /tmp/sing-box.tar.gz \
               https://github.com/SagerNet/sing-box/releases/download/v1.14.1/sing-box-1.14.1-linux-amd64.tar.gz
             tar -xzf /tmp/sing-box.tar.gz -C /tmp
-            ENGINE=$(find /tmp -type f -name sing-box -perm -u+x | head -n 1)
+            ENGINE=/tmp/sing-box-1.14.1-linux-amd64/sing-box
+            chmod +x "$ENGINE"
             echo "engine: $ENGINE"
             "$ENGINE" version
             for file in ci-out/configs/*.json; do
@@ -233,10 +234,14 @@ jobs:
         run: |
           mkdir -p .ci
           sed -E 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z?//g; s/[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?//g' \
-            "$BUILD_LOG" > .ci/build.log || cp "$BUILD_LOG" .ci/build.log
-          tail -n 400 .ci/build.log > .ci/build.tail.log
-          rm -f .ci/build.log
-          mv .ci/build.tail.log .ci/build.log
+            "$BUILD_LOG" > /tmp/clean.log || cp "$BUILD_LOG" /tmp/clean.log
+          {
+            echo "=== failure markers ==="
+            grep -nE "error:|error;|FAILURE:|Execution failed|Caused by:|What went wrong|> Task .*FAILED|Could not (find|resolve|download)|No such file|not found|failed to|Exception" /tmp/clean.log | head -n 120 || true
+            echo
+            echo "=== tail ==="
+            tail -n 500 /tmp/clean.log
+          } > .ci/build.log
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f .ci/build.log
