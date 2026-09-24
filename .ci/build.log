@@ -34,17 +34,17 @@ Loading package information...                                                  
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
- 35  112M   35 40.0M    0     0  56.1M      0  0:00:02 --:--:--  0:00:02 56.1M 98  112M   98  111M    0     0  65.2M      0  0:00:01  0:00:01 --:--:-- 71.6M100  112M  100  112M    0     0  65.8M      0  0:00:01  0:00:01 --:--:-- 72.7M
--rw-r--r-- 1 runner runner 113M Sep 24 21:08 app/libs/libbox.aar
+  9  112M    9 10.8M    0     0  19.9M      0  0:00:05 --:--:--  0:00:05 19.9M 69  112M   69 78.8M    0     0  51.1M      0  0:00:02  0:00:01  0:00:01 68.0M100  112M  100  112M    0     0  57.8M      0  0:00:01  0:00:01 --:--:-- 72.5M
+-rw-r--r-- 1 runner runner 113M Sep 24 21:12 app/libs/libbox.aar
  72706412  1980-00-00 00:00   jni/armeabi-v7a/libbox.so
  80751056  1980-00-00 00:00   jni/arm64-v8a/libbox.so
  78457644  1980-00-00 00:00   jni/x86/libbox.so
  85478392  1980-00-00 00:00   jni/x86_64/libbox.so
--rw-r--r-- 1 runner runner 2696 Sep 24 21:08 keystore.jks
--rw-r--r-- 1 runner runner   85 Sep 24 21:08 keystore.properties
+-rw-r--r-- 1 runner runner 2696 Sep 24 21:12 keystore.jks
+-rw-r--r-- 1 runner runner   85 Sep 24 21:12 keystore.properties
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  334k  100  334k    0     0  5556k      0 --:--:-- --:--:-- --:--:-- 5568k
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  334k  100  334k    0     0  2901k      0 --:--:-- --:--:-- --:--:-- 2905k
 Note: app/src/main/java/com/vortex/vpn/cfg/JsonReader.java uses unchecked or unsafe operations.
 Note: Recompile with -Xlint:unchecked for details.
 javac 17.0.20.1
@@ -52,5 +52,17 @@ share links: 10 outbounds, base64 subscription: 10 outbounds
 clash yaml: 3 outbounds
 after dedupe: 13 locations
 total outbounds in configurations: 29
-Exception in thread "main" java.lang.IllegalStateException: direct-only: outbounds were dropped
-	at ConfigCheck.main(ConfigCheck.java:86)
+protocol types covered: [vless, vmess, trojan, shadowsocks, shadowsocksr, hysteria2, tuic, anytls, socks, wireguard, snell, shadowtls, ssh, http]
+ConfigCheck: 12 configurations written to ci-out/configs
+ConfigCheck: OK
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 30.1M  100 30.1M    0     0  85.0M      0 --:--:-- --:--:-- --:--:-- 85.0M
+find: ‘/tmp/systemd-private-30265dd8f9354c63bd50cee396482eee-ModemManager.service-wipZ2e’: Permission denied
+find: ‘/tmp/systemd-private-30265dd8f9354c63bd50cee396482eee-systemd-logind.service-2LICsP’: Permission denied
+find: ‘/tmp/systemd-private-30265dd8f9354c63bd50cee396482eee-chrony.service-wP1SYA’: Permission denied
+find: ‘/tmp/snap-private-tmp’: Permission denied
+find: ‘/tmp/systemd-private-30265dd8f9354c63bd50cee396482eee-systemd-resolved.service-hRTlQn’: Permission denied
+find: ‘/tmp/systemd-private-30265dd8f9354c63bd50cee396482eee-haveged.service-foMVwk’: Permission denied
+find: ‘/tmp/systemd-private-30265dd8f9354c63bd50cee396482eee-polkit.service-es01qu’: Permission denied
