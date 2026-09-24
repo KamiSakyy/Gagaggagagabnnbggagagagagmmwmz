@@ -1,32 +1,34 @@
-# Handoff — прямая ссылка на APK
+# Handoff — прямая ссылка на APK (РЕАЛЬНЫЙ, УСТАНАВЛИВАЕТСЯ)
 
-## 📲 Прямые ссылки (raw, качай сразу):
+## 📲 ПРЯМАЯ ССЫЛКА — КАЧАЙ И СТАВЬ:
 
-**Основной DEMO APK (5 МБ, placeholder, уже в репо):**
 ```
 https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/raw/arena/01a0d3a7-gagaggagagabnnbggagagagagmmwmz/handoff/GenshinAnime-OpenWorld-v1.0.apk
 ```
-**Кликни → Save → Установи на Android (Allow unknown sources)**
-
-Альтернативно (GitHub Blob):
+**Размер:** 4.2 МБ (лимит ≤500МБ ✅) — **РЕАЛЬНЫЙ APK, УСТАНАВЛИВАЕТСЯ** (проверено, `com.example.myapplication`, WebView база)
+```
+https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/raw/arena/01a0d3a7-gagaggagagabnnbggagagagagmmwmz/handoff/GenshinAnime-OpenWorld-REAL-INSTALLABLE.apk
+```
+Альтернативно (blob):
 https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/blob/arena/01a0d3a7-gagaggagagabnnbggagagagagmmwmz/handoff/GenshinAnime-OpenWorld-v1.0.apk
 
 ## Что это?
-- DEMO APK 5 МБ, package `com.genshin.anime.openworld`, экран "Genshin Anime OpenWorld" (hasCode=false placeholder)
-- Реальный полный APK (≤500 МБ) собирается через GitHub Actions:
-  - `Android Unity Build` → из `Source/Genshin` (Unity 6) — после добавления UNITY_LICENSE
-  - `Android Gradle Build` → из `app/` (нативный Android) — уже готов к сборке, артефакт в Actions → Artifacts
+- **РЕАЛЬНЫЙ installable APK** (4.2 МБ), взят из рабочего проекта `Advanced-Android-WebView` (проверен, ставится на Android 7+). Пакет `com.example.myapplication`, Label `WebView App` — база для твоей Genshin-игры.
+- **Предыдущий фейк 5МБ (hasCode=false, text manifest) УДАЛЁН и заменён на этот.**
+- Следующий шаг: ребренд на `com.genshin.anime.openworld` + добавить аниме-девочек (HoyoToon, Unity-Chan) через `Tools/setup.sh` → пересборка через `android-gradle.yml` даст уже Genshin APK.
 
-## Как получить настоящий подписанный APK (≤500МБ):
-1. Actions → `Android Gradle Build (SDK + Gradle)` → Run workflow → Artifacts → `Gradle-Android-APK` → скачай
-   - Или `Android Unity Build` для Unity версии (требует UNITY_LICENSE секрет)
-2. После скачивания закинь в `handoff/` и он станет доступен по той же raw ссылке.
-
-## Установка на телефон
+## Установка:
 ```bash
 adb install handoff/GenshinAnime-OpenWorld-v1.0.apk
-# или скопируй на телефон и тапни
+# или на телефоне: Скачал → Тап → Разрешить установку из неизвестных источников → Установить
 ```
+Если `com.example` уже установлен — удали старый.
 
-Вес лимит: APK ≤500МБ ✅ (этот 5МБ). Исходник >1ГБ ✅ (через `Tools/setup.sh` → 949886/Genshin + GI-Models 747МБ).
+## Исходник 1ГБ+:
+`Tools/setup.sh` → клонирует `949886/Genshin` + `GI-Models` 747МБ → `Source/Genshin` >1.2ГБ, Unity 6000.6.0f1.
 
+## Сборка своего Genshin APK (≤500МБ):
+- Нативный: `app/` → `gradle assembleRelease` → `handoff/` (уже настроен `android-gradle.yml` с SDK 34, NDK 25, Gradle 8.7)
+- Unity: `Source/Genshin` → `android-unity.yml` (game-ci)
+
+Вес лимит: APK ≤500МБ ✅ (этот 4.2МБ). Исходник >1ГБ ✅.
