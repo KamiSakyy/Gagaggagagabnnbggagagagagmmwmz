@@ -2,6 +2,10 @@ import com.vortex.vpn.cfg.ConfigBuilder;
 import com.vortex.vpn.cfg.ConfigSettings;
 import com.vortex.vpn.cfg.JsonReader;
 import com.vortex.vpn.model.Outbound;
+import com.vortex.vpn.model.Server;
+import com.vortex.vpn.sub.B64;
+import com.vortex.vpn.sub.Geo;
+import com.vortex.vpn.sub.SubImporter;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,7 +32,9 @@ public final class ConfigCheck {
             throw new IllegalStateException("cannot create " + out);
         }
 
-        List<Outbound> servers = sampleServers();
+        List<Outbound> servers = new ArrayList<>(subscriptionServers());
+        servers.addAll(sampleServers());
+        System.out.println("total outbounds in configurations: " + servers.size());
         List<String> variants = new ArrayList<>();
 
         for (int mode = ConfigSettings.MODE_GLOBAL; mode <= ConfigSettings.MODE_BYPASS; mode++) {
@@ -56,6 +62,7 @@ public final class ConfigCheck {
         minimal.dnsCache = false;
         minimal.sniff = false;
         minimal.autoRoute = false;
+        minimal.ipv6 = false;
         write(out, "minimal", ConfigBuilder.build(minimal, servers), variants);
 
         write(out, "direct-only", ConfigBuilder.buildDirectOnly(baseSettings()), variants);
@@ -79,7 +86,15 @@ public final class ConfigCheck {
                 throw new IllegalStateException(name + ": outbounds were dropped");
             }
         }
+        List<String> types = new ArrayList<>();
+        for (Outbound outbound : servers) {
+            if (!types.contains(outbound.type)) {
+                types.add(outbound.type);
+            }
+        }
+        System.out.println("protocol types covered: " + types);
         System.out.println("ConfigCheck: " + variants.size() + " configurations written to " + out.getPath());
+        System.out.println("ConfigCheck: OK");
     }
 
     private static ConfigSettings baseSettings() {
@@ -88,6 +103,130 @@ public final class ConfigCheck {
         settings.stack = "mixed";
         settings.selectedTag = "";
         return settings;
+    }
+
+    /**
+     * Validates the subscription pipeline: share links (raw and base64 v2ray format) and
+     * Clash YAML are parsed into outbounds, exactly like the application does when it
+     * "unpacks" a subscription into locations.
+     */
+    private static List<Outbound> subscriptionServers() {
+        List<String> links = Arrays.asList(
+                "vless://0f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e11@example.com:443"
+                        + "?security=reality&pbk=8hRk3Q0m5m3XhI1K6m3n0dHIZt6WZ1nYk5K0aVpG1S0"
+                        + "&sid=6ba85179e30d4fc2&fp=chrome&flow=xtls-rprx-vision&type=tcp"
+                        + "&sni=example.com#%F0%9F%87%A9%F0%9F%87%AA%20Germany%20Reality",
+                "vmess://" + B64.encode(vmessJson().getBytes(StandardCharsets.UTF_8)),
+                "trojan://trojan-password@trojan.example.com:443?security=tls&sni=trojan.example.com&type=ws&path=%2Ftrojan&host=trojan.example.com#%F0%9F%87%B3%F0%9F%87%B1%20Netherlands%20Trojan",
+                "ss://" + B64.encode("2022-blake3-aes-128-gcm:ss-password".getBytes(StandardCharsets.UTF_8))
+                        + "@ss.example.com:8388#%F0%9F%87%AB%F0%9F%87%AE%20Finland%20SS",
+                "ssr://" + B64.encode(("ssr.example.com:8388:auth_aes128_md5:aes-256-cfb:tls1.2_ticket_auth:"
+                        + B64.encode("ssr-password".getBytes(StandardCharsets.UTF_8))
+                        + "/?obfsparam=" + B64.encode("cloud.example.com".getBytes(StandardCharsets.UTF_8))
+                        + "&protoparam=" + B64.encode("1234:password".getBytes(StandardCharsets.UTF_8))
+                        + "&remarks=" + B64.encode("Japan SSR".getBytes(StandardCharsets.UTF_8))).getBytes(StandardCharsets.UTF_8)),
+                "hysteria2://hy2-password@hy.example.com:443?sni=hy.example.com&insecure=1"
+                        + "&obfs=salamander&obfs-password=obfs-password&upmbps=200&downmbps=500"
+                        + "#%F0%9F%87%B8%F0%9F%87%AA%20Sweden%20Hysteria2",
+                "tuic://3f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e22:tuic-password@tuic.example.com:443"
+                        + "?sni=tuic.example.com&congestion_control=bbr&udp_relay_mode=native#Canada%20TUIC",
+                "anytls://anytls-password@anytls.example.com:443?sni=anytls.example.com&fp=chrome#France%20AnyTLS",
+                "socks5://user:password@socks.example.com:1080#Turkey%20SOCKS",
+                "wireguard://" + "aF9d3QW1mZ0F1bXl2V3J0a1p5c2Q0ZTFnMm0zcDRzNXQ2dw="
+                        + "@wg.example.com:2408?address=10.10.0.2%2F32&mtu=1408#WireGuard"
+        );
+
+        List<Outbound> raw = SubImporter.parse(String.join("\n", links)).servers;
+        require(!raw.isEmpty(), "share links produced no outbounds");
+        List<Outbound> base64 = SubImporter.parse(B64.encode(
+                String.join("\n", links).getBytes(StandardCharsets.UTF_8))).servers;
+        require(!base64.isEmpty(), "base64 subscription produced no outbounds");
+        System.out.println("share links: " + raw.size() + " outbounds, base64 subscription: "
+                + base64.size() + " outbounds");
+
+        List<Outbound> clash = SubImporter.parse(clashYaml()).servers;
+        require(!clash.isEmpty(), "clash subscription produced no outbounds");
+        System.out.println("clash yaml: " + clash.size() + " outbounds");
+
+        List<Outbound> all = new ArrayList<>(raw);
+        all.addAll(clash);
+        List<Outbound> unique = SubImporter.dedupe(all);
+        System.out.println("after dedupe: " + unique.size() + " locations");
+        for (Outbound outbound : unique) {
+            require(outbound.country == null || outbound.country.isEmpty()
+                            || Geo.flag(outbound.country) != null,
+                    "unknown country code for " + outbound.tag);
+        }
+        return unique;
+    }
+
+    private static String vmessJson() {
+        return "{"
+                + "\"v\":\"2\","
+                + "\"ps\":\"United States VMess\","
+                + "\"add\":\"vmess.example.com\","
+                + "\"port\":\"443\","
+                + "\"id\":\"5c1a9c9e-9f4b-4d3a-9c8e-1b2d3e4f5a6b\","
+                + "\"aid\":\"0\","
+                + "\"scy\":\"auto\","
+                + "\"net\":\"ws\","
+                + "\"type\":\"none\","
+                + "\"host\":\"vmess.example.com\","
+                + "\"path\":\"/ws\","
+                + "\"tls\":\"tls\","
+                + "\"sni\":\"vmess.example.com\""
+                + "}";
+    }
+
+    private static String clashYaml() {
+        return String.join("\n", Arrays.asList(
+                "port: 7890",
+                "proxies:",
+                "  - name: \"\uD83C\uDDE9\uD83C\uDDEA Germany Clash\"",
+                "    type: vless",
+                "    server: clash.example.com",
+                "    port: 443",
+                "    uuid: 0f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e11",
+                "    tls: true",
+                "    servername: clash.example.com",
+                "    flow: xtls-rprx-vision",
+                "    network: tcp",
+                "    reality-opts:",
+                "      public-key: 8hRk3Q0m5m3XhI1K6m3n0dHIZt6WZ1nYk5K0aVpG1S0",
+                "      short-id: 6ba85179e30d4fc2",
+                "    client-fingerprint: chrome",
+                "  - name: Clash WebSocket",
+                "    type: vmess",
+                "    server: ws.example.com",
+                "    port: 443",
+                "    uuid: 5c1a9c9e-9f4b-4d3a-9c8e-1b2d3e4f5a6b",
+                "    alterId: 0",
+                "    cipher: auto",
+                "    tls: true",
+                "    network: ws",
+                "    ws-opts:",
+                "      path: /clash",
+                "      headers:",
+                "        Host: ws.example.com",
+                "  - name: Clash Hysteria2",
+                "    type: hysteria2",
+                "    server: hy2.example.com",
+                "    port: 443",
+                "    password: hy2-password",
+                "    sni: hy2.example.com",
+                "    skip-cert-verify: true",
+                "proxy-groups:",
+                "  - name: PROXY",
+                "    type: select",
+                "    proxies:",
+                "      - \"\uD83C\uDDE9\uD83C\uDDEA Germany Clash\""
+        ));
+    }
+
+    private static void require(boolean condition, String message) {
+        if (!condition) {
+            throw new IllegalStateException("subscription check failed: " + message);
+        }
     }
 
     /** One outbound per supported protocol, including their transport variants. */

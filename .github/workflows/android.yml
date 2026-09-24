@@ -134,11 +134,14 @@ jobs:
           set -o pipefail
           {
             set -e
-            mkdir -p ci-out
-            javac -d ci-out/cfgcheck \
-              $(find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model -name '*.java') \
+            mkdir -p ci-out/cfgcheck
+            curl -fL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/snakeyaml.jar \
+              https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar
+            javac -cp /tmp/snakeyaml.jar -d ci-out/cfgcheck \
+              $(find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model app/src/main/java/com/vortex/vpn/sub -name '*.java') \
               tools/ConfigCheck.java
-            java -cp ci-out/cfgcheck ConfigCheck ci-out/configs
+            javac -version
+            java -cp ci-out/cfgcheck:/tmp/snakeyaml.jar ConfigCheck ci-out/configs
             curl -fL --retry 6 --retry-delay 5 --retry-all-errors \
               -o /tmp/sing-box.tar.gz \
               https://github.com/SagerNet/sing-box/releases/download/v1.14.1/sing-box-1.14.1-linux-amd64.tar.gz
