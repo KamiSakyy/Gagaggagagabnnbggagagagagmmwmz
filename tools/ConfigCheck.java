@@ -155,10 +155,10 @@ public final class ConfigCheck {
                         + "?sni=tuic.example.com&congestion_control=bbr&udp_relay_mode=native#Canada%20TUIC",
                 "anytls://anytls-password@anytls.example.com:443?sni=anytls.example.com&fp=chrome#France%20AnyTLS",
                 "socks5://user:password@socks.example.com:1080#Turkey%20SOCKS",
-                "wireguard://" + "aF9d3QW1mZ0F1bXl2V3J0a1p5c2Q0ZTFnMm0zcDRzNXQ2dw="
+                "wireguard://" + "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA="
                         + "@wg.example.com:2408?address=10.10.0.2%2F32&mtu=1408"
-                        + "&public_key=bG9uZ3JhbmRvbWtleWZvcnRlc3Rpbmdvbmx5MTIzNDU2Nzg5MA="
-                        + "&preshared_key=cHJlc2hhcmVka2V5Zm9ydGVzdGluZ29ubHk="
+                        + "&public_key=ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0A="
+                        + "&preshared_key=QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A="
                         + "&keepalive=25#WireGuard"
         );
 
@@ -426,8 +426,8 @@ public final class ConfigCheck {
 
     private static Outbound wireguard() {
         Outbound outbound = base("wireguard", "WireGuard", "wg.example.com", 2408);
-        outbound.wgPrivateKey = "aF9d3QW1mZ0F1bXl2V3J0a1p5c2Q0ZTFnMm0zcDRzNXQ2dw=";
-        outbound.wgPeerPublicKey = "bG9uZ3JhbmRvbWtleWZvcnRlc3Rpbmdvbmx5MTIzNDU2Nzg5MA=";
+        outbound.wgPrivateKey = "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=";
+        outbound.wgPeerPublicKey = "ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0A=";
         outbound.wgLocalAddress = "10.10.0.2/32";
         outbound.wgMtu = 1408;
         return outbound;
