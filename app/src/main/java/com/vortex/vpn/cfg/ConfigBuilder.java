@@ -27,15 +27,16 @@ public final class ConfigBuilder {
 
     public static String build(ConfigSettings s, List<Outbound> servers) {
         List<Outbound> list = servers == null ? new ArrayList<Outbound>() : servers;
+        boolean hasProxies = !list.isEmpty();
         Json.Obj root = Json.obj();
         root.put("log", log(s));
-        root.put("dns", dns(s));
+        root.put("dns", dns(s, hasProxies));
         root.put("inbounds", inbounds(s));
         root.put("outbounds", outbounds(s, list));
         if (hasWireGuard(list)) {
             root.put("endpoints", endpoints(list));
         }
-        root.put("route", route(s));
+        root.put("route", route(s, hasProxies));
         root.put("experimental", experimental(s));
         return root.toString();
     }
@@ -53,7 +54,7 @@ public final class ConfigBuilder {
     }
 
     // ------------------------------------------------------------------ dns
-    private static Json.Obj dns(ConfigSettings s) {
+    private static Json.Obj dns(ConfigSettings s, boolean hasProxies) {
         Json.Arr servers = Json.arr();
 
         // Local resolver: used to bootstrap the proxy server host name, never proxied.
@@ -65,7 +66,9 @@ public final class ConfigBuilder {
                 .put("detour", TAG_DIRECT));
 
         // Remote resolver: protected by the tunnel, keeps DNS away from the ISP.
-        if (s.remoteDnsDoh) {
+        if (!hasProxies) {
+            // Nothing to protect the remote resolver with - stay direct.
+        } else if (s.remoteDnsDoh) {
             servers.add(Json.obj()
                     .put("type", "https")
                     .put("tag", TAG_DNS_REMOTE)
@@ -86,7 +89,7 @@ public final class ConfigBuilder {
                     .put("detour", TAG_PROXY));
         }
 
-        if (s.fakeIp) {
+        if (s.fakeIp && hasProxies) {
             Json.Obj fake = Json.obj()
                     .put("type", "fakeip")
                     .put("tag", TAG_FAKEIP)
@@ -103,7 +106,7 @@ public final class ConfigBuilder {
                     .put("domain_suffix", s.directDomains.toArray(new String[0]))
                     .put("server", TAG_DNS_DIRECT));
         }
-        if (s.fakeIp) {
+        if (s.fakeIp && hasProxies) {
             rules.add(Json.obj()
                     .put("query_type", new String[]{"A", "AAAA"})
                     .put("server", TAG_FAKEIP));
@@ -111,7 +114,7 @@ public final class ConfigBuilder {
 
         Json.Obj dns = Json.obj()
                 .put("servers", servers)
-                .put("final", TAG_DNS_REMOTE)
+                .put("final", hasProxies ? TAG_DNS_REMOTE : TAG_DNS_DIRECT)
                 .put("strategy", s.preferIpv4 ? "prefer_ipv4" : "prefer_ipv6")
                 .put("timeout", "5s");
         if (s.dnsCache) {
@@ -159,26 +162,45 @@ public final class ConfigBuilder {
         used.add(TAG_DIRECT);
 
         List<String> tags = new ArrayList<>();
+        List<Json.Obj> proxies = new ArrayList<>();
         for (Outbound server : servers) {
             String tag = uniqueTag(server, used);
             used.add(tag);
             server.tag = tag;
             tags.add(tag);
             if ("wireguard".equals(server.type)) {
-                // emitted through the endpoints section instead
+                // wireguard is emitted through the endpoints section instead
                 continue;
             }
-            result.add(server.toJson());
+            Json.Obj outbound = server.toJson();
+            if (s.mux && supportsMultiplex(server.type)) {
+                Json.Obj mux = Json.obj()
+                        .put("enabled", true)
+                        .put("protocol", s.muxProtocol == null ? "h2mux" : s.muxProtocol);
+                if (s.muxMaxStreams > 0) {
+                    mux.put("max_streams", (long) s.muxMaxStreams);
+                }
+                outbound.put("multiplex", mux);
+            }
+            if (s.tlsFragment && outbound.has("tls")) {
+                Json.Obj tls = outbound.object("tls");
+                if (tls != null) {
+                    tls.put("fragment", true);
+                    if (s.recordFragment) {
+                        tls.put("record_fragment", true);
+                    }
+                }
+            }
+            proxies.add(outbound);
         }
 
         if (!tags.isEmpty()) {
             String selected = s.selectedTag;
-            boolean autoPref = s.autoSelect;
             if (selected == null || !tags.contains(selected)) {
                 selected = tags.get(0);
             }
-            if (autoPref) {
-                // keep "proxy" pointing at the auto group but remember the manual pick
+            if (s.autoSelect) {
+                // "proxy" follows the fastest location chosen by the urltest group
                 result.add(Json.obj()
                         .put("type", "selector")
                         .put("tag", TAG_PROXY)
@@ -204,25 +226,8 @@ public final class ConfigBuilder {
                     .put("interrupt_exist_connections", false));
         }
 
-        for (Outbound server : servers) {
-            Json.Obj o = server.toJson();
-            if (s.mux && supportsMultiplex(server.type)) {
-                Json.Obj mux = Json.obj()
-                        .put("enabled", true)
-                        .put("protocol", s.muxProtocol == null ? "h2mux" : s.muxProtocol);
-                if (s.muxMaxStreams > 0) {
-                    mux.put("max_streams", (long) s.muxMaxStreams);
-                }
-                o.put("multiplex", mux);
-            }
-            if (s.tlsFragment && o.has("tls")) {
-                Json.Obj tls = o.object("tls");
-                if (tls != null) {
-                    tls.put("fragment", true);
-                    tls.put("record_fragment", s.recordFragment);
-                }
-            }
-            result.add(o);
+        for (Json.Obj proxy : proxies) {
+            result.add(proxy);
         }
 
         result.add(Json.obj().put("type", "direct").put("tag", TAG_DIRECT));
@@ -283,7 +288,7 @@ public final class ConfigBuilder {
     }
 
     // ------------------------------------------------------------------ route
-    private static Json.Obj route(ConfigSettings s) {
+    private static Json.Obj route(ConfigSettings s, boolean hasProxies) {
         Json.Arr rules = Json.arr();
 
         // sing-box 1.13+ performs sniffing through a rule action instead of inbound fields.
@@ -325,7 +330,7 @@ public final class ConfigBuilder {
 
         return Json.obj()
                 .put("rules", rules)
-                .put("final", TAG_PROXY)
+                .put("final", hasProxies ? TAG_PROXY : TAG_DIRECT)
                 .put("auto_detect_interface", true)
                 .put("default_domain_resolver", Json.obj().put("server", TAG_DNS_DIRECT));
     }

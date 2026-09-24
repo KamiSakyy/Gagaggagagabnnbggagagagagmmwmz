@@ -35,6 +35,11 @@ public final class Json {
             if (value == null) {
                 return this;
             }
+            int index = keys.indexOf(key);
+            if (index >= 0) {
+                values.set(index, value);
+                return this;
+            }
             keys.add(key);
             values.add(value);
             return this;

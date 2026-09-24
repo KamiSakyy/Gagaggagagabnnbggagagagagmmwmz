@@ -156,7 +156,10 @@ public final class ConfigCheck {
                 "anytls://anytls-password@anytls.example.com:443?sni=anytls.example.com&fp=chrome#France%20AnyTLS",
                 "socks5://user:password@socks.example.com:1080#Turkey%20SOCKS",
                 "wireguard://" + "aF9d3QW1mZ0F1bXl2V3J0a1p5c2Q0ZTFnMm0zcDRzNXQ2dw="
-                        + "@wg.example.com:2408?address=10.10.0.2%2F32&mtu=1408#WireGuard"
+                        + "@wg.example.com:2408?address=10.10.0.2%2F32&mtu=1408"
+                        + "&public_key=bG9uZ3JhbmRvbWtleWZvcnRlc3Rpbmdvbmx5MTIzNDU2Nzg5MA="
+                        + "&preshared_key=cHJlc2hhcmVka2V5Zm9ydGVzdGluZ29ubHk="
+                        + "&keepalive=25#WireGuard"
         );
 
         List<Outbound> raw = SubImporter.parse(String.join("\n", links)).servers;
