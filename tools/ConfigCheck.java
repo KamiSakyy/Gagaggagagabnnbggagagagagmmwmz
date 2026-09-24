@@ -81,9 +81,28 @@ public final class ConfigCheck {
                     throw new IllegalStateException(name + ": missing section " + key);
                 }
             }
-            List<?> outbounds = (List<?>) root.get("outbounds");
-            if (outbounds.size() < servers.size()) {
-                throw new IllegalStateException(name + ": outbounds were dropped");
+            if (!root.containsKey("outbounds") || ((List<?>) root.get("outbounds")).isEmpty()) {
+                throw new IllegalStateException(name + ": no outbounds");
+            }
+            if (!name.startsWith("direct-only")) {
+                List<?> outbounds = (List<?>) root.get("outbounds");
+                if (outbounds.size() < servers.size()) {
+                    throw new IllegalStateException(name + ": outbounds were dropped ("
+                            + outbounds.size() + " < " + servers.size() + ")");
+                }
+                List<?> inbounds = (List<?>) root.get("inbounds");
+                Map<?, ?> first = (Map<?, ?>) inbounds.get(0);
+                if (!"tun".equals(first.get("type"))) {
+                    throw new IllegalStateException(name + ": the first inbound is not a tun");
+                }
+                Map<?, ?> dns = (Map<?, ?>) root.get("dns");
+                if (!(dns.get("servers") instanceof List) || ((List<?>) dns.get("servers")).isEmpty()) {
+                    throw new IllegalStateException(name + ": no dns servers");
+                }
+                Map<?, ?> route = (Map<?, ?>) root.get("route");
+                if (!(route.get("rules") instanceof List)) {
+                    throw new IllegalStateException(name + ": no route rules");
+                }
             }
         }
         List<String> types = new ArrayList<>();
