@@ -31,14 +31,28 @@ jobs:
           submodules: recursive
 
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
           cache: gradle
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Android SDK (preinstalled + install)
+        run: |
+          echo "Using preinstalled Android SDK at /usr/local/lib/android/sdk"
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+          sdkmanager --version || echo "sdkmanager not in PATH, try find"
+          ls -la $ANDROID_SDK_ROOT/cmdline-tools/ || true
+          # fallback install via apt if missing
+          if [ ! -f "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            echo "cmdline-tools missing, will try to locate"
+            find /usr -name "sdkmanager" 2>/dev/null | head -n 5
+          fi
 
       - name: Install SDK components & accept licenses
         run: |
@@ -145,11 +159,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
       - uses: android-actions/setup-android@v3
+        # fallback: preinstalled SDK on runner is at /usr/local/lib/android/sdk
       - run: |
           echo "Android SDK + Java + Gradle окружение готово"
           java -version
