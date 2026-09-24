@@ -131,36 +131,48 @@ jobs:
 
       - name: Validate generated configurations with sing-box
         run: |
+          exec > >(stdbuf -oL tee -a "$BUILD_LOG") 2>&1
           set -o pipefail
-          {
-            set -e
-            mkdir -p ci-out/cfgcheck
-            curl -fL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/snakeyaml.jar \
-              https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar
-            javac -cp /tmp/snakeyaml.jar -d ci-out/cfgcheck \
-              $(find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model app/src/main/java/com/vortex/vpn/sub -name '*.java') \
-              tools/ConfigCheck.java
-            javac -version
-            java -cp ci-out/cfgcheck:/tmp/snakeyaml.jar ConfigCheck ci-out/configs
-            curl -fL --retry 6 --retry-delay 5 --retry-all-errors \
-              -o /tmp/sing-box.tar.gz \
-              https://github.com/SagerNet/sing-box/releases/download/v1.14.1/sing-box-1.14.1-linux-amd64.tar.gz
-            tar -xzf /tmp/sing-box.tar.gz -C /tmp
-            ENGINE=/tmp/sing-box-1.14.1-linux-amd64/sing-box
-            chmod +x "$ENGINE"
-            echo "engine: $ENGINE"
-            "$ENGINE" version
-            for file in ci-out/configs/*.json; do
-              echo "--- check $file"
-              "$ENGINE" check -c "$file"
-            done
-            echo "all configurations are valid"
-          } 2>&1 | tee -a "$BUILD_LOG"
+          set -x
+          mkdir -p ci-out/cfgcheck
+          curl -fsSL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/snakeyaml.jar \
+            https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar
+          javac -cp /tmp/snakeyaml.jar -d ci-out/cfgcheck \
+            $(find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model app/src/main/java/com/vortex/vpn/sub -name '*.java') \
+            tools/ConfigCheck.java
+          javac -version
+          java -cp ci-out/cfgcheck:/tmp/snakeyaml.jar ConfigCheck ci-out/configs
+          echo "harness done"
+          curl -fsSL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/sing-box.tar.gz \
+            https://github.com/SagerNet/sing-box/releases/download/v1.14.1/sing-box-1.14.1-linux-amd64.tar.gz
+          echo "engine downloaded: $(du -h /tmp/sing-box.tar.gz | cut -f1)"
+          tar -xzf /tmp/sing-box.tar.gz -C /tmp
+          ls /tmp | grep -i sing-box || true
+          ENGINE=/tmp/sing-box-1.14.1-linux-amd64/sing-box
+          chmod +x "$ENGINE"
+          echo "engine: $ENGINE"
+          "$ENGINE" version
+          FAILED=0
+          for file in ci-out/configs/*.json; do
+            echo "--- check $(basename "$file")"
+            if ! "$ENGINE" check -c "$file"; then
+              echo "INVALID: $file"
+              FAILED=1
+            fi
+          done
+          if [ "$FAILED" -ne 0 ]; then
+            echo "some configurations were rejected by the engine"
+            exit 1
+          fi
+          echo "=== all configurations are valid ==="
 
       - name: Build release APKs
         run: |
+          exec > >(stdbuf -oL tee -a "$BUILD_LOG") 2>&1
           set -o pipefail
-          gradle --no-daemon --stacktrace --info assembleRelease 2>&1 | tee -a "$BUILD_LOG"
+          echo "=== gradle assembleRelease ==="
+          gradle --no-daemon --stacktrace assembleRelease
+          echo "=== gradle finished ==="
 
       - name: Collect handoff artifacts
         run: |
