@@ -34,9 +34,11 @@
 *.pdb.meta
 *.mdb.meta
 
-# Builds
+# Builds (allow handoff APK direct link)
 *.apk
+!handoff/*.apk
 *.aab
+!handoff/*.aab
 *.unitypackage
 *.app
 

@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.genshin.anime.openworld'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.genshin.anime.openworld"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+        // Вес APK: контролируем до 500МБ — keep small
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Для теста подпись debug ключом через CI
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+    packaging {
+        resources {
+            excludes += ['/META-INF/{AL2.0,LGPL2.1}']
+        }
+    }
+    // Для веса ≤500МБ: сплит по ABI (если много .so)
+    // splits { abi { enable true; reset(); include 'arm64-v8a', 'armeabi-v7a' } }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+}
