@@ -1,0 +1,13 @@
+<resources>
+    <style name="Theme.GenshinAnime" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#3A7BFF</item>
+        <item name="colorPrimaryVariant">#1E3A8A</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">#0A0E1A</item>
+    </style>
+    <style name="Theme.GenshinAnime.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+</resources>

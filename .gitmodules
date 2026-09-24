@@ -1,0 +1,12 @@
+[submodule "Source/Genshin"]
+	path = Source/Genshin
+	url = https://github.com/949886/Genshin.git
+	branch = main
+[submodule "Source/LunarFramework"]
+	path = Source/LunarFramework
+	url = https://github.com/949886/LunarFramework.git
+	branch = main
+[submodule "Source/ThirdPersonPack"]
+	path = Source/ThirdPersonPack
+	url = https://github.com/conradosaud/ThirdPersonPack.git
+	branch = master
