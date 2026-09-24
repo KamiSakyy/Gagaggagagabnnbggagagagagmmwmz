@@ -1,0 +1,166 @@
+name: Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - 'arena/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build signed APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Show toolchain
+        run: |
+          java -version
+          gradle --version | head -20
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+
+      - name: Fetch sing-box engine (libbox.aar)
+        run: |
+          mkdir -p app/libs
+          curl -fL --retry 6 --retry-delay 5 --retry-all-errors \
+            -o app/libs/libbox.aar \
+            https://github.com/singbox-android/libbox/releases/download/1.14.1/libbox.aar
+          ls -lh app/libs/libbox.aar
+          unzip -l app/libs/libbox.aar | grep -E "jni/.+\.so" || true
+
+      - name: Ensure release signing keystore
+        run: |
+          if [ ! -f keystore.jks ]; then
+            keytool -genkeypair -v -keystore keystore.jks -alias vortex \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass vortexvpn -keypass vortexvpn \
+              -dname "CN=Vortex VPN, OU=Vortex, O=Vortex, L=Moscow, C=RU"
+            printf 'storeFile=keystore.jks\nstorePassword=vortexvpn\nkeyAlias=vortex\nkeyPassword=vortexvpn\n' > keystore.properties
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add keystore.jks keystore.properties
+            git commit -m "ci: add release signing keystore" || true
+            git push origin HEAD:${GITHUB_REF_NAME} || true
+          fi
+          ls -l keystore.jks keystore.properties
+
+      - name: Validate generated configurations with sing-box
+        run: |
+          set -e
+          mkdir -p ci-out
+          javac -d ci-out/cfgcheck \
+            $(find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model -name '*.java') \
+            tools/ConfigCheck.java
+          java -cp ci-out/cfgcheck ConfigCheck ci-out/configs
+          curl -fL --retry 6 --retry-delay 5 --retry-all-errors \
+            -o /tmp/sing-box.tar.gz \
+            https://github.com/SagerNet/sing-box/releases/download/v1.14.1/sing-box-1.14.1-linux-amd64.tar.gz
+          tar -xzf /tmp/sing-box.tar.gz -C /tmp
+          ENGINE=$(find /tmp -type f -name sing-box -perm -u+x | head -n 1)
+          echo "engine: $ENGINE"
+          "$ENGINE" version
+          for file in ci-out/configs/*.json; do
+            echo "::group::check $file"
+            "$ENGINE" check -c "$file"
+            echo "::endgroup::"
+          done
+
+      - name: Build release APKs
+        run: gradle --no-daemon --stacktrace assembleRelease
+
+      - name: Collect handoff artifacts
+        run: |
+          set -e
+          mkdir -p handoff
+          rm -f handoff/*.apk
+          for apk in app/build/outputs/apk/release/*.apk; do
+            name=$(basename "$apk")
+            case "$name" in
+              *arm64*) target="VortexVPN-1.0.0-arm64-v8a.apk" ;;
+              *armeabi*) target="VortexVPN-1.0.0-armeabi-v7a.apk" ;;
+              *) target="VortexVPN-1.0.0-universal.apk" ;;
+            esac
+            cp "$apk" "handoff/$target"
+          done
+          ls -lh handoff
+          du -sh handoff
+
+      - name: Package sources into handoff
+        run: |
+          set -e
+          zip -qr handoff/VortexVPN-source.zip \
+            app/src app/build.gradle app/proguard-rules.pro \
+            build.gradle settings.gradle gradle.properties \
+            tools/ConfigCheck.java README.md 2>/dev/null || \
+          zip -qr handoff/VortexVPN-source.zip app/src app/build.gradle app/proguard-rules.pro \
+            build.gradle settings.gradle gradle.properties tools/ConfigCheck.java
+          ls -lh handoff
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vortex-vpn-apk
+          path: handoff/*.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload source artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vortex-vpn-source
+          path: handoff/VortexVPN-source.zip
+          if-no-files-found: warn
+
+      - name: Commit handoff into the repository
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f handoff
+          if git diff --cached --quiet; then
+            echo "handoff is up to date"
+          else
+            git commit -m "handoff: signed APK build ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
+
+      - name: Summary
+        run: |
+          {
+            echo "### Vortex VPN build"
+            echo
+            echo "| file | size |"
+            echo "| --- | --- |"
+            for f in handoff/*.apk handoff/*.zip; do
+              echo "| $(basename "$f") | $(du -h "$f" | cut -f1) |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

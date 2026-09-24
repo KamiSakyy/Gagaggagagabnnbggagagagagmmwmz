@@ -1,0 +1,12 @@
+.gradle/
+build/
+app/build/
+local.properties
+keystore.properties
+*.iml
+.idea/
+.DS_Store
+app/libs/libbox.aar
+app/release/
+out/
+ci-out/

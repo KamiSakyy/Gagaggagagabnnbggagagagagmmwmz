@@ -1,0 +1,109 @@
+plugins {
+    id 'com.android.application'
+}
+
+def keystorePropsFile = rootProject.file("keystore.properties")
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystoreProps.load(new FileInputStream(keystorePropsFile))
+}
+
+android {
+    namespace 'com.vortex.vpn'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.vortex.vpn"
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName "1.0.0"
+        resConfigs "en", "ru"
+        vectorDrawables { useSupportLibrary true }
+    }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a'
+            universalApk false
+        }
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if (keystorePropsFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+        viewBinding true
+    }
+
+    packaging {
+        jniLibs {
+            // Keep native libraries compressed inside the APK (smaller download).
+            useLegacyPackaging = true
+        }
+        resources {
+            excludes += [
+                    'META-INF/AL2.0',
+                    'META-INF/LGPL2.1',
+                    'META-INF/DEPENDENCIES',
+                    'META-INF/LICENSE',
+                    'META-INF/LICENSE.txt',
+                    'META-INF/NOTICE',
+                    'META-INF/NOTICE.txt',
+                    'META-INF/com/android/build/gradle/**',
+                    'META-INF/*.kotlin_module',
+                    'kotlin/**',
+                    'DebugProbesKt.bin'
+            ]
+        }
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
+
+dependencies {
+    // sing-box engine (full protocol set) - downloaded by CI into app/libs
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
+
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'androidx.preference:preference:1.2.1'
+    implementation 'androidx.lifecycle:lifecycle-livedata:2.8.7'
+    implementation 'androidx.work:work-runtime:2.10.0'
+
+    // Clash / YAML subscription parsing
+    implementation 'org.yaml:snakeyaml:2.3'
+}
