@@ -32,6 +32,9 @@ public final class ConfigBuilder {
         root.put("dns", dns(s));
         root.put("inbounds", inbounds(s));
         root.put("outbounds", outbounds(s, list));
+        if (hasWireGuard(list)) {
+            root.put("endpoints", endpoints(list));
+        }
         root.put("route", route(s));
         root.put("experimental", experimental(s));
         return root.toString();
@@ -138,8 +141,6 @@ public final class ConfigBuilder {
                 .put("auto_route", s.autoRoute)
                 .put("strict_route", s.strictRoute)
                 .put("dns_mode", "hijack")
-                .put("sniff", s.sniff)
-                .put("sniff_override_destination", s.sniffOverrideDestination)
                 .put("udp_timeout", "5m");
         if (s.stack != null && !s.stack.isEmpty()) {
             tun.put("stack", s.stack);
@@ -163,6 +164,11 @@ public final class ConfigBuilder {
             used.add(tag);
             server.tag = tag;
             tags.add(tag);
+            if ("wireguard".equals(server.type)) {
+                // emitted through the endpoints section instead
+                continue;
+            }
+            result.add(server.toJson());
         }
 
         if (!tags.isEmpty()) {
@@ -255,9 +261,38 @@ public final class ConfigBuilder {
         return tag;
     }
 
+    private static boolean hasWireGuard(List<Outbound> servers) {
+        for (Outbound server : servers) {
+            if ("wireguard".equals(server.type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** WireGuard is an endpoint (not an outbound) since sing-box 1.11. */
+    private static Json.Arr endpoints(List<Outbound> servers) {
+        Json.Arr result = Json.arr();
+        for (Outbound server : servers) {
+            if (!"wireguard".equals(server.type)) {
+                continue;
+            }
+            result.add(server.toJson());
+        }
+        return result;
+    }
+
     // ------------------------------------------------------------------ route
     private static Json.Obj route(ConfigSettings s) {
         Json.Arr rules = Json.arr();
+
+        // sing-box 1.13+ performs sniffing through a rule action instead of inbound fields.
+        if (s.sniff) {
+            Json.Obj sniff = Json.obj()
+                    .put("action", "sniff")
+                    .put("timeout", "300ms");
+            rules.add(sniff);
+        }
 
         if (s.mode != ConfigSettings.MODE_GLOBAL) {
             rules.add(Json.obj()

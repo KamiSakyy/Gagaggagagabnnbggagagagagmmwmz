@@ -114,6 +114,10 @@ public final class ConfigCheck {
         System.out.println("protocol types covered: " + types);
         System.out.println("ConfigCheck: " + variants.size() + " configurations written to " + out.getPath());
         System.out.println("ConfigCheck: OK");
+        String sample = read(new File(out, "mode1-mixed.json"));
+        System.out.println("=== sample configuration (" + sample.length() + " bytes) ===");
+        System.out.println(sample);
+        System.out.println("=== end of sample ===");
     }
 
     private static ConfigSettings baseSettings() {
