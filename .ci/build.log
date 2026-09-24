@@ -1,0 +1,59 @@
+== build  ==
+ref=arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+--- sdkmanager ---
+--- gradle (preinstalled) ---
+
+Welcome to Gradle 9.7.1!
+
+Here are the highlights of this release:
+ - Isolated Projects graduates to incubating
+ - Broader Configuration Cache compatibility
+ - Resilient Sync helps you fix broken builds
+ - More source locations in problem reports
+
+For more details see https://docs.gradle.org/9.7.1/release-notes.html
+
+
+------------------------------------------------------------
+Gradle 9.7.1
+------------------------------------------------------------
+
+Build time:    2026-08-19  UTC
+Revision:      92f0512e7f06d84621afba191f75e265363890cf
+
+Kotlin:        2.4.0
+Groovy:        4.0.32
+Ant:           Apache Ant(TM) version 1.10.17 compiled on April 6 2026
+Launcher JVM:  17.0.20.1 (Eclipse Adoptium 17.0.20.1+1)
+Daemon JVM:    /usr/lib/jvm/temurin-17-jdk-amd64 (no Daemon JVM specified, using current Java home)
+OS:            Linux 6.17.0-1022-azure amd64
+
+yes: standard output: Broken pipe
+Loading package information...                                                  Loading local repository...                                                     [                                       ] 3% Loading local repository...        [                                       ] 3% Fetch remote repository...         [=                                      ] 3% Fetch remote repository...         [=                                      ] 4% Fetch remote repository...         [=                                      ] 5% Fetch remote repository...         [==                                     ] 5% Fetch remote repository...         [==                                     ] 6% Fetch remote repository...         [==                                     ] 7% Fetch remote repository...         [==                                     ] 7% Computing updates...               [===                                    ] 8% Computing updates...               [===                                    ] 10% Computing updates...              [=======================================] 100% Computing updates...             
+
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+ 92  112M   92  104M    0     0   121M      0 --:--:-- --:--:-- --:--:--  121M100  112M  100  112M    0     0   123M      0 --:--:-- --:--:-- --:--:--  160M
+-rw-r--r-- 1 runner runner 113M Sep 24 21:05 app/libs/libbox.aar
+ 72706412  1980-00-00 00:00   jni/armeabi-v7a/libbox.so
+ 80751056  1980-00-00 00:00   jni/arm64-v8a/libbox.so
+ 78457644  1980-00-00 00:00   jni/x86/libbox.so
+ 85478392  1980-00-00 00:00   jni/x86_64/libbox.so
+Generating 2,048 bit RSA key pair and self-signed certificate (SHA256withRSA) with a validity of 10,000 days
+	for: CN=Vortex VPN, OU=Vortex, O=Vortex, L=Moscow, C=RU
+[Storing keystore.jks]
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 54ed9b7] ci: add release signing keystore
+ 2 files changed, 4 insertions(+)
+ create mode 100644 keystore.jks
+ create mode 100644 keystore.properties
+To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
+   6419d16..54ed9b7  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+-rw-r--r-- 1 runner runner 2696 Sep 24 21:05 keystore.jks
+-rw-r--r-- 1 runner runner   85 Sep 24 21:05 keystore.properties
+app/src/main/java/com/vortex/vpn/model/Outbound.java:537: error: package com.vortex.vpn.sub does not exist
+            o.country = com.vortex.vpn.sub.Geo.countryCode(o.tag);
+                                          ^
+Note: app/src/main/java/com/vortex/vpn/cfg/JsonReader.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+1 error
