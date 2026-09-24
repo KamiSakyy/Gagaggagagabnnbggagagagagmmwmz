@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - 'arena/**'
+    paths-ignore:
+      - '.ci/**'
   workflow_dispatch:
 
 permissions:
@@ -13,6 +15,9 @@ permissions:
 concurrency:
   group: android-apk-${{ github.ref }}
   cancel-in-progress: false
+
+env:
+  BUILD_LOG: ${{ github.workspace }}/ci-out/build.log
 
 jobs:
   build:
@@ -27,6 +32,14 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
+      - name: Prepare log
+        run: |
+          mkdir -p ci-out app/libs
+          {
+            echo "== build $(date -u +%FT%TZ) =="
+            echo "ref=$GITHUB_REF_NAME"
+          } > "$BUILD_LOG"
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -34,98 +47,152 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          set -x
+          java -version
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          if [ -z "$SDK" ] || [ ! -d "$SDK" ]; then
+            SDK=/usr/local/lib/android/sdk
+            echo "android.sdk.dir=$SDK" > /dev/null
+          fi
+          echo "SDK=$SDK" >> "$GITHUB_ENV"
+          ls "$SDK" || true
+          ls "$SDK/platforms" || true
+          ls "$SDK/build-tools" || true
+        continue-on-error: false
+        env:
+          BUILD_LOG: ${{ env.BUILD_LOG }}
+
+      - name: Show toolchain
+        run: |
+          {
+            echo "--- sdkmanager ---"
+            which sdkmanager || true
+            echo "--- gradle (preinstalled) ---"
+            gradle --version || true
+          } 2>&1 | tee -a "$BUILD_LOG"
+
+      - name: Install missing SDK packages
+        run: |
+          set -o pipefail
+          {
+            SDK="${SDK:-/usr/local/lib/android/sdk}"
+            if [ -x "$SDK/cmdline-tools/latest/bin/sdkmanager" ]; then
+              SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+            elif command -v sdkmanager >/dev/null 2>&1; then
+              SM="sdkmanager"
+            else
+              SM=""
+            fi
+            if [ -n "$SM" ]; then
+              yes | "$SM" --licenses > /dev/null 2>&1 || true
+              "$SM" --install "platforms;android-35" "build-tools;35.0.0" "platform-tools" || \
+                "$SM" --install "platforms;android-35" "build-tools;35.0.0"
+            fi
+          } 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
 
-      - name: Show toolchain
-        run: |
-          java -version
-          gradle --version | head -20
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-
       - name: Fetch sing-box engine (libbox.aar)
         run: |
-          mkdir -p app/libs
-          curl -fL --retry 6 --retry-delay 5 --retry-all-errors \
-            -o app/libs/libbox.aar \
-            https://github.com/singbox-android/libbox/releases/download/1.14.1/libbox.aar
-          ls -lh app/libs/libbox.aar
-          unzip -l app/libs/libbox.aar | grep -E "jni/.+\.so" || true
+          set -o pipefail
+          {
+            mkdir -p app/libs
+            curl -fL --retry 6 --retry-delay 5 --retry-all-errors \
+              -o app/libs/libbox.aar \
+              https://github.com/singbox-android/libbox/releases/download/1.14.1/libbox.aar
+            ls -lh app/libs/libbox.aar
+            unzip -l app/libs/libbox.aar | grep -E "jni/.+\.so" || true
+          } 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Ensure release signing keystore
         run: |
-          if [ ! -f keystore.jks ]; then
-            keytool -genkeypair -v -keystore keystore.jks -alias vortex \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass vortexvpn -keypass vortexvpn \
-              -dname "CN=Vortex VPN, OU=Vortex, O=Vortex, L=Moscow, C=RU"
-            printf 'storeFile=keystore.jks\nstorePassword=vortexvpn\nkeyAlias=vortex\nkeyPassword=vortexvpn\n' > keystore.properties
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add keystore.jks keystore.properties
-            git commit -m "ci: add release signing keystore" || true
-            git push origin HEAD:${GITHUB_REF_NAME} || true
-          fi
-          ls -l keystore.jks keystore.properties
+          set -o pipefail
+          {
+            if [ ! -f keystore.jks ]; then
+              keytool -genkeypair -v -keystore keystore.jks -alias vortex \
+                -keyalg RSA -keysize 2048 -validity 10000 \
+                -storepass vortexvpn -keypass vortexvpn \
+                -dname "CN=Vortex VPN, OU=Vortex, O=Vortex, L=Moscow, C=RU"
+              printf 'storeFile=keystore.jks\nstorePassword=vortexvpn\nkeyAlias=vortex\nkeyPassword=vortexvpn\n' > keystore.properties
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add -f keystore.jks keystore.properties
+              git commit -m "ci: add release signing keystore"
+              git push origin HEAD:${GITHUB_REF_NAME} || true
+            fi
+            ls -l keystore.jks keystore.properties
+          } 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Validate generated configurations with sing-box
         run: |
-          set -e
-          mkdir -p ci-out
-          javac -d ci-out/cfgcheck \
-            $(find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model -name '*.java') \
-            tools/ConfigCheck.java
-          java -cp ci-out/cfgcheck ConfigCheck ci-out/configs
-          curl -fL --retry 6 --retry-delay 5 --retry-all-errors \
-            -o /tmp/sing-box.tar.gz \
-            https://github.com/SagerNet/sing-box/releases/download/v1.14.1/sing-box-1.14.1-linux-amd64.tar.gz
-          tar -xzf /tmp/sing-box.tar.gz -C /tmp
-          ENGINE=$(find /tmp -type f -name sing-box -perm -u+x | head -n 1)
-          echo "engine: $ENGINE"
-          "$ENGINE" version
-          for file in ci-out/configs/*.json; do
-            echo "::group::check $file"
-            "$ENGINE" check -c "$file"
-            echo "::endgroup::"
-          done
+          set -o pipefail
+          {
+            set -e
+            mkdir -p ci-out
+            javac -d ci-out/cfgcheck \
+              $(find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model -name '*.java') \
+              tools/ConfigCheck.java
+            java -cp ci-out/cfgcheck ConfigCheck ci-out/configs
+            curl -fL --retry 6 --retry-delay 5 --retry-all-errors \
+              -o /tmp/sing-box.tar.gz \
+              https://github.com/SagerNet/sing-box/releases/download/v1.14.1/sing-box-1.14.1-linux-amd64.tar.gz
+            tar -xzf /tmp/sing-box.tar.gz -C /tmp
+            ENGINE=$(find /tmp -type f -name sing-box -perm -u+x | head -n 1)
+            echo "engine: $ENGINE"
+            "$ENGINE" version
+            for file in ci-out/configs/*.json; do
+              echo "--- check $file"
+              "$ENGINE" check -c "$file"
+            done
+            echo "all configurations are valid"
+          } 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Build release APKs
-        run: gradle --no-daemon --stacktrace assembleRelease
+        run: |
+          set -o pipefail
+          gradle --no-daemon --stacktrace --info assembleRelease 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Collect handoff artifacts
         run: |
-          set -e
-          mkdir -p handoff
-          rm -f handoff/*.apk
-          for apk in app/build/outputs/apk/release/*.apk; do
-            name=$(basename "$apk")
-            case "$name" in
-              *arm64*) target="VortexVPN-1.0.0-arm64-v8a.apk" ;;
-              *armeabi*) target="VortexVPN-1.0.0-armeabi-v7a.apk" ;;
-              *) target="VortexVPN-1.0.0-universal.apk" ;;
-            esac
-            cp "$apk" "handoff/$target"
-          done
-          ls -lh handoff
-          du -sh handoff
+          set -o pipefail
+          {
+            set -e
+            mkdir -p handoff
+            rm -f handoff/*.apk
+            find app/build/outputs/apk/release -name '*.apk' -print
+            for apk in app/build/outputs/apk/release/*.apk; do
+              name=$(basename "$apk")
+              case "$name" in
+                *arm64*) target="VortexVPN-1.0.0-arm64-v8a.apk" ;;
+                *armeabi*) target="VortexVPN-1.0.0-armeabi-v7a.apk" ;;
+                *) target="VortexVPN-1.0.0-universal.apk" ;;
+              esac
+              cp "$apk" "handoff/$target"
+            done
+            ls -lh handoff
+          } 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Package sources into handoff
         run: |
-          set -e
-          zip -qr handoff/VortexVPN-source.zip \
-            app/src app/build.gradle app/proguard-rules.pro \
-            build.gradle settings.gradle gradle.properties \
-            tools/ConfigCheck.java README.md 2>/dev/null || \
-          zip -qr handoff/VortexVPN-source.zip app/src app/build.gradle app/proguard-rules.pro \
-            build.gradle settings.gradle gradle.properties tools/ConfigCheck.java
-          ls -lh handoff
+          set -o pipefail
+          {
+            set -e
+            rm -f handoff/VortexVPN-source.zip
+            zip -qr handoff/VortexVPN-source.zip \
+              app/src app/build.gradle app/proguard-rules.pro \
+              build.gradle settings.gradle gradle.properties \
+              tools .github README.md
+            ls -lh handoff
+          } 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: vortex-vpn-apk
@@ -134,6 +201,7 @@ jobs:
           retention-days: 90
 
       - name: Upload source artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: vortex-vpn-source
@@ -141,19 +209,48 @@ jobs:
           if-no-files-found: warn
 
       - name: Commit handoff into the repository
+        if: success()
         run: |
-          set -e
+          set -o pipefail
+          {
+            set -e
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -f handoff
+            if git diff --cached --quiet; then
+              echo "handoff is up to date"
+            else
+              git commit -m "handoff: signed APK build ($(date -u +%Y-%m-%dT%H:%MZ))"
+              git push origin HEAD:${GITHUB_REF_NAME}
+            fi
+          } 2>&1 | tee -a "$BUILD_LOG"
+
+      - name: Publish build log
+        if: failure()
+        run: |
+          mkdir -p .ci
+          sed -E 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z?//g; s/[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?//g' \
+            "$BUILD_LOG" > .ci/build.log || cp "$BUILD_LOG" .ci/build.log
+          tail -n 400 .ci/build.log > .ci/build.tail.log
+          rm -f .ci/build.log
+          mv .ci/build.tail.log .ci/build.log
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f handoff
+          git add -f .ci/build.log
           if git diff --cached --quiet; then
-            echo "handoff is up to date"
+            echo "log unchanged"
           else
-            git commit -m "handoff: signed APK build ($(date -u +%Y-%m-%dT%H:%MZ))"
-            git push origin HEAD:${GITHUB_REF_NAME}
+            OLD=$(git show HEAD:.ci/build.log 2>/dev/null | sha1sum | cut -d' ' -f1)
+            NEW=$(sha1sum .ci/build.log | cut -d' ' -f1)
+            echo "old=$OLD new=$NEW"
+            if [ "$OLD" != "$NEW" ]; then
+              git commit -m "ci: build log [skip log-loop]"
+              git push origin HEAD:${GITHUB_REF_NAME} || true
+            fi
           fi
 
       - name: Summary
+        if: always()
         run: |
           {
             echo "### Vortex VPN build"
@@ -161,6 +258,6 @@ jobs:
             echo "| file | size |"
             echo "| --- | --- |"
             for f in handoff/*.apk handoff/*.zip; do
-              echo "| $(basename "$f") | $(du -h "$f" | cut -f1) |"
+              [ -f "$f" ] && echo "| $(basename "$f") | $(du -h "$f" | cut -f1) |"
             done
           } >> "$GITHUB_STEP_SUMMARY"
