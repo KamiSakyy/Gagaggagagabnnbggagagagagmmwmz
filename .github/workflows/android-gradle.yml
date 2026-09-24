@@ -117,8 +117,19 @@ jobs:
           fi
           echo "Using $GRADLEW"
           $GRADLEW --version
-          # Чистим и собираем release
-          $GRADLEW clean assembleRelease --stacktrace --info || $GRADLEW assembleRelease --stacktrace
+          # Чистим и собираем release — логи в файл для артефакта при падении
+          set -o pipefail
+          $GRADLEW clean assembleRelease --stacktrace --info 2>&1 | tee gradle.log || $GRADLEW assembleRelease --stacktrace 2>&1 | tee -a gradle.log
+          echo "GRADLE_EXIT=${PIPESTATUS[0]}" >> $GITHUB_ENV
+
+      - name: Upload Gradle log (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-log
+          path: gradle.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Sign APK (debug keystore for CI, для релиза замени на свой)
         if: steps.detect.outputs.found == 'true'

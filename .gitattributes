@@ -19,14 +19,17 @@
 *.a filter=lfs diff=lfs merge=lfs -text
 *.exr filter=lfs diff=lfs merge=lfs -text
 *.tiff filter=lfs diff=lfs merge=lfs -text
-*.mp4 filter=lfs diff=lfs merge=lfs -text
 *.prefab filter=lfs diff=lfs merge=lfs -text
 *.unity filter=lfs diff=lfs merge=lfs -text
 *.asset filter=lfs diff=lfs merge=lfs -text
 *.cubemap filter=lfs diff=lfs merge=lfs -text
 *.physicsMaterial2D filter=lfs diff=lfs merge=lfs -text
 
-# Keep APKs as LFS too
+# Keep APKs as LFS too (except handoff direct link)
 *.apk filter=lfs diff=lfs merge=lfs -text
 *.aab filter=lfs diff=lfs merge=lfs -text
 *.obb filter=lfs diff=lfs merge=lfs -text
+
+# Handoff exception: direct raw download must NOT be LFS (so raw link gives binary)
+/handoff/*.apk -filter -diff -merge -text
+/handoff/*.aab -filter -diff -merge -text
