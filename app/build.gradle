@@ -89,7 +89,7 @@ android {
         abortOnError false
         checkReleaseBuilds false
     }
-
+}
 
 dependencies {
     // sing-box engine (full protocol set) - downloaded by CI into app/libs
