@@ -380,7 +380,7 @@ jobs:
           done
 
           echo "--- ui monkey (no --ignore-crashes on purpose) ---"
-          adb shell monkey -p $PKG --throttle 300 -v 150 || true
+          adb shell monkey -p $PKG --throttle 300 150 || true
           sleep 3
           if ! adb shell pidof "$PKG" > /dev/null; then
             echo "the app died during the monkey run"
@@ -404,15 +404,16 @@ jobs:
         run: |
           mkdir -p .ci
           if [ -f ci-out/smoke.log ]; then
-            tr '\r' '\n' < ci-out/smoke.log | tail -n 400 > .ci/smoke.log
+            {
+              echo "=== verdict ==="
+              grep -aE "SMOKE OK|SMOKE SKIPPED|SELFTEST|EMULATOR BOOTED|FATAL EXCEPTION|CRASH|killed the app|did not report|could not start|not running" \
+                ci-out/smoke.log | tail -n 40 || true
+              echo
+              echo "=== log tail ==="
+              tr '\r' '\n' < ci-out/smoke.log | tail -n 250
+            } > .ci/smoke.log
           else
             echo "the emulator smoke test did not run" > .ci/smoke.log
-          fi
-          if [ -f ci-out/emulator.log ]; then
-            {
-              echo "=== emulator output (tail) ==="
-              tail -n 80 ci-out/emulator.log
-            } >> .ci/smoke.log
           fi
           wc -l .ci/smoke.log
 
