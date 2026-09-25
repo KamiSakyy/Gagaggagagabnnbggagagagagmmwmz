@@ -11,8 +11,8 @@
 + ANDROID_AVD_HOME=/home/runner/.android/avd
 + mkdir -p /home/runner/.android/avd
 + PKG=com.vortex.vpn
-++ ls app/build/outputs/apk/release/app-x86_64-release.apk
 ++ head -1
+++ ls app/build/outputs/apk/release/app-x86_64-release.apk
 + APK=app/build/outputs/apk/release/app-x86_64-release.apk
 + '[' -z app/build/outputs/apk/release/app-x86_64-release.apk ']'
 + SM=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager
@@ -37,14 +37,14 @@ Loading local repository...                                                     
 Auto-selecting single ABI x86_64
 Do you wish to create a custom hardware profile? [no] + ls -l /home/runner/.android/avd
 total 8
-drwxr-xr-x 2 runner runner 4096 Sep 25 12:39 smoke.avd
--rw-r--r-- 1 runner runner  105 Sep 25 12:39 smoke.ini
+drwxr-xr-x 2 runner runner 4096 Sep 25 12:46 smoke.avd
+-rw-r--r-- 1 runner runner  105 Sep 25 12:46 smoke.ini
 + /usr/local/lib/android/sdk/emulator/emulator -list-avds
 smoke
 + /usr/local/lib/android/sdk/emulator/emulator -list-avds
 + grep -qx smoke
-+ echo 'emulator pid 3721'
-emulator pid 3721
++ echo 'emulator pid 3930'
+emulator pid 3930
 + adb start-server
 + nohup /usr/local/lib/android/sdk/emulator/emulator -avd smoke -no-window -no-audio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect -accel auto -camera-back none -camera-front none -verbose
 * daemon not running; starting now at tcp:5037
@@ -105,8 +105,8 @@ Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity }
 Status: ok
 LaunchState: COLD
 Activity: com.vortex.vpn/.ui.MainActivity
-TotalTime: 1175
-WaitTime: 1179
+TotalTime: 1429
+WaitTime: 1431
 Complete
 + set -e
 + grep -qi error /tmp/start.log
@@ -114,11 +114,11 @@ Complete
 + echo '--- process after launch ---'
 --- process after launch ---
 + adb shell pidof com.vortex.vpn
-2285
+2329
 + adb shell dumpsys window
 + grep -E 'mCurrentFocus|mFocusedApp'
-  mCurrentFocus=Window{f961e05 u0 com.vortex.vpn/com.vortex.vpn.ui.MainActivity}
-  mFocusedApp=ActivityRecord{35e8ff2 u0 com.vortex.vpn/.ui.MainActivity t9}
+  mCurrentFocus=Window{79eb988 u0 com.vortex.vpn/com.vortex.vpn.ui.MainActivity}
+  mFocusedApp=ActivityRecord{b32cd1 u0 com.vortex.vpn/.ui.MainActivity t9}
 + adb logcat -d
 + grep -q 'FATAL EXCEPTION'
 + adb shell pidof com.vortex.vpn
@@ -145,7 +145,7 @@ Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
 + echo '--- self test verdict ---'
 --- self test verdict ---
 + cat ci-out/selftest.txt
-09-25 12:39:57.050  2377  2414 I VortexSelfTest: SELFTEST OK configs=4 engine=1.14.1 go=go1.26.8, android/amd64 smart-mixed=ok(9304b) global-gvisor=ok(9133b) hardened=ok(11052b) direct-only=ok outbounds=31 protocols=15/[vless, vmess, trojan, shadowsocks, hysteria2, tuic, anytls, socks, wireguard, snell, shadowtls, ssh, http, naive, hysteria]
+09-25 12:47:15.894  2419  2456 I VortexSelfTest: SELFTEST OK configs=4 engine=1.14.1 go=go1.26.8, android/amd64 smart-mixed=ok(9304b) global-gvisor=ok(9133b) hardened=ok(11052b) direct-only=ok outbounds=31 protocols=15/[vless, vmess, trojan, shadowsocks, hysteria2, tuic, anytls, socks, wireguard, snell, shadowtls, ssh, http, naive, hysteria]
 + echo '--- opening every screen on the device ---'
 --- opening every screen on the device ---
 + adb shell am force-stop com.vortex.vpn
@@ -169,16 +169,16 @@ Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
 + echo '--- screen audit verdict ---'
 --- screen audit verdict ---
 + cat ci-out/screenaudit.txt
-09-25 12:40:03.168  2437  2437 I VortexSelfTest: SCREENAUDIT step=0 ServersActivity
-09-25 12:40:04.007  2437  2437 I VortexSelfTest: SCREENAUDIT step=1 ProfilesActivity
-09-25 12:40:04.034  2437  2437 I VortexSelfTest: SCREENAUDIT step=2 SettingsActivity
-09-25 12:40:04.051  2437  2437 I VortexSelfTest: SCREENAUDIT step=3 LogsActivity
-09-25 12:40:04.058  2437  2437 I VortexSelfTest: SCREENAUDIT step=4 ConnectionsActivity
-09-25 12:40:04.064  2437  2437 I VortexSelfTest: SCREENAUDIT step=5 AboutActivity
-09-25 12:40:04.071  2437  2437 I VortexSelfTest: SCREENAUDIT step=6 ConfigEditorActivity
-09-25 12:40:04.077  2437  2437 I VortexSelfTest: SCREENAUDIT step=7 AppListActivity
-09-25 12:40:04.084  2437  2437 I VortexSelfTest: SCREENAUDIT step=8 MainActivity
-09-25 12:40:04.101  2437  2437 I VortexSelfTest: SCREENAUDIT OK opened=8
+09-25 12:47:22.030  2482  2482 I VortexSelfTest: SCREENAUDIT step=0 ServersActivity
+09-25 12:47:23.051  2482  2482 I VortexSelfTest: SCREENAUDIT step=1 ProfilesActivity
+09-25 12:47:23.067  2482  2482 I VortexSelfTest: SCREENAUDIT step=2 SettingsActivity
+09-25 12:47:23.095  2482  2482 I VortexSelfTest: SCREENAUDIT step=3 LogsActivity
+09-25 12:47:23.106  2482  2482 I VortexSelfTest: SCREENAUDIT step=4 ConnectionsActivity
+09-25 12:47:23.115  2482  2482 I VortexSelfTest: SCREENAUDIT step=5 AboutActivity
+09-25 12:47:23.127  2482  2482 I VortexSelfTest: SCREENAUDIT step=6 ConfigEditorActivity
+09-25 12:47:23.141  2482  2482 I VortexSelfTest: SCREENAUDIT step=7 AppListActivity
+09-25 12:47:23.150  2482  2482 I VortexSelfTest: SCREENAUDIT step=8 MainActivity
+09-25 12:47:23.177  2482  2482 I VortexSelfTest: SCREENAUDIT OK opened=8
 + grep -q 'SCREENAUDIT OK' ci-out/screenaudit.txt
 + echo '--- screenshots of the real app ---'
 --- screenshots of the real app ---
@@ -222,14 +222,14 @@ Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
 + sleep 9
 + adb exec-out screencap -p
 + ls -la ci-out/screens
-total 208
-drwxr-xr-x 2 runner runner  4096 Sep 25 12:41 .
-drwxr-xr-x 5 runner runner  4096 Sep 25 12:40 ..
--rw-r--r-- 1 runner runner 50331 Sep 25 12:40 01-dashboard.png
--rw-r--r-- 1 runner runner 63751 Sep 25 12:40 02-locations.png
--rw-r--r-- 1 runner runner 26677 Sep 25 12:40 03-profiles.png
--rw-r--r-- 1 runner runner 43632 Sep 25 12:40 04-settings.png
--rw-r--r-- 1 runner runner 10697 Sep 25 12:41 05-connections.png
+total 200
+drwxr-xr-x 2 runner runner  4096 Sep 25 12:48 .
+drwxr-xr-x 5 runner runner  4096 Sep 25 12:47 ..
+-rw-r--r-- 1 runner runner 50376 Sep 25 12:47 01-dashboard.png
+-rw-r--r-- 1 runner runner 66517 Sep 25 12:47 02-locations.png
+-rw-r--r-- 1 runner runner 14165 Sep 25 12:48 03-profiles.png
+-rw-r--r-- 1 runner runner 43717 Sep 25 12:48 04-settings.png
+-rw-r--r-- 1 runner runner 10940 Sep 25 12:48 05-connections.png
 + adb shell am force-stop com.vortex.vpn
 + sleep 2
 + adb shell am start -n com.vortex.vpn/.ui.MainActivity
@@ -251,10 +251,16 @@ args: [-p, com.vortex.vpn, --throttle, 300, 150]
 data="com.vortex.vpn"
 arg="--throttle" mCurArgData="null" mNextArg=3 argwas="--throttle" nextarg="300"
 data="300"
-Got IOException performing flipjava.io.FileNotFoundException: /dev/input/event0: open failed: EACCES (Permission denied)
     // Injection Failed
+    // Injection Failed
+    // Injection Failed
+    // Injection Failed
+    // Injection Failed
+    // Injection Failed
+    // Injection Failed
+    // activityResuming(com.vortex.vpn)
 Events injected: 150
-## Network stats: elapsed time=10366ms (0ms mobile, 0ms wifi, 10366ms not connected)
+## Network stats: elapsed time=11303ms (0ms mobile, 0ms wifi, 11303ms not connected)
 + sleep 3
 + adb shell pidof com.vortex.vpn
 + adb logcat -d
