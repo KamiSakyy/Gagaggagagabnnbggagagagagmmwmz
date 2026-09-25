@@ -429,6 +429,7 @@ jobs:
               echo "=== app log ==="
               grep -a -E "VortexSelfTest|AndroidRuntime|libbox" ci-out/smoke.log | tail -n 60 || true
             } > .ci/smoke-verdict.log
+          else
             echo "the emulator smoke test did not run" > .ci/smoke.log
           fi
           wc -l .ci/smoke.log
