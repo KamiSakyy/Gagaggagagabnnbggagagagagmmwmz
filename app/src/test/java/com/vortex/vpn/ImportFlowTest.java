@@ -143,6 +143,44 @@ public class ImportFlowTest {
         assertTrue("no rows were bound", list.getChildCount() > 0);
     }
 
+    /** Providers that hand out a javascript app instead of plain links. */
+    @Test
+    public void javascriptLandingPageIsUnpacked() {
+        String token = "ghufjskZ9RVk5CTy";
+        String page = "<!DOCTYPE html><html><head><script src=\"/assets/app.js\"></script></head>"
+                + "<body><div id=\"root\"></div><script>"
+                + "const api = '/api/v1/client/subscribe?token=" + token + "';"
+                + "const theme = '/assets/style.css';"
+                + "window.__SUB__ = \"https://provider.example/sub/" + token + "\";"
+                + "</script></body></html>";
+
+        List<PageImporter.Candidate> candidates =
+                PageImporter.candidates("https://provider.example/" + token, page);
+        boolean hasRelativeApi = false;
+        for (PageImporter.Candidate candidate : candidates) {
+            if (candidate.url.equals("https://provider.example/api/v1/client/subscribe?token=" + token)) {
+                hasRelativeApi = true;
+            }
+        }
+        assertTrue("a relative subscription endpoint was missed: " + candidates, hasRelativeApi);
+        // static assets must not waste the request budget
+        for (PageImporter.Candidate candidate : candidates) {
+            assertFalse("a css file was treated as a subscription: " + candidate,
+                    candidate.url.endsWith(".css"));
+        }
+    }
+
+    /** Some pages keep the payload base64 encoded instead of linking to it. */
+    @Test
+    public void base64PayloadInsideThePageIsUnpacked() {
+        String payload = VLESS + "\n" + TROJAN;
+        String blob = B64.encode(payload.getBytes(StandardCharsets.UTF_8));
+        String page = "<!DOCTYPE html><html><body><div data-config=\"" + blob
+                + "\"></div></body></html>";
+
+        assertEquals("the base64 payload was not unpacked", 2, SubImporter.parse(page).servers.size());
+    }
+
     @Test
     public void storeNeverThrowsOnGarbage() {
         android.content.Context context = org.robolectric.RuntimeEnvironment.getApplication();

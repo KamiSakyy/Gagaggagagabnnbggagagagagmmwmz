@@ -27,6 +27,10 @@ public final class SubImporter {
             "(?:vless|vmess|trojan-go|trojan|ssr|ss|shadowtls|snell|hysteria2|hy2|hysteria|tuic|anytls|naive\\+https|naive|socks5|socks|sk5|wireguard|wg|ssh)://[^\\s\"'<>\\\\]+",
             Pattern.CASE_INSENSITIVE);
 
+    /** Base64 payloads that pages hide in attributes or scripts. */
+    private static final Pattern BASE64_BLOB = Pattern.compile(
+            "(?<![A-Za-z0-9+/=])[A-Za-z0-9+/]{60,4000}={0,2}(?![A-Za-z0-9+/=])");
+
     public static final class Result {
         public final List<Outbound> servers = new ArrayList<>();
         public String kind = KIND_LINKS;
@@ -91,10 +95,50 @@ public final class SubImporter {
             String decoded = B64.decodeToString(trimmed);
             links = extractLinks(decoded);
         }
+        if (links.isEmpty()) {
+            // pages that embed the profile as base64 (data attributes, javascript variables)
+            links = linksFromBase64Blobs(trimmed);
+        }
 
         appendLinks(result, links);
         result.kind = KIND_LINKS;
         return result;
+    }
+
+    /** Finds share links inside base64 payloads embedded in a page. */
+    private static List<String> linksFromBase64Blobs(String content) {
+        List<String> links = new ArrayList<>();
+        Matcher matcher = BASE64_BLOB.matcher(content);
+        int blobs = 0;
+        while (matcher.find() && blobs < 8) {
+            blobs++;
+            String decoded;
+            try {
+                decoded = B64.decodeToString(matcher.group());
+            } catch (Throwable ignored) {
+                continue;
+            }
+            if (decoded == null || decoded.isEmpty()) {
+                continue;
+            }
+            for (String link : extractLinks(decoded)) {
+                if (!links.contains(link)) {
+                    links.add(link);
+                }
+            }
+            if (links.isEmpty()) {
+                // the payload may itself be wrapped once more (some bots do that)
+                String inner = decoded.replace("\n", "").replace("\r", "").replace(" ", "");
+                if (B64.looksBase64(inner)) {
+                    for (String link : extractLinks(B64.decodeToString(inner))) {
+                        if (!links.contains(link)) {
+                            links.add(link);
+                        }
+                    }
+                }
+            }
+        }
+        return links;
     }
 
     /** Parses every share link and stores the result (shared by all input formats). */

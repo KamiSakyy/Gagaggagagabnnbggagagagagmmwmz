@@ -41,6 +41,9 @@ public final class PageImporter {
             Pattern.compile("https?://[^\\s\"'<>()\\\\]{4,400}", Pattern.CASE_INSENSITIVE);
     private static final Pattern UUID_OR_TOKEN = Pattern.compile(
             "(?<![A-Za-z0-9_-])([A-Za-z0-9_-]{8,64})(?![A-Za-z0-9_-])");
+    /** Relative endpoints that single page applications fetch with javascript. */
+    private static final Pattern RELATIVE_PATH = Pattern.compile(
+            "[\"'](/[A-Za-z0-9_\\-./?=&%~]{5,200})[\"']");
 
     private PageImporter() {
     }
@@ -176,6 +179,20 @@ public final class PageImporter {
                 ordered.add(url);
             }
         }
+        // Relative endpoints of single page applications ("/api/v1/client/...").
+        String origin = origin(pastedUrl);
+        if (origin != null && !body.isEmpty()) {
+            Matcher relative = RELATIVE_PATH.matcher(body);
+            int addedRelative = 0;
+            while (relative.find() && addedRelative < 8) {
+                String path = clean(relative.group(1));
+                if (!looksLikeSubscriptionPath(path)) {
+                    continue;
+                }
+                add(result, seen, origin + path, "путь со страницы");
+                addedRelative++;
+            }
+        }
         for (String url : ordered) {
             add(result, seen, url, "ссылка со страницы");
         }
@@ -229,6 +246,28 @@ public final class PageImporter {
         if (seen.add(trimmed)) {
             list.add(new Candidate(trimmed, reason));
         }
+    }
+
+    /** Only endpoints that plausibly serve a subscription are worth a request. */
+    private static boolean looksLikeSubscriptionPath(String path) {
+        if (path == null || path.length() < 5) {
+            return false;
+        }
+        String lower = path.toLowerCase(Locale.ROOT);
+        String[] hints = {"sub", "token", "clash", "singbox", "sing-box", "link", "config", "v2ray",
+                "profile", "key=", "uuid"};
+        for (String hint : hints) {
+            if (lower.contains(hint)) {
+                return true;
+            }
+        }
+        // a long opaque identifier as the last segment also looks like a profile id
+        for (String part : lower.split("[/?&=]")) {
+            if (part.length() >= 20 && part.indexOf('.') < 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String clean(String raw) {
