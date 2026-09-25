@@ -1,23 +1,3 @@
-+ mkdir -p ci-out/cfgcheck
-+ curl -fsSL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/snakeyaml.jar https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar
-++ find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model app/src/main/java/com/vortex/vpn/sub -name '*.java'
-+ javac -cp /tmp/snakeyaml.jar -d ci-out/cfgcheck app/src/main/java/com/vortex/vpn/cfg/SampleServers.java app/src/main/java/com/vortex/vpn/cfg/JsonReader.java app/src/main/java/com/vortex/vpn/cfg/ConfigBuilder.java app/src/main/java/com/vortex/vpn/cfg/ConfigSettings.java app/src/main/java/com/vortex/vpn/cfg/Json.java app/src/main/java/com/vortex/vpn/model/Subscription.java app/src/main/java/com/vortex/vpn/model/Server.java app/src/main/java/com/vortex/vpn/model/Outbound.java app/src/main/java/com/vortex/vpn/sub/B64.java app/src/main/java/com/vortex/vpn/sub/LinkParser.java app/src/main/java/com/vortex/vpn/sub/ClashParser.java app/src/main/java/com/vortex/vpn/sub/SubImporter.java app/src/main/java/com/vortex/vpn/sub/SubFetcher.java app/src/main/java/com/vortex/vpn/sub/PageImporter.java app/src/main/java/com/vortex/vpn/sub/Geo.java tools/ConfigCheck.java
-Note: app/src/main/java/com/vortex/vpn/cfg/JsonReader.java uses unchecked or unsafe operations.
-Note: Recompile with -Xlint:unchecked for details.
-+ javac -version
-javac 17.0.20.1
-+ java -cp ci-out/cfgcheck:/tmp/snakeyaml.jar ConfigCheck ci-out/configs
-share links: 10 outbounds, base64 subscription: 10 outbounds
-clash yaml: 3 outbounds
-after dedupe: 13 locations (including one shadowsocksr location that is intentionally filtered out of the config)
-total outbounds in configurations: 31
-protocol types covered: [vless, vmess, trojan, shadowsocks, shadowsocksr, hysteria2, tuic, anytls, socks, wireguard, snell, shadowtls, ssh, http, naive, hysteria]
-ConfigCheck: 12 configurations written to ci-out/configs
-ConfigCheck: OK
-=== sample configuration (9262 bytes) ===
-{"log":{"level":"info","timestamp":true},"dns":{"servers":[{"type":"udp","tag":"dns-direct","server":"1.1.1.1","detour":"direct"},{"type":"https","tag":"dns-remote","server":"1.1.1.1","path":"/dns-query","tls":{"enabled":true,"server_name":"cloudflare-dns.com"},"detour":"proxy"}],"final":"dns-remote","strategy":"prefer_ipv4","timeout":"5s","disable_cache":false},"inbounds":[{"type":"tun","tag":"tun-in","mtu":9000,"address":["172.19.0.1/30","fdfe:dcba:9876::1/126"],"auto_route":true,"strict_route":false,"dns_mode":"hijack","udp_timeout":"5m","stack":"mixed"}],"outbounds":[{"type":"selector","tag":"proxy","outbounds":["🇩🇪 Germany Reality","United States VMess","🇳🇱 Netherlands Trojan","🇫🇮 Finland SS","🇸🇪 Sweden Hysteria2","Canada TUIC","France AnyTLS","Turkey SOCKS","WireGuard","🇩🇪 Germany Clash","Clash WebSocket","Clash Hysteria2","Reality vision","Reality ws","VMess ws","VMess grpc","Trojan","Shadowsocks","Hysteria2","TUIC","AnyTLS","Snell","ShadowTLS","SSH","WireGuard #2","SOCKS","HTTP","Naive","Hysteria"],"default":"🇩🇪 Germany Reality","interrupt_exist_connections":false},{"type":"urltest","tag":"auto","outbounds":["🇩🇪 Germany Reality","United States VMess","🇳🇱 Netherlands Trojan","🇫🇮 Finland SS","🇸🇪 Sweden Hysteria2","Canada TUIC","France AnyTLS","Turkey SOCKS","WireGuard","🇩🇪 Germany Clash","Clash WebSocket","Clash Hysteria2","Reality vision","Reality ws","VMess ws","VMess grpc","Trojan","Shadowsocks","Hysteria2","TUIC","AnyTLS","Snell","ShadowTLS","SSH","WireGuard #2","SOCKS","HTTP","Naive","Hysteria"],"url":"http://cp.cloudflare.com/generate_204","interval":"3m","tolerance":50,"idle_timeout":"30m","interrupt_exist_connections":false},{"type":"vless","tag":"🇩🇪 Germany Reality","server":"example.com","server_port":443,"uuid":"0f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e11","flow":"xtls-rprx-vision","tls":{"enabled":true,"server_name":"example.com","utls":{"enabled":true,"fingerprint":"chrome"},"reality":{"enabled":true,"public_key":"8hRk3Q0m5m3XhI1K6m3n0dHIZt6WZ1nYk5K0aVpG1S0","short_id":"6ba85179e30d4fc2"}}},{"type":"vmess","tag":"United States VMess","server":"vmess.example.com","server_port":443,"uuid":"5c1a9c9e-9f4b-4d3a-9c8e-1b2d3e4f5a6b","security":"auto","tls":{"enabled":true,"server_name":"vmess.example.com"},"transport":{"type":"ws","path":"/ws","headers":{"Host":"vmess.example.com"}}},{"type":"trojan","tag":"🇳🇱 Netherlands Trojan","server":"trojan.example.com","server_port":443,"password":"trojan-password","tls":{"enabled":true,"server_name":"trojan.example.com"},"transport":{"type":"ws","path":"/trojan","headers":{"Host":"trojan.example.com"}}},{"type":"shadowsocks","tag":"🇫🇮 Finland SS","server":"ss.example.com","server_port":8388,"method":"2022-blake3-aes-128-gcm","password":"MDEyMzQ1Njc4OWFiY2RlZg=="},{"type":"hysteria2","tag":"🇸🇪 Sweden Hysteria2","server":"hy.example.com","server_port":443,"password":"hy2-password","up_mbps":200,"down_mbps":500,"obfs":{"type":"salamander","password":"obfs-password"},"tls":{"enabled":true,"server_name":"hy.example.com","insecure":true}},{"type":"tuic","tag":"Canada TUIC","server":"tuic.example.com","server_port":443,"uuid":"3f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e22","password":"tuic-password","congestion_control":"bbr","udp_relay_mode":"native","tls":{"enabled":true,"server_name":"tuic.example.com"}},{"type":"anytls","tag":"France AnyTLS","server":"anytls.example.com","server_port":443,"password":"anytls-password","tls":{"enabled":true,"server_name":"anytls.example.com","utls":{"enabled":true,"fingerprint":"chrome"}}},{"type":"socks","tag":"Turkey SOCKS","server":"socks.example.com","server_port":1080,"username":"user","password":"password"},{"type":"vless","tag":"🇩🇪 Germany Clash","server":"clash.example.com","server_port":443,"uuid":"0f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e11","flow":"xtls-rprx-vision","tls":{"enabled":true,"server_name":"clash.example.com","utls":{"enabled":true,"fingerprint":"chrome"},"reality":{"enabled":true,"public_key":"8hRk3Q0m5m3XhI1K6m3n0dHIZt6WZ1nYk5K0aVpG1S0","short_id":"6ba85179e30d4fc2"}}},{"type":"vmess","tag":"Clash WebSocket","server":"ws.example.com","server_port":443,"uuid":"5c1a9c9e-9f4b-4d3a-9c8e-1b2d3e4f5a6b","security":"auto","tls":{"enabled":true,"server_name":"ws.example.com"},"transport":{"type":"ws","path":"/clash","headers":{"Host":"ws.example.com"}}},{"type":"hysteria2","tag":"Clash Hysteria2","server":"hy2.example.com","server_port":443,"password":"hy2-password","tls":{"enabled":true,"server_name":"hy2.example.com","insecure":true}},{"type":"vless","tag":"Reality vision","server":"example.com","server_port":443,"uuid":"0f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e11","flow":"xtls-rprx-vision","tls":{"enabled":true,"server_name":"example.com","utls":{"enabled":true,"fingerprint":"chrome"},"reality":{"enabled":true,"public_key":"8hRk3Q0m5m3XhI1K6m3n0dHIZt6WZ1nYk5K0aVpG1S0","short_id":"6ba85179e30d4fc2"}}},{"type":"vless","tag":"Reality ws","server":"example.com","server_port":8443,"uuid":"0f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e11","tls":{"enabled":true,"server_name":"example.com","utls":{"enabled":true,"fingerprint":"chrome"},"reality":{"enabled":true,"public_key":"8hRk3Q0m5m3XhI1K6m3n0dHIZt6WZ1nYk5K0aVpG1S0","short_id":"6ba85179e30d4fc2"}}},{"type":"vmess","tag":"VMess ws","server":"vmess.example.com","server_port":443,"uuid":"5c1a9c9e-9f4b-4d3a-9c8e-1b2d3e4f5a6b","security":"auto","tls":{"enabled":true,"server_name":"vmess.example.com"},"transport":{"type":"ws","path":"/vmess","headers":{"Host":"vmess.example.com"}}},{"type":"vmess","tag":"VMess grpc","server":"grpc.example.com","server_port":443,"uuid":"5c1a9c9e-9f4b-4d3a-9c8e-1b2d3e4f5a6c","security":"auto","tls":{"enabled":true,"server_name":"grpc.example.com"},"transport":{"type":"grpc","service_name":"GunService"}},{"type":"trojan","tag":"Trojan","server":"trojan.example.com","server_port":443,"password":"trojan-password","tls":{"enabled":true,"server_name":"trojan.example.com","utls":{"enabled":true,"fingerprint":"chrome"}},"transport":{"type":"ws","path":"/trojan"}},{"type":"shadowsocks","tag":"Shadowsocks","server":"ss.example.com","server_port":8388,"method":"2022-blake3-aes-128-gcm","password":"MDEyMzQ1Njc4OWFiY2RlZg=="},{"type":"hysteria2","tag":"Hysteria2","server":"hy2.example.com","server_port":443,"password":"hy2-password","up_mbps":200,"down_mbps":500,"obfs":{"type":"salamander","password":"obfs-password"},"tls":{"enabled":true,"server_name":"hy2.example.com","insecure":true}},{"type":"tuic","tag":"TUIC","server":"tuic.example.com","server_port":443,"uuid":"3f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e22","password":"tuic-password","congestion_control":"bbr","udp_relay_mode":"native","tls":{"enabled":true,"server_name":"tuic.example.com"}},{"type":"anytls","tag":"AnyTLS","server":"anytls.example.com","server_port":443,"password":"anytls-password","tls":{"enabled":true,"server_name":"anytls.example.com","utls":{"enabled":true,"fingerprint":"chrome"}}},{"type":"snell","tag":"Snell","server":"snell.example.com","server_port":443,"version":4,"psk":"snell-psk","obfs_mode":"tls","obfs_host":"example.org"},{"type":"shadowtls","tag":"ShadowTLS","server":"stls.example.com","server_port":443,"version":3,"password":"shadowtls-password","tls":{"enabled":true,"server_name":"example.org","insecure":true}},{"type":"ssh","tag":"SSH","server":"ssh.example.com","server_port":22,"user":"root","password":"ssh-password"},{"type":"socks","tag":"SOCKS","server":"socks.example.com","server_port":1080,"username":"user","password":"password"},{"type":"http","tag":"HTTP","server":"http.example.com","server_port":8080,"username":"user","password":"password","tls":{"enabled":true}},{"type":"naive","tag":"Naive","server":"naive.example.com","server_port":443,"username":"user","password":"naive-password","tls":{"enabled":true,"server_name":"naive.example.com"}},{"type":"hysteria","tag":"Hysteria","server":"hysteria.example.com","server_port":443,"auth_str":"hysteria-auth","up_mbps":100,"down_mbps":200,"obfs":"xplus","tls":{"enabled":true,"server_name":"hysteria.example.com"}},{"type":"direct","tag":"direct"}],"endpoints":[{"type":"wireguard","tag":"WireGuard","private_key":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=","address":"10.10.0.2/32","mtu":1408,"peers":[{"address":"wg.example.com","port":2408,"public_key":"ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0A=","pre_shared_key":"QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A=","allowed_ips":["0.0.0.0/0","::/0"],"persistent_keepalive_interval":25}]},{"type":"wireguard","tag":"WireGuard #2","private_key":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=","address":"10.10.0.2/32","mtu":1408,"peers":[{"address":"wg.example.com","port":2408,"public_key":"ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0A=","allowed_ips":["0.0.0.0/0","::/0"]}]}],"route":{"rules":[{"action":"sniff","timeout":"300ms"},{"ip_is_private":true,"outbound":"direct"},{"domain_suffix":[".lan",".local",".localdomain",".home",".internal",".localhost",".home.arpa","localhost"],"outbound":"direct"},{"ip_cidr":["0.0.0.0/8","10.0.0.0/8","172.16.0.0/12","192.168.0.0/16","169.254.0.0/16"],"outbound":"direct"}],"final":"proxy","auto_detect_interface":true,"default_domain_resolver":{"server":"dns-direct"}},"experimental":{"cache_file":{"enabled":true,"store_fakeip":false}}}
-=== end of sample ===
-+ echo 'harness done'
 harness done
 + curl -fsSL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.14.1/sing-box-1.14.1-linux-amd64.tar.gz
 ++ du -h /tmp/sing-box.tar.gz
@@ -102,5 +82,169 @@ CGO: disabled
 --- check mode2-system.json
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode2-system.json
 + '[' 0 -ne 0 ']'
-+ echo '=== configuration check finished (failed=0) ==='
-=== configuration check finished (failed=0) ===
++ START_FAILED=0
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/direct-only.json .json
++ name=direct-only
++ python3 tools/start_config.py ci-out/configs/direct-only.json /tmp/start-direct-only.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-direct-only.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-direct-only.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-direct-only.log
++ echo '--- start direct-only: the engine started and stayed up'
+--- start direct-only: the engine started and stayed up
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/hardened.json .json
++ name=hardened
++ python3 tools/start_config.py ci-out/configs/hardened.json /tmp/start-hardened.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-hardened.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-hardened.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-hardened.log
++ echo '--- start hardened: THE ENGINE REFUSED TO START'
+--- start hardened: THE ENGINE REFUSED TO START
++ tail -n 25 /tmp/start-hardened.log
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard]: routine: encryption worker 1 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard]: routine: encryption worker 4 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: receive incoming v6 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: peer(ISIj…+P0A) - stopping
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: peer(ISIj…+P0A) - routine: sequential sender - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: peer(ISIj…+P0A) - routine: sequential receiver - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: interface state was Up, requested Down, now Down
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: device closing
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: tun reader - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: event worker - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: device closed
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: decryption worker 1 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: decryption worker 3 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: handshake worker 1 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: decryption worker 2 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: decryption worker 4 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: handshake worker 2 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: handshake worker 4 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: handshake worker 3 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: encryption worker 2 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: encryption worker 3 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: encryption worker 4 - stopped
++0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: encryption worker 1 - stopped
++0000 2026-09-25 12:10:20 [33mWARN[0m outbound: close outbound/vmess[VMess grpc] take too much time to finish!
+[31mFATAL[0m[0034] sing-box did not close!
++ START_FAILED=1
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/minimal.json .json
++ name=minimal
++ python3 tools/start_config.py ci-out/configs/minimal.json /tmp/start-minimal.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-minimal.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-minimal.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-minimal.log
++ echo '--- start minimal: the engine started and stayed up'
+--- start minimal: the engine started and stayed up
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/mode0-gvisor.json .json
++ name=mode0-gvisor
++ python3 tools/start_config.py ci-out/configs/mode0-gvisor.json /tmp/start-mode0-gvisor.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-gvisor.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-mode0-gvisor.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode0-gvisor.log
++ echo '--- start mode0-gvisor: the engine started and stayed up'
+--- start mode0-gvisor: the engine started and stayed up
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/mode0-mixed.json .json
++ name=mode0-mixed
++ python3 tools/start_config.py ci-out/configs/mode0-mixed.json /tmp/start-mode0-mixed.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-mixed.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-mode0-mixed.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode0-mixed.log
++ echo '--- start mode0-mixed: the engine started and stayed up'
+--- start mode0-mixed: the engine started and stayed up
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/mode0-system.json .json
++ name=mode0-system
++ python3 tools/start_config.py ci-out/configs/mode0-system.json /tmp/start-mode0-system.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-system.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-mode0-system.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode0-system.log
++ echo '--- start mode0-system: the engine started and stayed up'
+--- start mode0-system: the engine started and stayed up
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/mode1-gvisor.json .json
++ name=mode1-gvisor
++ python3 tools/start_config.py ci-out/configs/mode1-gvisor.json /tmp/start-mode1-gvisor.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-gvisor.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-mode1-gvisor.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode1-gvisor.log
++ echo '--- start mode1-gvisor: the engine started and stayed up'
+--- start mode1-gvisor: the engine started and stayed up
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/mode1-mixed.json .json
++ name=mode1-mixed
++ python3 tools/start_config.py ci-out/configs/mode1-mixed.json /tmp/start-mode1-mixed.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-mixed.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-mode1-mixed.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode1-mixed.log
++ echo '--- start mode1-mixed: the engine started and stayed up'
+--- start mode1-mixed: the engine started and stayed up
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/mode1-system.json .json
++ name=mode1-system
++ python3 tools/start_config.py ci-out/configs/mode1-system.json /tmp/start-mode1-system.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-system.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-mode1-system.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode1-system.log
++ echo '--- start mode1-system: the engine started and stayed up'
+--- start mode1-system: the engine started and stayed up
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/mode2-gvisor.json .json
++ name=mode2-gvisor
++ python3 tools/start_config.py ci-out/configs/mode2-gvisor.json /tmp/start-mode2-gvisor.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-gvisor.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-mode2-gvisor.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode2-gvisor.log
++ echo '--- start mode2-gvisor: the engine started and stayed up'
+--- start mode2-gvisor: the engine started and stayed up
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/mode2-mixed.json .json
++ name=mode2-mixed
++ python3 tools/start_config.py ci-out/configs/mode2-mixed.json /tmp/start-mode2-mixed.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-mixed.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-mode2-mixed.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode2-mixed.log
++ echo '--- start mode2-mixed: the engine started and stayed up'
+--- start mode2-mixed: the engine started and stayed up
++ for file in ci-out/configs/*.json
+++ basename ci-out/configs/mode2-system.json .json
++ name=mode2-system
++ python3 tools/start_config.py ci-out/configs/mode2-system.json /tmp/start-mode2-system.json
++ set +e
++ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-system.json
++ set -e
++ grep -aq 'sing-box started' /tmp/start-mode2-system.log
++ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode2-system.log
++ echo '--- start mode2-system: the engine started and stayed up'
+--- start mode2-system: the engine started and stayed up
++ echo '=== configuration check finished (check failed=0, start failed=1) ==='
+=== configuration check finished (check failed=0, start failed=1) ===
++ '[' 1 -ne 0 ']'
++ echo 'some configurations could not be started by the engine'
+some configurations could not be started by the engine
++ FAILED=1
