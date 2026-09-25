@@ -11,260 +11,6 @@
 + ANDROID_AVD_HOME=/home/runner/.android/avd
 + mkdir -p /home/runner/.android/avd
 + PKG=com.vortex.vpn
+++ ls 'app/build/outputs/apk/release/*x86_64*.apk'
 ++ head -1
-++ ls app/build/outputs/apk/release/app-x86_64-release.apk
-+ APK=app/build/outputs/apk/release/app-x86_64-release.apk
-+ '[' -z app/build/outputs/apk/release/app-x86_64-release.apk ']'
-+ SM=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager
-+ '[' -x /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager ']'
-+ AV=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/avdmanager
-+ '[' -x /usr/local/lib/android/sdk/cmdline-tools/latest/bin/avdmanager ']'
-+ IMAGE='system-images;android-30;default;x86_64'
-+ yes
-+ /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-yes: standard output: Broken pipe
-+ true
-+ /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --install platform-tools emulator 'system-images;android-30;default;x86_64'
-+ tail -n 3 ci-out/sdkmanager.log
-Loading package information...                                                  Loading local repository...                                                     [                                       ] 3% Loading local repository...        [                                       ] 3% Fetch remote repository...         [=                                      ] 3% Fetch remote repository...         [=                                      ] 4% Fetch remote repository...         [=                                      ] 5% Fetch remote repository...         [==                                     ] 5% Fetch remote repository...         [==                                     ] 6% Fetch remote repository...         [==                                     ] 7% Fetch remote repository...         [==                                     ] 7% Computing updates...               [===                                    ] 8% Computing updates...               [===                                    ] 10% Computing updates...              [===                                    ] 10% Installing Android Emulator       [===                                    ] 10% Downloading emulator-linux_x64-159[====                                   ] 10% Downloading emulator-linux_x64-159[====                                   ] 11% Downloading emulator-linux_x64-159[====                                   ] 12% Downloading emulator-linux_x64-159[=====                                  ] 13% Downloading emulator-linux_x64-159[=====                                  ] 14% Downloading emulator-linux_x64-159[=====                                  ] 15% Downloading emulator-linux_x64-159[======                                 ] 15% Downloading emulator-linux_x64-159[======                                 ] 16% Downloading emulator-linux_x64-159[======                                 ] 17% Downloading emulator-linux_x64-159[=======                                ] 18% Downloading emulator-linux_x64-159[=======                                ] 19% Downloading emulator-linux_x64-159[=======                                ] 20% Downloading emulator-linux_x64-159[========                               ] 20% Downloading emulator-linux_x64-159[========                               ] 21% Downloading emulator-linux_x64-159[========                               ] 21% Unzipping...                      [========                               ] 21% Unzipping... emulator/            [========                               ] 21% Unzipping... emulator/resources/  [========                               ] 21% Unzipping... emulator/qsn         [========                               ] 21% Unzipping... emulator/emulator    [========                               ] 21% Unzipping... emulator/netsimd     [========                               ] 22% Unzipping... emulator/netsimd     [========                               ] 22% Unzipping... emulator/bin64/      [========                               ] 22% Unzipping... emulator/qemu/       [========                               ] 22% Unzipping... emulator/NOTICE.txt  [========                               ] 22% Unzipping... emulator/crashpad_han[========                               ] 22% Unzipping... emulator/source.prope[========                               ] 22% Unzipping... emulator/nimble_bridg[========                               ] 22% Unzipping... emulator/LICENSE     [========                               ] 22% Unzipping... emulator/lib/        [========                               ] 22% Unzipping... emulator/qemu-img    [========                               ] 22% Unzipping... emulator/include/    [========                               ] 22% Unzipping... emulator/NOTICE.csv  [========                               ] 22% Unzipping... emulator/lib64/      [========                               ] 22% Unzipping... emulator/emulator-che[========                               ] 22% Unzipping... emulator/crashreport [========                               ] 22% Unzipping... emulator/mksdcard    [========                               ] 22% Unzipping... emulator/resources/To[========                               ] 22% Unzipping... emulator/resources/de[========                               ] 22% Unzipping... emulator/resources/To[========                               ] 22% Unzipping... emulator/resources/ma[========                               ] 22% Unzipping... emulator/resources/de[========                               ] 22% Unzipping... emulator/resources/sk[========                               ] 22% Unzipping... emulator/resources/de[========                               ] 22% Unzipping... emulator/resources/ma[========                               ] 22% Unzipping... emulator/resources/po[========                               ] 22% Unzipping... emulator/resources/ma[========                               ] 22% Unzipping... emulator/resources/sk[========                               ] 22% Unzipping... emulator/resources/ma[========                               ] 22% Unzipping... emulator/bin64/e2fsck[========                               ] 22% Unzipping... emulator/bin64/fsck.e[========                               ] 22% Unzipping... emulator/bin64/tune2f[========                               ] 22% Unzipping... emulator/bin64/resize[========                               ] 22% Unzipping... emulator/bin64/mkfs.e[========                               ] 22% Unzipping... emulator/qemu/linux-x[=========                              ] 23% Unzipping... emulator/qemu/linux-x[=========                              ] 24% Unzipping... emulator/qemu/linux-x[=========                              ] 25% Unzipping... emulator/qemu/linux-x[==========                             ] 25% Unzipping... emulator/qemu/linux-x[==========                             ] 25% Unzipping... emulator/lib/emulator[==========                             ] 25% Unzipping... emulator/lib/rtc_serv[==========                             ] 25% Unzipping... emulator/lib/advanced[==========                             ] 25% Unzipping... emulator/lib/cmake/  [==========                             ] 25% Unzipping... emulator/lib/emulator[==========                             ] 25% Unzipping... emulator/lib/control_[==========                             ] 25% Unzipping... emulator/lib/emulated[==========                             ] 25% Unzipping... emulator/lib/rtc_serv[==========                             ] 25% Unzipping... emulator/lib/emu-orig[==========                             ] 25% Unzipping... emulator/lib/hardware[==========                             ] 25% Unzipping... emulator/lib/pkgconfi[==========                             ] 25% Unzipping... emulator/lib/pc-bios/[==========                             ] 25% Unzipping... emulator/lib/snapshot[==========                             ] 25% Unzipping... emulator/lib/adb_serv[==========                             ] 25% Unzipping... emulator/lib/hostapd.[==========                             ] 25% Unzipping... emulator/lib/grpc_end[==========                             ] 25% Unzipping... emulator/lib/ca-bundl[==========                             ] 25% Unzipping... emulator/lib/ui_contr[==========                             ] 25% Unzipping... emulator/lib/snapshot[==========                             ] 25% Unzipping... emulator/lib/ice_conf[==========                             ] 25% Unzipping... emulator/lib/libflatb[==========                             ] 26% Unzipping... emulator/lib/libflatb[==========                             ] 26% Unzipping... emulator/lib/emulator[==========                             ] 26% Unzipping... emulator/lib/waterfal[==========                             ] 26% Unzipping... emulator/lib/emulated[==========                             ] 26% Unzipping... emulator/lib/cmake/fl[==========                             ] 26% Unzipping... emulator/lib/pkgconfi[==========                             ] 26% Unzipping... emulator/lib/pc-bios/[==========                             ] 26% Unzipping... emulator/include/flat[==========                             ] 26% Unzipping... emulator/lib64/libgli[==========                             ] 26% Unzipping... emulator/lib64/libpro[==========                             ] 26% Unzipping... emulator/lib64/qt/   [==========                             ] 26% Unzipping... emulator/lib64/liband[==========                             ] 26% Unzipping... emulator/lib64/libgfx[==========                             ] 26% Unzipping... emulator/lib64/gles_l[==========                             ] 26% Unzipping... emulator/lib64/liband[==========                             ] 26% Unzipping... emulator/lib64/vulkan[==========                             ] 26% Unzipping... emulator/lib64/gles_s[==========                             ] 26% Unzipping... emulator/lib64/libemu[==========                             ] 26% Unzipping... emulator/lib64/libpro[==========                             ] 26% Unzipping... emulator/lib64/liband[==========                             ] 26% Unzipping... emulator/lib64/libtcm[==========                             ] 26% Unzipping... emulator/lib64/libima[==========                             ] 26% Unzipping... emulator/lib64/libc++[==========                             ] 26% Unzipping... emulator/lib64/liband[==========                             ] 26% Unzipping... emulator/lib64/libabs[==========                             ] 26% Unzipping... emulator/lib64/gles_a[==========                             ] 26% Unzipping... emulator/lib64/libsha[==========                             ] 26% Unzipping... emulator/lib64/libc++[==========                             ] 26% Unzipping... emulator/lib64/qt/res[==========                             ] 26% Unzipping... emulator/lib64/qt/lib[==========                             ] 26% Unzipping... emulator/lib64/qt/tra[==========                             ] 26% Unzipping... emulator/lib64/qt/plu[==========                             ] 26% Unzipping... emulator/lib64/qt/res[==========                             ] 27% Unzipping... emulator/lib64/qt/res[==========                             ] 27% Unzipping... emulator/lib64/qt/lib[===========                            ] 28% Unzipping... emulator/lib64/qt/lib[===========                            ] 29% Unzipping... emulator/lib64/qt/lib[===========                            ] 30% Unzipping... emulator/lib64/qt/lib[============                           ] 30% Unzipping... emulator/lib64/qt/lib[============                           ] 30% Unzipping... emulator/lib64/qt/tra[============                           ] 31% Unzipping... emulator/lib64/qt/tra[============                           ] 31% Unzipping... emulator/lib64/qt/plu[============                           ] 31% Unzipping... emulator/lib64/gles_l[============                           ] 31% Unzipping... emulator/lib64/vulkan[============                           ] 32% Unzipping... emulator/lib64/vulkan[============                           ] 32% Unzipping... emulator/lib64/gles_s[============                           ] 32% Unzipping... emulator/lib64/gles_a[=============                          ] 33% Unzipping... emulator/lib64/gles_a[=====================                  ] 55% Unzipping... emulator/lib64/gles_a[=====================                  ] 55% Installing Intel x86_64 Atom Syste[=====================                  ] 55% Downloading x86_64-30_r11.zip... e[======================                 ] 55% Downloading x86_64-30_r11.zip... e[======================                 ] 56% Downloading x86_64-30_r11.zip... e[======================                 ] 57% Downloading x86_64-30_r11.zip... e[=======================                ] 58% Downloading x86_64-30_r11.zip... e[=======================                ] 59% Downloading x86_64-30_r11.zip... e[=======================                ] 60% Downloading x86_64-30_r11.zip... e[========================               ] 60% Downloading x86_64-30_r11.zip... e[========================               ] 61% Downloading x86_64-30_r11.zip... e[========================               ] 62% Downloading x86_64-30_r11.zip... e[=========================              ] 63% Downloading x86_64-30_r11.zip... e[=========================              ] 64% Downloading x86_64-30_r11.zip... e[=========================              ] 65% Downloading x86_64-30_r11.zip... e[==========================             ] 65% Downloading x86_64-30_r11.zip... e[==========================             ] 66% Downloading x86_64-30_r11.zip... e[==========================             ] 66% Unzipping... emulator/lib64/gles_a[==========================             ] 66% Unzipping... x86_64/VerifiedBootPa[==========================             ] 66% Unzipping... x86_64/advancedFeatur[==========================             ] 66% Unzipping... x86_64/build.prop    [==========================             ] 66% Unzipping... x86_64/encryptionkey.[==========================             ] 66% Unzipping... x86_64/kernel-ranchu [==========================             ] 67% Unzipping... x86_64/kernel-ranchu [==========================             ] 67% Unzipping... x86_64/ramdisk.img   [==========================             ] 67% Unzipping... x86_64/source.propert[==========================             ] 67% Unzipping... x86_64/system.img    [===========================            ] 68% Unzipping... x86_64/system.img    [===========================            ] 69% Unzipping... x86_64/system.img    [===========================            ] 70% Unzipping... x86_64/system.img    [============================           ] 70% Unzipping... x86_64/system.img    [============================           ] 71% Unzipping... x86_64/system.img    [============================           ] 72% Unzipping... x86_64/system.img    [=============================          ] 73% Unzipping... x86_64/system.img    [=============================          ] 74% Unzipping... x86_64/system.img    [=============================          ] 75% Unzipping... x86_64/system.img    [==============================         ] 75% Unzipping... x86_64/system.img    [==============================         ] 76% Unzipping... x86_64/system.img    [==============================         ] 77% Unzipping... x86_64/system.img    [==============================         ] 77% Unzipping... x86_64/userdata.img  [==============================         ] 77% Unzipping... x86_64/vendor.img    [==============================         ] 77% Unzipping... x86_64/data/local.pro[==============================         ] 77% Unzipping... x86_64/data/misc/apns[==============================         ] 77% Unzipping... x86_64/data/misc/emul[==============================         ] 77% Unzipping... x86_64/data/misc/gcec[==============================         ] 77% Unzipping... x86_64/data/misc/wifi[==============================         ] 77% Unzipping... x86_64/data/system/di[==============================         ] 78% Unzipping... x86_64/data/system/di[=======================================] 100% Unzipping... x86_64/data/system/d
-
-+ ls /usr/local/lib/android/sdk/emulator/emulator /usr/local/lib/android/sdk/platform-tools/adb
-/usr/local/lib/android/sdk/emulator/emulator
-/usr/local/lib/android/sdk/platform-tools/adb
-+ echo no
-+ /usr/local/lib/android/sdk/cmdline-tools/latest/bin/avdmanager create avd -n smoke -k 'system-images;android-30;default;x86_64' --force
-Loading local repository...                                                     [=========                              ] 25% Loading local repository...       [=========                              ] 25% Fetch remote repository...        [=======================================] 100% Fetch remote repository...       
-Auto-selecting single ABI x86_64
-Do you wish to create a custom hardware profile? [no] + ls -l /home/runner/.android/avd
-total 8
-drwxr-xr-x 2 runner runner 4096 Sep 25 12:46 smoke.avd
--rw-r--r-- 1 runner runner  105 Sep 25 12:46 smoke.ini
-+ /usr/local/lib/android/sdk/emulator/emulator -list-avds
-smoke
-+ /usr/local/lib/android/sdk/emulator/emulator -list-avds
-+ grep -qx smoke
-+ echo 'emulator pid 3930'
-emulator pid 3930
-+ adb start-server
-+ nohup /usr/local/lib/android/sdk/emulator/emulator -avd smoke -no-window -no-audio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect -accel auto -camera-back none -camera-front none -verbose
-* daemon not running; starting now at tcp:5037
-* daemon started successfully
-+ timeout 300 adb wait-for-device
-+ BOOT=
-++ seq 1 90
-+ for i in $(seq 1 90)
-++ adb shell getprop sys.boot_completed
-++ tr -d '\r'
-+ BOOT=
-+ echo 'boot attempt 1: []'
-boot attempt 1: []
-+ '[' '' = 1 ']'
-+ '[' 1 -eq 0 ']'
-+ sleep 5
-+ for i in $(seq 1 90)
-++ adb shell getprop sys.boot_completed
-++ tr -d '\r'
-+ BOOT=
-+ echo 'boot attempt 2: []'
-boot attempt 2: []
-+ '[' '' = 1 ']'
-+ '[' 2 -eq 0 ']'
-+ sleep 5
-+ for i in $(seq 1 90)
-++ adb shell getprop sys.boot_completed
-++ tr -d '\r'
-+ BOOT=1
-+ echo 'boot attempt 3: [1]'
-boot attempt 3: [1]
-+ '[' 1 = 1 ']'
-+ break
-+ '[' 1 '!=' 1 ']'
-+ adb shell input keyevent 82
-+ adb logcat -G 16M
-++ adb shell getprop ro.build.version.release
-++ tr -d '\r'
-++ adb shell getprop ro.product.cpu.abi
-++ tr -d '\r'
-+ echo 'EMULATOR BOOTED: android 11 x86_64'
-EMULATOR BOOTED: android 11 x86_64
-++ du -h app/build/outputs/apk/release/app-x86_64-release.apk
-++ cut -f1
-+ echo 'installing app/build/outputs/apk/release/app-x86_64-release.apk (33M)'
-installing app/build/outputs/apk/release/app-x86_64-release.apk (33M)
-+ adb install -r -t app/build/outputs/apk/release/app-x86_64-release.apk
-Performing Streamed Install
-Success
-+ adb shell pm list packages
-+ grep com.vortex.vpn
-package:com.vortex.vpn
-+ adb logcat -c
-+ set +e
-+ adb shell am start -W -n com.vortex.vpn/.ui.MainActivity
-+ cat /tmp/start.log
-Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity }
-Status: ok
-LaunchState: COLD
-Activity: com.vortex.vpn/.ui.MainActivity
-TotalTime: 1429
-WaitTime: 1431
-Complete
-+ set -e
-+ grep -qi error /tmp/start.log
-+ sleep 12
-+ echo '--- process after launch ---'
---- process after launch ---
-+ adb shell pidof com.vortex.vpn
-2329
-+ adb shell dumpsys window
-+ grep -E 'mCurrentFocus|mFocusedApp'
-  mCurrentFocus=Window{79eb988 u0 com.vortex.vpn/com.vortex.vpn.ui.MainActivity}
-  mFocusedApp=ActivityRecord{b32cd1 u0 com.vortex.vpn/.ui.MainActivity t9}
-+ adb logcat -d
-+ grep -q 'FATAL EXCEPTION'
-+ adb shell pidof com.vortex.vpn
-+ echo '--- on-device engine self test ---'
---- on-device engine self test ---
-+ adb shell am force-stop com.vortex.vpn
-+ sleep 2
-+ adb logcat -c
-+ adb shell am start -n com.vortex.vpn/.ui.MainActivity --ez vortex_selftest true
-Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
-+ rm -f ci-out/selftest.txt
-++ seq 1 24
-+ for i in $(seq 1 24)
-+ adb logcat -d
-+ grep -a SELFTEST
-+ true
-+ '[' -s ci-out/selftest.txt ']'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d
-+ grep -a SELFTEST
-+ '[' -s ci-out/selftest.txt ']'
-+ break
-+ echo '--- self test verdict ---'
---- self test verdict ---
-+ cat ci-out/selftest.txt
-09-25 12:47:15.894  2419  2456 I VortexSelfTest: SELFTEST OK configs=4 engine=1.14.1 go=go1.26.8, android/amd64 smart-mixed=ok(9304b) global-gvisor=ok(9133b) hardened=ok(11052b) direct-only=ok outbounds=31 protocols=15/[vless, vmess, trojan, shadowsocks, hysteria2, tuic, anytls, socks, wireguard, snell, shadowtls, ssh, http, naive, hysteria]
-+ echo '--- opening every screen on the device ---'
---- opening every screen on the device ---
-+ adb shell am force-stop com.vortex.vpn
-+ sleep 2
-+ adb logcat -c
-+ adb shell am start -n com.vortex.vpn/.ui.MainActivity --ez vortex_screens_audit true
-Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
-+ rm -f ci-out/screenaudit.txt
-++ seq 1 24
-+ for i in $(seq 1 24)
-+ adb logcat -d
-+ grep -a SCREENAUDIT
-+ true
-+ grep -q 'SCREENAUDIT OK' ci-out/screenaudit.txt
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d
-+ grep -a SCREENAUDIT
-+ grep -q 'SCREENAUDIT OK' ci-out/screenaudit.txt
-+ break
-+ echo '--- screen audit verdict ---'
---- screen audit verdict ---
-+ cat ci-out/screenaudit.txt
-09-25 12:47:22.030  2482  2482 I VortexSelfTest: SCREENAUDIT step=0 ServersActivity
-09-25 12:47:23.051  2482  2482 I VortexSelfTest: SCREENAUDIT step=1 ProfilesActivity
-09-25 12:47:23.067  2482  2482 I VortexSelfTest: SCREENAUDIT step=2 SettingsActivity
-09-25 12:47:23.095  2482  2482 I VortexSelfTest: SCREENAUDIT step=3 LogsActivity
-09-25 12:47:23.106  2482  2482 I VortexSelfTest: SCREENAUDIT step=4 ConnectionsActivity
-09-25 12:47:23.115  2482  2482 I VortexSelfTest: SCREENAUDIT step=5 AboutActivity
-09-25 12:47:23.127  2482  2482 I VortexSelfTest: SCREENAUDIT step=6 ConfigEditorActivity
-09-25 12:47:23.141  2482  2482 I VortexSelfTest: SCREENAUDIT step=7 AppListActivity
-09-25 12:47:23.150  2482  2482 I VortexSelfTest: SCREENAUDIT step=8 MainActivity
-09-25 12:47:23.177  2482  2482 I VortexSelfTest: SCREENAUDIT OK opened=8
-+ grep -q 'SCREENAUDIT OK' ci-out/screenaudit.txt
-+ echo '--- screenshots of the real app ---'
---- screenshots of the real app ---
-+ adb shell am force-stop com.vortex.vpn
-+ sleep 2
-+ adb shell am start -n com.vortex.vpn/.ui.MainActivity --ez vortex_demo_servers true
-Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
-+ sleep 12
-+ mkdir -p ci-out/screens
-+ adb exec-out screencap -p
-+ for entry in "0 02-locations" "1 03-profiles" "2 04-settings" "4 05-connections"
-+ set -- 0 02-locations
-+ adb shell am force-stop com.vortex.vpn
-+ sleep 2
-+ adb shell am start -n com.vortex.vpn/.ui.MainActivity --ez vortex_demo_servers true --ei vortex_screen 0
-Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
-+ sleep 9
-+ adb exec-out screencap -p
-+ for entry in "0 02-locations" "1 03-profiles" "2 04-settings" "4 05-connections"
-+ set -- 1 03-profiles
-+ adb shell am force-stop com.vortex.vpn
-+ sleep 2
-+ adb shell am start -n com.vortex.vpn/.ui.MainActivity --ez vortex_demo_servers true --ei vortex_screen 1
-Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
-+ sleep 9
-+ adb exec-out screencap -p
-+ for entry in "0 02-locations" "1 03-profiles" "2 04-settings" "4 05-connections"
-+ set -- 2 04-settings
-+ adb shell am force-stop com.vortex.vpn
-+ sleep 2
-+ adb shell am start -n com.vortex.vpn/.ui.MainActivity --ez vortex_demo_servers true --ei vortex_screen 2
-Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
-+ sleep 9
-+ adb exec-out screencap -p
-+ for entry in "0 02-locations" "1 03-profiles" "2 04-settings" "4 05-connections"
-+ set -- 4 05-connections
-+ adb shell am force-stop com.vortex.vpn
-+ sleep 2
-+ adb shell am start -n com.vortex.vpn/.ui.MainActivity --ez vortex_demo_servers true --ei vortex_screen 4
-Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
-+ sleep 9
-+ adb exec-out screencap -p
-+ ls -la ci-out/screens
-total 200
-drwxr-xr-x 2 runner runner  4096 Sep 25 12:48 .
-drwxr-xr-x 5 runner runner  4096 Sep 25 12:47 ..
--rw-r--r-- 1 runner runner 50376 Sep 25 12:47 01-dashboard.png
--rw-r--r-- 1 runner runner 66517 Sep 25 12:47 02-locations.png
--rw-r--r-- 1 runner runner 14165 Sep 25 12:48 03-profiles.png
--rw-r--r-- 1 runner runner 43717 Sep 25 12:48 04-settings.png
--rw-r--r-- 1 runner runner 10940 Sep 25 12:48 05-connections.png
-+ adb shell am force-stop com.vortex.vpn
-+ sleep 2
-+ adb shell am start -n com.vortex.vpn/.ui.MainActivity
-+ sleep 8
-+ echo '--- ui monkey (no --ignore-crashes on purpose) ---'
---- ui monkey (no --ignore-crashes on purpose) ---
-+ adb shell monkey -p com.vortex.vpn --throttle 300 150
-  bash arg: -p
-  bash arg: com.vortex.vpn
-  bash arg: --throttle
-  bash arg: 300
-  bash arg: 150
-args: [-p, com.vortex.vpn, --throttle, 300, 150]
- arg: "-p"
- arg: "com.vortex.vpn"
- arg: "--throttle"
- arg: "300"
- arg: "150"
-data="com.vortex.vpn"
-arg="--throttle" mCurArgData="null" mNextArg=3 argwas="--throttle" nextarg="300"
-data="300"
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
-    // activityResuming(com.vortex.vpn)
-Events injected: 150
-## Network stats: elapsed time=11303ms (0ms mobile, 0ms wifi, 11303ms not connected)
-+ sleep 3
-+ adb shell pidof com.vortex.vpn
-+ adb logcat -d
-+ grep -q 'FATAL EXCEPTION'
-+ grep -q 'SELFTEST OK' ci-out/selftest.txt
-+ echo 'SMOKE OK: app launched, stayed alive, opened every screen, engine self test passed'
-SMOKE OK: app launched, stayed alive, opened every screen, engine self test passed
++ APK=
