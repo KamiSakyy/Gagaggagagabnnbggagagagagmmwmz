@@ -453,7 +453,8 @@ public class MainActivity extends AppCompatActivity {
         }
         // The speed is derived here from the cumulative counters: the engine reports them for every
         // status message, so a delayed or missing message can never leave the screen at "0 Б/с".
-        rate.sample(stats.uplinkTotal, stats.downlinkTotal, System.currentTimeMillis());
+        // Monotonic clock: a time zone or NTP jump must not distort the speed.
+        rate.sample(stats.uplinkTotal, stats.downlinkTotal, android.os.SystemClock.elapsedRealtime());
         long down = rate.downlink();
         long up = rate.uplink();
         if (VpnState.isRunning() && !stats.trafficAvailable) {
@@ -476,7 +477,7 @@ public class MainActivity extends AppCompatActivity {
         // app was eating their mobile data.
         textMemory.setText(getString(R.string.memory_format,
                 VpnServiceVortex.formatBytes(stats.memory)));
-        long now = System.currentTimeMillis();
+        long now = android.os.SystemClock.elapsedRealtime();
         if (now - lastSample >= SAMPLE_INTERVAL) {
             lastSample = now;
             chart.push(down, up);
