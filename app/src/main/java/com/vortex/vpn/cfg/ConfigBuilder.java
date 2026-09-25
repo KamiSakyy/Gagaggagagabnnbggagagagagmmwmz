@@ -160,6 +160,12 @@ public final class ConfigBuilder {
     }
 
     // ------------------------------------------------------------------ outbounds
+
+    /** The naive outbound rejects the TLS fragment option outright. */
+    private static boolean supportsTlsFragment(String type) {
+        return type != null && !"naive".equals(type);
+    }
+
     private static Json.Arr outbounds(ConfigSettings s, List<Outbound> servers) {
         Json.Arr result = Json.arr();
 
@@ -189,7 +195,7 @@ public final class ConfigBuilder {
                 }
                 outbound.put("multiplex", mux);
             }
-            if (s.tlsFragment && outbound.has("tls")) {
+            if (s.tlsFragment && supportsTlsFragment(server.type) && outbound.has("tls")) {
                 Json.Obj tls = outbound.object("tls");
                 if (tls != null) {
                     tls.put("fragment", true);

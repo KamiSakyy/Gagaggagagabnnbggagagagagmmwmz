@@ -98,6 +98,16 @@ public final class ConfigCheck {
                         expectedOutbounds++;
                     }
                 }
+                for (Object raw : (List<?>) root.get("outbounds")) {
+                    Map<?, ?> outbound = (Map<?, ?>) raw;
+                    if ("naive".equals(outbound.get("type")) && outbound.get("tls") instanceof Map) {
+                        Map<?, ?> tls = (Map<?, ?>) outbound.get("tls");
+                        if (Boolean.TRUE.equals(tls.get("fragment"))) {
+                            throw new IllegalStateException(
+                                    name + ": tls.fragment is not supported on naive outbound");
+                        }
+                    }
+                }
                 List<?> outbounds = (List<?>) root.get("outbounds");
                 // selector + urltest groups are added on top of the servers themselves
                 if (outbounds.size() < expectedOutbounds) {

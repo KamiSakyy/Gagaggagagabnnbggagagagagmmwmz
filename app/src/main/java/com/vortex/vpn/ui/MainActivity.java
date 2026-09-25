@@ -344,6 +344,9 @@ public class MainActivity extends AppCompatActivity {
         if (latency > 0) {
             meta.append(" \u2022 ").append(latency).append(" мс");
         }
+        if (!server.isSupported()) {
+            meta.append(" \u2022 ").append(getString(R.string.unsupported_protocol));
+        }
         if (tag != null && ConfigTags.AUTO.equals(tag) && server.tag != null && !ConfigTags.AUTO.equals(server.tag)) {
             meta.append(" \u2022 ").append(getString(R.string.via_auto));
         }
