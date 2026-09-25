@@ -52,6 +52,12 @@ public final class SelfTest {
 
         /** Parameters of the native model right now. */
         String parameterReport();
+
+        /**
+         * Report on the parsing of every motion file, or null while the check is still running.
+         * The check reads and parses all motions, which is why it happens in the background.
+         */
+        String motionsLoadReport();
     }
 
     private static final long STEP_DELAY_MS = 1400;
@@ -244,6 +250,28 @@ public final class SelfTest {
                     fail("параметры модели не изменились за время проверки");
                 } else {
                     pass("параметры модели меняются: " + callbacks.parameterReport());
+                }
+                phase++;
+                break;
+            }
+            case 11: {
+                // Every motion is parsed with the real engine here: a motion whose counters do not
+                // match its curves is exactly what used to break the drawing of the model.
+                final String report = callbacks.motionsLoadReport();
+                if (report == null) {
+                    counter++;
+                    if (counter > 20) {
+                        fail("проверка движений не завершилась за 28 секунд");
+                        counter = 0;
+                        phase++;
+                    }
+                    break;
+                }
+                counter = 0;
+                if (report.contains("ошибок 0")) {
+                    pass(report);
+                } else {
+                    fail(report);
                 }
                 phase++;
                 break;

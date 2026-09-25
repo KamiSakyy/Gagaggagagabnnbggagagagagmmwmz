@@ -31,6 +31,7 @@ import android.widget.Toast;
 import com.echidna.studio.anim.Show;
 import com.echidna.studio.track.CameraController;
 import com.live2d.sdk.cubism.framework.CubismFramework;
+import com.live2d.sdk.cubism.framework.motion.CubismMotion;
 import com.echidna.studio.track.FaceSignals;
 import com.echidna.studio.track.TrackingHub;
 
@@ -43,7 +44,7 @@ import java.util.Locale;
  * <p>The layout is built in code instead of XML so that the whole app stays in one small set of
  * files and the UI can be tuned together with the behaviour it drives. Everything the streamer needs
  * is one tap away: the five shows, the random motion, the camera mode, the chroma key backgrounds
- * for OBS, the microphone lip sync, the motion gallery with all 66 animations and the self check.</p>
+ * for OBS, the microphone lip sync, the motion gallery with all 68 animations and the self check.</p>
  */
 public final class MainActivity extends Activity implements ModelStage.Listener, EchidnaRenderer.StatusListener {
 
@@ -77,6 +78,12 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private SelfTest selfTest;
+
+    /** Каталог движений внутри assets и результат их фонового разбора. */
+    private static final String MOTION_DIR = "live2d/Echidna/motions";
+
+    private volatile String motionsLoadReport;
+    private volatile boolean motionsCheckStarted;
     private boolean cameraMode;
     private boolean micEnabled;
     private boolean previewMirror = true;
@@ -944,6 +951,63 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         runSelfTest(false);
     }
 
+    /**
+     * Parses every motion file of the model with the real Live2D motion parser.
+     *
+     * This is the check that would have caught the bug that once left the screen empty: the counters
+     * of a motion used to be smaller than its curves, and the engine then threw while loading a
+     * motion. Runs in a background thread, the result is read by the self test.
+     */
+    private void parseAllMotions() {
+        final StringBuilder broken = new StringBuilder();
+        int total = 0;
+        int failed = 0;
+        try {
+            final String[] files = getAssets().list(MOTION_DIR);
+            if (files == null) {
+                motionsLoadReport = "каталог движений пуст: " + MOTION_DIR;
+                return;
+            }
+            java.util.Arrays.sort(files);
+            for (String file : files) {
+                if (!file.endsWith(".motion3.json")) {
+                    continue;
+                }
+                total++;
+                try {
+                    final byte[] data = readAsset(MOTION_DIR + "/" + file);
+                    CubismMotion.create(data);
+                } catch (Throwable error) {
+                    failed++;
+                    if (failed <= 6) {
+                        broken.append(broken.length() == 0 ? "" : ", ")
+                              .append(file).append(" (").append(error.getClass().getSimpleName()).append(')');
+                    }
+                }
+            }
+        } catch (Throwable error) {
+            motionsLoadReport = "проверка движений сорвалась: " + error;
+            return;
+        }
+        final String report = failed == 0
+            ? "движения прочитаны: " + total + "/" + total + ", ошибок 0"
+            : "движения прочитаны: " + (total - failed) + "/" + total + ", ошибок " + failed + ": " + broken;
+        motionsLoadReport = report;
+        EchidnaLog.i("MOTION", report);
+    }
+
+    private byte[] readAsset(String path) throws java.io.IOException {
+        try (java.io.InputStream stream = getAssets().open(path)) {
+            final java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+            final byte[] chunk = new byte[8192];
+            int read;
+            while ((read = stream.read(chunk)) > 0) {
+                buffer.write(chunk, 0, read);
+            }
+            return buffer.toByteArray();
+        }
+    }
+
     private void runSelfTest(boolean withCamera) {
         toast("Самопроверка пошла, детали в логе");
         if (selfTest == null) {
@@ -1012,6 +1076,21 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                 @Override
                 public String parameterReport() {
                     return renderer.parameterSummary();
+                }
+
+                @Override
+                public String motionsLoadReport() {
+                    final String ready = motionsLoadReport;
+                    if (ready != null) {
+                        return ready;
+                    }
+                    if (!motionsCheckStarted) {
+                        motionsCheckStarted = true;
+                        final Thread worker = new Thread(MainActivity.this::parseAllMotions, "motion-check");
+                        worker.setDaemon(true);
+                        worker.start();
+                    }
+                    return null;
                 }
             });
         }
