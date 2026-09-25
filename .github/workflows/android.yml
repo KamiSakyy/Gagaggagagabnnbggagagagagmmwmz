@@ -195,6 +195,7 @@ jobs:
           echo "=== gradle finished ==="
 
       - name: Collect handoff artifacts
+        if: always()
         run: |
           set -o pipefail
           {
@@ -232,82 +233,117 @@ jobs:
             free -m | head -2
           } 2>&1 | tee -a "$BUILD_LOG"
 
-      - name: Install APK on an Android emulator and launch it
+      - name: Run the APK on an Android emulator
         if: always() && env.KVM_OK == '1'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          arch: x86_64
-          target: default
-          profile: pixel_5
-          disable-animations: true
-          emulator-boot-timeout: 900
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
-          script: |
-            set -o pipefail
-            mkdir -p ci-out
-            SMOKE="$PWD/ci-out/smoke.log"
-            exec > >(stdbuf -oL tee -a "$SMOKE") 2>&1
-            set -x
-            PKG=com.vortex.vpn
-            APK=$(ls app/build/outputs/apk/release/*x86_64*.apk 2>/dev/null | head -1)
-            if [ -z "$APK" ]; then
-              echo "SMOKE SKIPPED: no x86_64 APK was produced"
-              exit 0
-            fi
-            echo "installing $APK ($(du -h "$APK" | cut -f1))"
-            adb install -r -t "$APK"
-            adb shell pm list packages | grep "$PKG"
-            adb logcat -c || true
-            set +e
-            adb shell am start -W -n $PKG/.ui.MainActivity > /tmp/start.log 2>&1
-            cat /tmp/start.log
-            set -e
-            if grep -qi "error" /tmp/start.log; then echo "could not start MainActivity"; exit 1; fi
-            sleep 12
-            echo "--- process after launch ---"
-            adb shell pidof "$PKG"
-            adb shell dumpsys window 2>/dev/null | grep -E "mCurrentFocus|mFocusedApp" || true
-            if adb logcat -d | grep -q "FATAL EXCEPTION"; then
-              echo "CRASH DETECTED right after launch"
-              adb logcat -d -s AndroidRuntime:E | tail -n 200
-              exit 1
-            fi
-            echo "--- on-device engine self test ---"
-            adb shell am start -n $PKG/.ui.MainActivity --ez vortex_selftest true > /dev/null
-            for i in $(seq 1 24); do
-              if adb logcat -d -s VortexSelfTest:I | grep -q "SELFTEST OK"; then break; fi
-              sleep 5
-            done
-            adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | tail -n 40
-            adb logcat -d | grep -A 40 "FATAL EXCEPTION" | tail -n 200 || true
-            HAD_CRASH=0
-            if adb logcat -d | grep -q "FATAL EXCEPTION"; then HAD_CRASH=1; fi
-            echo "--- visiting every screen ---"
-            for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity; do
-              adb shell am start -n $PKG/.ui.$activity > /dev/null || true
-              sleep 5
-              if ! adb shell pidof "$PKG" > /dev/null; then
-                echo "$activity killed the app"
-                adb logcat -d -s AndroidRuntime:E | tail -n 200
-                exit 1
-              fi
-            done
-            echo "--- ui monkey (no --ignore-crashes on purpose) ---"
-            adb shell monkey -p $PKG --throttle 300 -v 150 || true
-            sleep 3
+        env:
+          SMOKE_LOG: ${{ github.workspace }}/ci-out/smoke.log
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          exec > >(stdbuf -oL tee -a "$SMOKE_LOG") 2>&1
+          set -x
+          SDK="${SDK:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$SDK"
+          export ANDROID_HOME="$SDK"
+          export PATH="$SDK/platform-tools:$SDK/emulator:$PATH"
+          PKG=com.vortex.vpn
+
+          APK=$(ls app/build/outputs/apk/release/*x86_64*.apk 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            echo "SMOKE SKIPPED: no x86_64 APK was produced"
+            exit 0
+          fi
+
+          SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SM" ] || SM="$(command -v sdkmanager)"
+          AV="$SDK/cmdline-tools/latest/bin/avdmanager"
+          [ -x "$AV" ] || AV="$(command -v avdmanager)"
+          IMAGE="system-images;android-30;default;x86_64"
+          yes | "$SM" --licenses > /dev/null 2>&1 || true
+          "$SM" --install "platform-tools" "emulator" "$IMAGE" || true
+          ls "$SDK/emulator/emulator" "$SDK/platform-tools/adb"
+          echo no | "$AV" create avd -n smoke -k "$IMAGE" --force || true
+
+          nohup "$SDK/emulator/emulator" -avd smoke -no-window -no-audio -no-boot-anim \
+            -no-snapshot -wipe-data -gpu swiftshader_indirect -accel auto \
+            -camera-back none -camera-front none > /tmp/emulator.log 2>&1 &
+          echo "emulator pid $!"
+          adb start-server
+          timeout 300 adb wait-for-device || true
+          BOOT=""
+          for i in $(seq 1 90); do
+            BOOT=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+            echo "boot attempt $i: [$BOOT]"
+            if [ "$BOOT" = "1" ]; then break; fi
+            sleep 5
+          done
+          if [ "$BOOT" != "1" ]; then
+            echo "EMULATOR FAILED TO BOOT"
+            tail -n 80 /tmp/emulator.log || true
+            adb devices -l || true
+            exit 1
+          fi
+          adb shell input keyevent 82 || true
+          echo "EMULATOR BOOTED: android $(adb shell getprop ro.build.version.release | tr -d '\r') $(adb shell getprop ro.product.cpu.abi | tr -d '\r')"
+
+          echo "installing $APK ($(du -h "$APK" | cut -f1))"
+          adb install -r -t "$APK"
+          adb shell pm list packages | grep "$PKG"
+          adb logcat -c || true
+          set +e
+          adb shell am start -W -n $PKG/.ui.MainActivity > /tmp/start.log 2>&1
+          cat /tmp/start.log
+          set -e
+          if grep -qi "error" /tmp/start.log; then echo "could not start MainActivity"; exit 1; fi
+          sleep 12
+          echo "--- process after launch ---"
+          adb shell pidof "$PKG"
+          adb shell dumpsys window 2>/dev/null | grep -E "mCurrentFocus|mFocusedApp" || true
+          if adb logcat -d | grep -q "FATAL EXCEPTION"; then
+            echo "CRASH DETECTED right after launch"
+            adb logcat -d -s AndroidRuntime:E | tail -n 200
+            exit 1
+          fi
+          if ! adb shell pidof "$PKG" > /dev/null; then
+            echo "the app is not running after launch"
+            adb logcat -d -s AndroidRuntime:E | tail -n 200
+            exit 1
+          fi
+
+          echo "--- on-device engine self test ---"
+          adb shell am start -n $PKG/.ui.MainActivity --ez vortex_selftest true > /dev/null
+          for i in $(seq 1 24); do
+            if adb logcat -d -s VortexSelfTest:I | grep -q "SELFTEST OK"; then break; fi
+            sleep 5
+          done
+          adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | tail -n 40
+
+          echo "--- visiting every screen ---"
+          for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity; do
+            adb shell am start -n $PKG/.ui.$activity > /dev/null || true
+            sleep 5
             if ! adb shell pidof "$PKG" > /dev/null; then
-              echo "the app died during the monkey run"
+              echo "$activity killed the app"
               adb logcat -d -s AndroidRuntime:E | tail -n 200
               exit 1
             fi
-            if [ "$HAD_CRASH" -ne 0 ] || adb logcat -d | grep -q "FATAL EXCEPTION"; then
-              echo "the app crashed (see logcat above)"
-              adb logcat -d -s AndroidRuntime:E | tail -n 200
-              exit 1
-            fi
-            adb logcat -d -s VortexSelfTest:I | grep -q "SELFTEST OK" || { echo "engine self test did not report OK"; exit 1; }
-            echo "SMOKE OK: app launched, stayed alive, every screen opened, engine self test passed"
+          done
+
+          echo "--- ui monkey (no --ignore-crashes on purpose) ---"
+          adb shell monkey -p $PKG --throttle 300 -v 150 || true
+          sleep 3
+          if ! adb shell pidof "$PKG" > /dev/null; then
+            echo "the app died during the monkey run"
+            adb logcat -d -s AndroidRuntime:E | tail -n 200
+            exit 1
+          fi
+          if adb logcat -d | grep -q "FATAL EXCEPTION"; then
+            echo "the app crashed (see logcat above)"
+            adb logcat -d -s AndroidRuntime:E | tail -n 200
+            exit 1
+          fi
+          adb logcat -d -s VortexSelfTest:I | grep -q "SELFTEST OK" || { echo "engine self test did not report OK"; exit 1; }
+          echo "SMOKE OK: app launched, stayed alive, every screen opened, engine self test passed"
 
       - name: Save emulator smoke test report
         if: always()
@@ -322,6 +358,7 @@ jobs:
           wc -l .ci/smoke.log
 
       - name: Package sources into handoff
+        if: always()
         run: |
           set -o pipefail
           {
@@ -335,7 +372,7 @@ jobs:
           } 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Upload APK artifact
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vortex-vpn-apk
@@ -344,7 +381,7 @@ jobs:
           retention-days: 90
 
       - name: Upload source artifact
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vortex-vpn-source
@@ -352,7 +389,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Commit handoff into the repository
-        if: success()
+        if: always()
         run: |
           set -o pipefail
           {
