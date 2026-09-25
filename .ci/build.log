@@ -1,0 +1,73 @@
+=== маркеры проблем ===
+13:curl: (22) The requested URL returned error: 404
+17:curl: (22) The requested URL returned error: 404
+21:curl: (22) The requested URL returned error: 404
+25:curl: (22) The requested URL returned error: 404
+29:curl: (22) The requested URL returned error: 404
+54:ls: cannot access 'keystore.properties': No such file or directory
+
+=== хвост ===
+== Echidna Studio build  ==
+ref=arena/01a0d529-gagaggagagabnnbggagagagagmmwmz commit=6c561f90f82afaeeb4033cb29e6399c8b34b09eb
+=== загрузка модели Face Landmarker ===
+--- источник: официальный Google Storage
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  33.4M      0 --:--:-- --:--:-- --:--:-- 33.8M
+  файл не является zip-контейнером задачи
+--- источник: GitHub raw (mediapipe samples mirror)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    14    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (22) The requested URL returned error: 404
+Warning: Problem (retrying all errors). Will retry in 4 seconds. 4 retries 
+Warning: left.
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    14    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (22) The requested URL returned error: 404
+Warning: Problem (retrying all errors). Will retry in 4 seconds. 3 retries 
+Warning: left.
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    14    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (22) The requested URL returned error: 404
+Warning: Problem (retrying all errors). Will retry in 4 seconds. 2 retries 
+Warning: left.
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    14    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (22) The requested URL returned error: 404
+Warning: Problem (retrying all errors). Will retry in 4 seconds. 1 retries 
+Warning: left.
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    14    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (22) The requested URL returned error: 404
+--- источник: Git LFS devp1866/face-recognition/face_landmarker_v2_with_blendshapes.task
+  ссылка получена
+tools/fetch_face_model.sh: line 71: return: try_url: numeric argument required
+--- источник: Git LFS DCP0001/face-render/face_landmarker_v2_with_blendshapes.task
+  ссылка получена
+tools/fetch_face_model.sh: line 71: return: try_url: numeric argument required
+--- источник: Git LFS sandipan004/SmartCompanion/tasks/face_landmarker.task
+  ссылка получена
+tools/fetch_face_model.sh: line 71: return: try_url: numeric argument required
+НЕ УДАЛОСЬ СКАЧАТЬ МОДЕЛЬ MEDIAPIPE
+приложение соберётся и будет работать, но трекером станет ML Kit (без blendshape)
+--- модель Echidna ---
+Echidna.moc3
+Echidna.model3.json
+motions
+textures
+мошенов: 68
+текстур: 1
+размер модели: 2.5M
+--- нативное ядро Live2D ---
+    18096  1980-02-01 00:00   classes.jar
+    94072  1980-02-01 00:00   jni/arm64-v8a/libLive2DCubismCoreJNI.so
+    97064  1980-02-01 00:00   jni/x86/libLive2DCubismCoreJNI.so
+   110728  1980-02-01 00:00   jni/x86_64/libLive2DCubismCoreJNI.so
+ls: cannot access 'keystore.properties': No such file or directory
+-rw-r--r-- 1 runner runner 2696 Sep 25 19:35 keystore.jks
+total 1968
+drwxr-xr-x 2 runner runner    4096 Sep 25 19:36 .
+drwxr-xr-x 9 runner runner    4096 Sep 25 19:36 ..
+-rw-r--r-- 1 runner runner 2005163 Sep 25 19:36 EchidnaStudio-source.zip
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz fae0bba] handoff: signed APK build ()
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 handoff/EchidnaStudio-source.zip
+To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
+   6c561f9..fae0bba  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
