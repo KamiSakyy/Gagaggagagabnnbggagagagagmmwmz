@@ -29,13 +29,22 @@ public class TrafficProbeTest {
     }
 
     @Test
-    public void otherInterfacesOrBrokenDataMeanNoCounters() {
-        assertNull("the loopback device is not the tunnel", TrafficProbe.parse(PROC, "lo"));
-        assertNull(TrafficProbe.parse(PROC, "tun9"));
+    public void aMissingInterfaceOrBrokenDataMeanNoCounters() {
+        assertNull("an interface that is not listed must yield nothing", TrafficProbe.parse(PROC, "tun9"));
         assertNull(TrafficProbe.parse(null, "tun0"));
         assertNull(TrafficProbe.parse(PROC, null));
         assertNull(TrafficProbe.parse("tun0: 1 2\n", "tun0"));
         assertNull(TrafficProbe.parse("garbage without a colon", "tun0"));
+    }
+
+    @Test
+    public void everyListedInterfaceIsReadSeparately() {
+        long[] loopback = TrafficProbe.parse(PROC, "lo");
+        assertEquals(120_000L, loopback[0]);
+        assertEquals(120_000L, loopback[1]);
+        long[] wifi = TrafficProbe.parse(PROC, "wlan0");
+        assertEquals(3_000_000L, wifi[0]);
+        assertEquals(9_000_000L, wifi[1]);
     }
 
     @Test
