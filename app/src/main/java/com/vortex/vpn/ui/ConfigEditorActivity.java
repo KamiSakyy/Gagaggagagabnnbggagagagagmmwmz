@@ -20,6 +20,7 @@ import androidx.appcompat.widget.Toolbar;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.vortex.vpn.Prefs;
 import com.vortex.vpn.R;
+import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.core.VpnServiceVortex;
 import com.vortex.vpn.db.Repo;
 import com.vortex.vpn.model.Subscription;
@@ -68,6 +69,7 @@ public class ConfigEditorActivity extends AppCompatActivity {
             editor.setHint(R.string.config_hint);
         }
         check(true);
+        ScreenAudit.handOff(this);
     }
 
     private String currentConfig() {

@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.vortex.vpn.Prefs;
 import com.vortex.vpn.R;
+import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.core.VpnServiceVortex;
 import com.vortex.vpn.ui.adapter.AppAdapter;
 
@@ -93,6 +94,7 @@ public class AppListActivity extends AppCompatActivity {
         });
 
         loadApps();
+        ScreenAudit.handOff(this);
     }
 
     private void loadApps() {

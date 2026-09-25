@@ -26,6 +26,7 @@ import com.vortex.vpn.R;
 import com.vortex.vpn.cfg.ConfigSettings;
 import com.vortex.vpn.core.ConfigTags;
 import com.vortex.vpn.core.EngineSelfTest;
+import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.core.VpnServiceVortex;
 import com.vortex.vpn.core.VpnState;
 import com.vortex.vpn.db.Repo;
@@ -79,6 +80,8 @@ public class MainActivity extends AppCompatActivity {
         if (getIntent() != null && getIntent().getBooleanExtra(EXTRA_SELF_TEST, false)) {
             runEngineSelfTest();
         }
+        // CI walks through every screen from here (see ScreenAudit); a no-op in normal use.
+        ScreenAudit.handOff(this);
     }
 
     /** Exercises the real engine on this device (see {@link EngineSelfTest}). */

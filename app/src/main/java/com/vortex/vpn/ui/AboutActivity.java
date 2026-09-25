@@ -15,6 +15,7 @@ import android.widget.Toast;
 
 import com.vortex.vpn.BuildConfig;
 import com.vortex.vpn.R;
+import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.core.EngineSelfTest;
 
 import io.nekohasekai.libbox.Libbox;
@@ -61,6 +62,7 @@ public class AboutActivity extends AppCompatActivity {
                 runSelfTest();
             }
         });
+        ScreenAudit.handOff(this);
     }
 
     /** Starts the on-device engine check and reports the verdict in a dialog. */

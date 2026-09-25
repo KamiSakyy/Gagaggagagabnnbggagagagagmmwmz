@@ -361,35 +361,39 @@ jobs:
           fi
 
           echo "--- on-device engine self test ---"
-          adb shell rm -f /sdcard/Android/data/$PKG/files/selftest.txt || true
           adb shell am force-stop $PKG
           sleep 2
           adb logcat -c || true
           adb shell am start -n $PKG/.ui.MainActivity --ez vortex_selftest true || true
           rm -f ci-out/selftest.txt
-          for i in $(seq 1 30); do
-            adb shell cat /sdcard/Android/data/$PKG/files/selftest.txt > ci-out/selftest.txt 2>/dev/null || true
-            if [ ! -s ci-out/selftest.txt ]; then
-              adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | grep -a "SELFTEST" > ci-out/selftest.txt || true
-            fi
+          # the report is read from logcat: the shell cannot read /sdcard/Android/data on android 11
+          for i in $(seq 1 24); do
+            adb logcat -d | grep -a "SELFTEST" > ci-out/selftest.txt || true
             if [ -s ci-out/selftest.txt ]; then break; fi
             sleep 5
           done
           echo "--- self test verdict ---"
           cat ci-out/selftest.txt
-          echo "--- crash buffer ---"
-          adb logcat -d -b crash | tail -n 40 || true
 
-          echo "--- visiting every screen ---"
-          for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity; do
-            adb shell am start -n $PKG/.ui.$activity > /dev/null || true
+          echo "--- opening every screen on the device ---"
+          adb shell am force-stop $PKG
+          sleep 2
+          adb logcat -c || true
+          adb shell am start -n $PKG/.ui.MainActivity --ez vortex_screens_audit true || true
+          rm -f ci-out/screenaudit.txt
+          for i in $(seq 1 24); do
+            adb logcat -d | grep -a "SCREENAUDIT" > ci-out/screenaudit.txt || true
+            if grep -q "SCREENAUDIT OK" ci-out/screenaudit.txt; then break; fi
             sleep 5
-            if ! adb shell pidof "$PKG" > /dev/null; then
-              echo "$activity killed the app"
-              adb logcat -d -s AndroidRuntime:E | tail -n 200
-              exit 1
-            fi
           done
+          echo "--- screen audit verdict ---"
+          cat ci-out/screenaudit.txt
+          if ! grep -q "SCREENAUDIT OK" ci-out/screenaudit.txt; then
+            echo "a screen did not survive being opened"
+            adb logcat -d -s AndroidRuntime:E | tail -n 200 || true
+            adb logcat -d -b crash | tail -n 60 || true
+            exit 1
+          fi
 
           echo "--- ui monkey (no --ignore-crashes on purpose) ---"
           adb shell monkey -p $PKG --throttle 300 150 || true
@@ -407,27 +411,24 @@ jobs:
           if ! grep -q "SELFTEST OK" ci-out/selftest.txt; then
             echo "engine self test did not report OK"
             cat ci-out/selftest.txt || true
+            adb logcat -d | grep -a "VortexSelfTest" | tail -n 20 || true
+            adb logcat -d -b crash | tail -n 40 || true
             exit 1
           fi
-          echo "SMOKE OK: app launched, stayed alive, every screen opened, engine self test passed"
+          echo "SMOKE OK: app launched, stayed alive, opened every screen, engine self test passed"
 
       - name: Save emulator smoke test report
         if: always()
         run: |
           mkdir -p .ci
           if [ -f ci-out/smoke.log ]; then
+            cp ci-out/smoke.log .ci/smoke.log
             {
               echo "=== verdict ==="
-              grep -aE "SMOKE OK|SMOKE SKIPPED|SELFTEST|EMULATOR BOOTED|FATAL EXCEPTION|CRASH|killed the app|did not report|could not start|not running" \
-                ci-out/smoke.log | tail -n 40 || true
-              echo
-              echo "=== engine self test ==="
-              cat ci-out/selftest.txt 2>/dev/null || true
-              echo
-              echo "=== log tail ==="
-              tr '\r' '\n' < ci-out/smoke.log | tail -n 400
-            } > .ci/smoke.log
-          else
+              grep -a -E "SMOKE OK|SMOKE SKIPPED|self test verdict|screen audit verdict|EMULATOR BOOTED|Permission Denial|FATAL|did not" ci-out/smoke.log | head -n 40 || true
+              echo "=== app log ==="
+              grep -a -E "VortexSelfTest|AndroidRuntime|libbox" ci-out/smoke.log | tail -n 60 || true
+            } > .ci/smoke-verdict.log
             echo "the emulator smoke test did not run" > .ci/smoke.log
           fi
           wc -l .ci/smoke.log

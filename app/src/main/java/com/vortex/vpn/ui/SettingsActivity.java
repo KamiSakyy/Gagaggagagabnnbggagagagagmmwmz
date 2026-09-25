@@ -17,6 +17,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.vortex.vpn.Prefs;
 import com.vortex.vpn.R;
+import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.cfg.ConfigSettings;
 import com.vortex.vpn.core.VpnServiceVortex;
 
@@ -50,6 +51,7 @@ public class SettingsActivity extends AppCompatActivity {
         content = findViewById(R.id.content);
         buildSwitches();
         buildDialogs();
+        ScreenAudit.handOff(this);
     }
 
     private void buildSwitches() {

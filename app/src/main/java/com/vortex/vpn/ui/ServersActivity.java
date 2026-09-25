@@ -21,6 +21,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.vortex.vpn.Prefs;
 import com.vortex.vpn.R;
+import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.core.VpnServiceVortex;
 import com.vortex.vpn.core.VpnState;
 import com.vortex.vpn.db.Repo;
@@ -131,6 +132,7 @@ public class ServersActivity extends AppCompatActivity {
                 adapter.setActiveTag(value);
             }
         });
+        ScreenAudit.handOff(this);
     }
 
     @Override

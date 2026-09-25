@@ -26,6 +26,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.vortex.vpn.Prefs;
 import com.vortex.vpn.R;
+import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.core.Bridge;
 import com.vortex.vpn.core.SubscriptionUpdater;
 import com.vortex.vpn.core.VpnServiceVortex;
@@ -110,6 +111,7 @@ public class ProfilesActivity extends AppCompatActivity {
         if (addOnStart) {
             showAddDialog();
         }
+        ScreenAudit.handOff(this);
     }
 
     @Override

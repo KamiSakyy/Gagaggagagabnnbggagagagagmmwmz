@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.vortex.vpn.R;
+import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.core.Bridge;
 
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public class LogsActivity extends AppCompatActivity {
             }
         });
         reload();
+        ScreenAudit.handOff(this);
     }
 
     /** Crash reports are shown first: they explain why the app closed last time. */

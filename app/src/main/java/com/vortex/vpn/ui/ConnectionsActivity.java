@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.vortex.vpn.R;
+import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.core.Bridge;
 import com.vortex.vpn.core.VpnServiceVortex;
 import com.vortex.vpn.ui.adapter.ConnectionAdapter;
@@ -63,6 +64,7 @@ public class ConnectionsActivity extends AppCompatActivity {
                 summary.setText(getString(R.string.connections_total, items.size()));
             }
         });
+        ScreenAudit.handOff(this);
     }
 
     @Override
