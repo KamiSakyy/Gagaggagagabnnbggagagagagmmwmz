@@ -220,6 +220,7 @@ public final class Repo {
             cursor = db.rawQuery("SELECT id, name, url, enabled, kind, raw_config, user_agent, last_update, "
                     + "update_interval, auto_update, traffic_used, traffic_total, expire, web_page, last_error "
                     + "FROM subscriptions ORDER BY id ASC", null);
+            Map<Long, Integer> counts = new HashMap<>();
             while (cursor.moveToNext()) {
                 Subscription sub = new Subscription();
                 sub.id = cursor.getLong(0);
@@ -238,6 +239,16 @@ public final class Repo {
                 sub.webPage = cursor.getString(13);
                 sub.lastError = cursor.getString(14);
                 result.add(sub);
+            }
+            cursor.close();
+            cursor = null;
+            cursor = db.rawQuery("SELECT sub_id, COUNT(*) FROM servers GROUP BY sub_id", null);
+            while (cursor.moveToNext()) {
+                counts.put(cursor.getLong(0), cursor.getInt(1));
+            }
+            for (Subscription sub : result) {
+                Integer count = counts.get(sub.id);
+                sub.serverCount = count == null ? 0 : count;
             }
         } finally {
             if (cursor != null) {

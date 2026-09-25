@@ -212,8 +212,8 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void updateSummaries() {
         int mode = Prefs.routeMode();
-        summary(R.id.btn_mode, mode == ConfigSettings.MODE_GLOBAL ? R.string.mode_global
-                : mode == ConfigSettings.MODE_BYPASS ? R.string.mode_bypass : R.string.mode_smart);
+        summary(R.id.btn_mode, getString(mode == ConfigSettings.MODE_GLOBAL ? R.string.mode_global
+                : mode == ConfigSettings.MODE_BYPASS ? R.string.mode_bypass : R.string.mode_smart));
         summary(R.id.btn_stack, Prefs.stack());
         summary(R.id.btn_mtu, String.valueOf(Prefs.mtu()));
         summary(R.id.btn_dns_direct, Prefs.getString(Prefs.KEY_DNS_DIRECT, ""));

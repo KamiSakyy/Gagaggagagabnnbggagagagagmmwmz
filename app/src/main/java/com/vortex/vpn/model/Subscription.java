@@ -19,6 +19,8 @@ public class Subscription {
     public long expire;
     public String webPage = "";
     public String lastError = "";
+    /** Number of locations of this profile (filled when the list is loaded). */
+    public int serverCount;
 
     public boolean isConfig() {
         return "config".equals(kind);

@@ -97,12 +97,6 @@ public class Bridge implements CommandClientHandler {
             }
         } catch (Throwable ignored) {
         }
-        try {
-            if (client != null) {
-                client.close();
-            }
-        } catch (Throwable ignored) {
-        }
         client = null;
     }
 
@@ -133,7 +127,8 @@ public class Bridge implements CommandClientHandler {
         }
     }
 
-    public static void clearLogs() {
+    /** Clears the buffered engine log (UI entry point). */
+    public static void clearAll() {
         synchronized (LOGS) {
             LOGS.clear();
         }
@@ -177,14 +172,7 @@ public class Bridge implements CommandClientHandler {
 
     @Override
     public void clearLogs() {
-        clearLogsInternal();
-    }
-
-    private void clearLogsInternal() {
-        synchronized (LOGS) {
-            LOGS.clear();
-        }
-        logVersion.postValue(0);
+        clearAll();
     }
 
     @Override

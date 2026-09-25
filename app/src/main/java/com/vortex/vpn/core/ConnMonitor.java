@@ -37,7 +37,7 @@ public class ConnMonitor {
         deliver(lastNetwork);
     }
 
-    private void start() {
+    public void start() {
         if (connectivity == null || callback != null) {
             return;
         }

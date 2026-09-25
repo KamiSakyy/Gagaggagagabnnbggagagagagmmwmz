@@ -103,7 +103,7 @@ public class LogsActivity extends AppCompatActivity {
             return true;
         }
         if (id == R.id.action_clear) {
-            Bridge.clearLogs();
+            Bridge.clearAll();
             reload();
             return true;
         }

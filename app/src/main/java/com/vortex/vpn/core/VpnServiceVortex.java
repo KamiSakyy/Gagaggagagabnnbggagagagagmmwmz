@@ -201,6 +201,7 @@ public class VpnServiceVortex extends VpnService implements PlatformInterface {
         instance = null;
         stopTunnel(false);
         monitor.stop();
+        forgetObservers();
         super.onDestroy();
     }
 
@@ -434,9 +435,12 @@ public class VpnServiceVortex extends VpnService implements PlatformInterface {
         }
     }
 
+    private androidx.lifecycle.Observer<VpnState.Stats> statsObserver;
+    private androidx.lifecycle.Observer<String> tagObserver;
+
     private void observeStats() {
         try {
-            VpnState.stats.observeForever(new androidx.lifecycle.Observer<VpnState.Stats>() {
+            statsObserver = new androidx.lifecycle.Observer<VpnState.Stats>() {
                 @Override
                 public void onChanged(VpnState.Stats stats) {
                     long now = System.currentTimeMillis();
@@ -448,17 +452,31 @@ public class VpnServiceVortex extends VpnService implements PlatformInterface {
                         updateNotification(true, false);
                     }
                 }
-            });
-            VpnState.activeTag.observeForever(new androidx.lifecycle.Observer<String>() {
+            };
+            tagObserver = new androidx.lifecycle.Observer<String>() {
                 @Override
                 public void onChanged(String tag) {
                     if (VpnState.isRunning()) {
                         updateNotification(true, true);
                     }
                 }
-            });
+            };
+            VpnState.stats.observeForever(statsObserver);
+            VpnState.activeTag.observeForever(tagObserver);
         } catch (Throwable t) {
             Log.w(TAG, "observe", t);
+        }
+    }
+
+    private void forgetObservers() {
+        try {
+            if (statsObserver != null) {
+                VpnState.stats.removeObserver(statsObserver);
+            }
+            if (tagObserver != null) {
+                VpnState.activeTag.removeObserver(tagObserver);
+            }
+        } catch (Throwable ignored) {
         }
     }
 
@@ -858,18 +876,13 @@ public class VpnServiceVortex extends VpnService implements PlatformInterface {
                 return null;
             }
             String ssid = info.getSSID();
-            WIFIState state = new WIFIState();
             if ("<unknown ssid>".equals(ssid)) {
-                state.setSSID("");
-                state.setBSSID("");
-                return state;
+                return new WIFIState("", "");
             }
             if (ssid.startsWith("\"") && ssid.endsWith("\"") && ssid.length() > 1) {
                 ssid = ssid.substring(1, ssid.length() - 1);
             }
-            state.setSSID(ssid);
-            state.setBSSID(info.getBSSID() == null ? "" : info.getBSSID());
-            return state;
+            return new WIFIState(ssid, info.getBSSID() == null ? "" : info.getBSSID());
         } catch (Throwable t) {
             return null;
         }
