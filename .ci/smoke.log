@@ -1,19 +1,291 @@
 === verdict ===
+* daemon not running; starting now at tcp:5037
++ echo 'EMULATOR BOOTED: android 11 x86_64'
+EMULATOR BOOTED: android 11 x86_64
++ grep -q 'FATAL EXCEPTION'
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -q 'FATAL EXCEPTION'
++ grep -q 'SELFTEST OK' ci-out/selftest.txt
++ echo 'engine self test did not report OK'
+engine self test did not report OK
 
 === log tail ===
-+ SDK=/usr/local/lib/android/sdk
-+ export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-+ ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-+ export ANDROID_HOME=/usr/local/lib/android/sdk
-+ ANDROID_HOME=/usr/local/lib/android/sdk
-+ export PATH=/usr/local/lib/android/sdk/platform-tools:/usr/local/lib/android/sdk/emulator:/home/runner/work/_temp/.gradle-actions/gradle-installations/installs/gradle-8.10.2/bin:/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64/bin:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
-+ PATH=/usr/local/lib/android/sdk/platform-tools:/usr/local/lib/android/sdk/emulator:/home/runner/work/_temp/.gradle-actions/gradle-installations/installs/gradle-8.10.2/bin:/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64/bin:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
-+ export ANDROID_USER_HOME=/home/runner/.android
-+ ANDROID_USER_HOME=/home/runner/.android
-+ export ANDROID_AVD_HOME=/home/runner/.android/avd
-+ ANDROID_AVD_HOME=/home/runner/.android/avd
-+ mkdir -p /home/runner/.android/avd
-+ PKG=com.vortex.vpn
-++ ls 'app/build/outputs/apk/release/*x86_64*.apk'
-++ head -1
-+ APK=
++ true
++ '[' -s ci-out/selftest.txt ']'
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -a SELFTEST
++ true
++ '[' -s ci-out/selftest.txt ']'
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -a SELFTEST
++ true
++ '[' -s ci-out/selftest.txt ']'
++ sleep 5
++ echo '--- self test verdict (captured right away) ---'
+--- self test verdict (captured right away) ---
++ cat ci-out/selftest.txt
++ echo '--- visiting every screen ---'
+--- visiting every screen ---
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.ServersActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ServersActivity } from null (pid=2483, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.ProfilesActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ProfilesActivity } from null (pid=2495, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.SettingsActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.SettingsActivity } from null (pid=2502, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.LogsActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.LogsActivity } from null (pid=2514, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.ConnectionsActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConnectionsActivity } from null (pid=2521, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.AboutActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AboutActivity } from null (pid=2533, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.ConfigEditorActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConfigEditorActivity } from null (pid=2540, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.AppListActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AppListActivity } from null (pid=2552, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ echo '--- ui monkey (no --ignore-crashes on purpose) ---'
+--- ui monkey (no --ignore-crashes on purpose) ---
++ adb shell monkey -p com.vortex.vpn --throttle 300 150
+  bash arg: -p
+  bash arg: com.vortex.vpn
+  bash arg: --throttle
+  bash arg: 300
+  bash arg: 150
+args: [-p, com.vortex.vpn, --throttle, 300, 150]
+ arg: "-p"
+ arg: "com.vortex.vpn"
+ arg: "--throttle"
+ arg: "300"
+ arg: "150"
+data="com.vortex.vpn"
+arg="--throttle" mCurArgData="null" mNextArg=3 argwas="--throttle" nextarg="300"
+data="300"
+    // Injection Failed
+    // Injection Failed
+Events injected: 150
+## Network stats: elapsed time=12722ms (0ms mobile, 0ms wifi, 12722ms not connected)
++ sleep 3
++ adb shell pidof com.vortex.vpn
++ adb logcat -d
++ grep -q 'FATAL EXCEPTION'
++ grep -q 'SELFTEST OK' ci-out/selftest.txt
++ echo 'engine self test did not report OK'
+engine self test did not report OK
++ cat ci-out/selftest.txt
++ exit 1

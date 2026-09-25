@@ -19,9 +19,9 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
+> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
-> Task :app:mergeDebugResources
 > Task :app:parseDebugLocalResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
@@ -47,28 +47,17 @@ Note: Recompile with -Xlint:unchecked for details.
 > Task :app:bundleDebugClassesToCompileJar
 > Task :app:generateDebugUnitTestConfig
 
-> Task :app:compileDebugUnitTestJavaWithJavac FAILED
-/home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/test/java/com/vortex/vpn/LayoutAuditTest.java:161: error: cannot find symbol
-                main.findViewById(R.id.btn_profiles) != null);
-                                      ^
-  symbol:   variable btn_profiles
-  location: class id
+> Task :app:compileDebugUnitTestJavaWithJavac
 Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/test/java/com/vortex/vpn/ImportFlowTest.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
-1 error
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790333970913.json
 
-FAILURE: Build failed with an exception.
+> Task :app:testDebugUnitTest
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790334135902.json
 
-* What went wrong:
-Execution failed for task ':app:compileDebugUnitTestJavaWithJavac'.
-> Compilation failed; see the compiler error output for details.
-
-* Try:
-> Run with --info option to get more log output.
-> Run with --scan to get full insights.
-
-BUILD FAILED in 1m 4s
-24 actionable tasks: 23 executed, 1 from cache
+BUILD SUCCESSFUL in 1m 18s
+25 actionable tasks: 24 executed, 1 from cache
 === unit test result files ===
-=== gradle exit code: 1 ===
+tests="4" skipped="0" failures="0" errors="0"
+tests="2" skipped="0" failures="0" errors="0"
+tests="2" skipped="0" failures="0" errors="0"
+=== gradle exit code: 0 ===
