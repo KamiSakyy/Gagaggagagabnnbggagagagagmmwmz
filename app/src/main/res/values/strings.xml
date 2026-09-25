@@ -7,6 +7,10 @@
     <string name="section_traffic">Скорость и трафик</string>
     <string name="label_down">ПОЛУЧЕНО</string>
     <string name="label_up">ОТПРАВЛЕНО</string>
+    <string name="traffic_explainer">Это ваш собственный трафик через VPN. Приложение не расходует данные в фоне.</string>
+    <string name="memory_format">ОЗУ движка: %1$s</string>
+    <string name="connections_format">Соединений: %1$d</string>
+    <string name="speed_unknown">—</string>
     <string name="zero_speed">0 Б/с</string>
     <string name="zero_bytes">0 Б</string>
     <string name="servers_read_error">не удалось прочитать список локаций</string>
@@ -48,7 +52,6 @@
     <string name="action_stop_service">Остановить службу</string>
 
     <string name="speed_format">%1$s/с</string>
-    <string name="connections_format">%1$d исх. • %2$d вх.</string>
     <string name="connections_total">Соединений: %1$d</string>
     <string name="connection_traffic">↓ %1$s   ↑ %2$s</string>
     <string name="location_selected">Локация: %1$s</string>
@@ -100,6 +103,7 @@
     <string name="error_no_permission">Разрешение VPN не выдано</string>
     <string name="error_not_running">Сначала подключитесь</string>
     <string name="mode_auto_selected">Включён авто-выбор локации</string>
+    <string name="mode_auto_enabled">Авто-выбор включён: движок сам выберет быструю локацию</string>
     <string name="ping_needs_tunnel">Массовая проверка доступна при активном туннеле</string>
     <string name="ping_timeout">таймаут</string>
     <string name="ping_unknown">— мс</string>
@@ -173,7 +177,7 @@
     <string name="setting_row_fragment_desc">Обход DPI на TLS-рукопожатии</string>
     <string name="setting_row_record_fragment">Фрагментация записей</string>
     <string name="setting_row_auto_select">Авто-выбор локации</string>
-    <string name="setting_row_auto_select_desc">Выбирать самую быструю через URL-тест</string>
+    <string name="setting_row_auto_select_desc">Движок будет периодически проверять локации — это тратит немного трафика</string>
     <string name="setting_row_auto_start">Запуск при загрузке</string>
     <string name="setting_row_sub_auto">Автообновление подписок</string>
     <string name="setting_row_per_app">Приложения через VPN</string>

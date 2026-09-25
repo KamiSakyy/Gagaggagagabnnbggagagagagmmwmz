@@ -48,7 +48,8 @@ public class ConfigSettings {
     public final Set<String> directDomains = new LinkedHashSet<>();
     public final Set<String> blockDomains = new LinkedHashSet<>();
     public String urlTestUrl = "http://cp.cloudflare.com/generate_204";
-    public String urlTestInterval = "3m";
+    /** 10 minutes: probing costs the user's own traffic, so it must stay rare. */
+    public String urlTestInterval = "10m";
     public int urlTestTolerance = 50;
 
     // ---- transport hardening ----------------------------------------------

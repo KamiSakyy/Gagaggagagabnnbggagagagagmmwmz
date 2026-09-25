@@ -220,6 +220,7 @@ public final class ConfigBuilder {
                         .put("outbounds", new String[]{TAG_AUTO})
                         .put("default", TAG_AUTO)
                         .put("interrupt_exist_connections", false));
+                // the auto group lists the same locations, otherwise the selector has nothing to pick
             } else {
                 result.add(Json.obj()
                         .put("type", "selector")
@@ -228,15 +229,20 @@ public final class ConfigBuilder {
                         .put("default", selected)
                         .put("interrupt_exist_connections", false));
             }
-            result.add(Json.obj()
-                    .put("type", "urltest")
-                    .put("tag", TAG_AUTO)
-                    .put("outbounds", tags.toArray(new String[0]))
-                    .put("url", s.urlTestUrl)
-                    .put("interval", s.urlTestInterval)
-                    .put("tolerance", (long) s.urlTestTolerance)
-                    .put("idle_timeout", "30m")
-                    .put("interrupt_exist_connections", false));
+            // The URL-test group probes every location it contains, through the user's own
+            // subscription, again and again. It is only useful when the user asked for automatic
+            // selection, so it is not emitted at all otherwise: no background traffic.
+            if (s.autoSelect) {
+                result.add(Json.obj()
+                        .put("type", "urltest")
+                        .put("tag", TAG_AUTO)
+                        .put("outbounds", tags.toArray(new String[0]))
+                        .put("url", s.urlTestUrl)
+                        .put("interval", s.urlTestInterval)
+                        .put("tolerance", (long) s.urlTestTolerance)
+                        .put("idle_timeout", "30m")
+                        .put("interrupt_exist_connections", false));
+            }
         }
 
         for (Json.Obj proxy : proxies) {

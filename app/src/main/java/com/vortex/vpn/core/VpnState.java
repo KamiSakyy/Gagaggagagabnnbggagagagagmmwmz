@@ -30,6 +30,8 @@ public final class VpnState {
         public int connectionsIn;
         public int connectionsOut;
         public long memory;
+        /** The engine only exposes traffic counters when its traffic manager is running. */
+        public boolean trafficAvailable;
         public int goroutines;
         public long timestamp;
 

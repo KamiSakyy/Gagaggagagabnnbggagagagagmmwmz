@@ -34,6 +34,7 @@ import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.core.VpnServiceVortex;
 import com.vortex.vpn.core.VpnState;
 import com.vortex.vpn.core.SubscriptionUpdater;
+import com.vortex.vpn.core.TrafficRate;
 import com.vortex.vpn.db.Repo;
 import com.vortex.vpn.model.Server;
 import com.vortex.vpn.ui.view.PowerView;
@@ -81,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
     private ChipGroup modeGroup;
     private SpeedChartView chart;
 
+    private final TrafficRate rate = new TrafficRate();
     private long lastSample;
     private boolean pendingStart;
 
@@ -368,6 +370,14 @@ public class MainActivity extends AppCompatActivity {
             toast(getString(R.string.error_not_running));
             return;
         }
+        if (!Prefs.autoSelect()) {
+            // Probing costs the user's own traffic, so it is opt-in: switch it on, rebuild the
+            // configuration and tell the user what changed.
+            Prefs.setBoolean(Prefs.KEY_AUTO_SELECT, true);
+            VpnServiceVortex.reload(this);
+            toast(getString(R.string.mode_auto_enabled));
+            return;
+        }
         VpnServiceVortex.get().selectOutbound(ConfigTags.AUTO);
         toast(getString(R.string.mode_auto_selected));
     }
@@ -404,6 +414,9 @@ public class MainActivity extends AppCompatActivity {
                 btnConnect.setEnabled(true);
                 styleConnectButton(true);
                 chart.reset();
+                rate.reset();
+                textDownSpeed.setText(R.string.speed_unknown);
+                textUpSpeed.setText(R.string.speed_unknown);
                 break;
         }
     }
@@ -438,16 +451,35 @@ public class MainActivity extends AppCompatActivity {
         if (stats == null) {
             return;
         }
-        textDownSpeed.setText(getString(R.string.speed_format, VpnServiceVortex.formatBytes(stats.downlink)));
-        textUpSpeed.setText(getString(R.string.speed_format, VpnServiceVortex.formatBytes(stats.uplink)));
+        // The speed is derived here from the cumulative counters: the engine reports them for every
+        // status message, so a delayed or missing message can never leave the screen at "0 Б/с".
+        rate.sample(stats.uplinkTotal, stats.downlinkTotal, System.currentTimeMillis());
+        long down = rate.downlink();
+        long up = rate.uplink();
+        if (VpnState.isRunning() && !stats.trafficAvailable) {
+            // No counters at all: say it instead of showing a zero that looks like a broken app.
+            textDownSpeed.setText(R.string.speed_unknown);
+            textUpSpeed.setText(R.string.speed_unknown);
+        } else if (VpnState.isRunning()) {
+            textDownSpeed.setText(getString(R.string.speed_format, VpnServiceVortex.formatBytes(down)));
+            textUpSpeed.setText(getString(R.string.speed_format, VpnServiceVortex.formatBytes(up)));
+        } else {
+            textDownSpeed.setText(R.string.speed_unknown);
+            textUpSpeed.setText(R.string.speed_unknown);
+        }
+        // Totals are the user's own bytes through the tunnel, not extra consumption.
         textDownTotal.setText(VpnServiceVortex.formatBytes(stats.downlinkTotal));
         textUpTotal.setText(VpnServiceVortex.formatBytes(stats.uplinkTotal));
-        textConnections.setText(getString(R.string.connections_format, stats.connectionsOut, stats.connectionsIn));
-        textMemory.setText(com.vortex.vpn.core.VpnServiceVortex.formatBytes(stats.memory));
+        textConnections.setText(getString(R.string.connections_format,
+                Math.max(stats.connectionsIn, stats.connectionsOut)));
+        // Memory is RAM, and the label says so: a bare "200 МБ" scared the user into thinking the
+        // app was eating their mobile data.
+        textMemory.setText(getString(R.string.memory_format,
+                VpnServiceVortex.formatBytes(stats.memory)));
         long now = System.currentTimeMillis();
         if (now - lastSample >= SAMPLE_INTERVAL) {
             lastSample = now;
-            chart.push(stats.downlink, stats.uplink);
+            chart.push(down, up);
         }
     }
 

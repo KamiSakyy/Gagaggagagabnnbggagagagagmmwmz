@@ -107,6 +107,30 @@ public class ConfigSanityTest {
         }
     }
 
+    /**
+     * Probing every location costs the user's own traffic, so it must only happen when automatic
+     * selection is switched on - and rarely.
+     */
+    @Test
+    public void nothingProbesTheLocationsInTheBackgroundUnlessAsked() {
+        List<Outbound> servers = SampleServers.all();
+
+        ConfigSettings manual = new ConfigSettings();
+        manual.autoSelect = false;
+        String withoutProbing = ConfigBuilder.build(manual, servers);
+        assertFalse("the manual configuration probes the locations in the background",
+                withoutProbing.contains("\"urltest\""));
+
+        ConfigSettings auto = new ConfigSettings();
+        auto.autoSelect = true;
+        auto.urlTestInterval = "10m";
+        String withProbing = ConfigBuilder.build(auto, servers);
+        assertTrue("automatic selection needs the url test group",
+                withProbing.contains("\"urltest\""));
+        assertTrue("the probing interval is too aggressive: " + withProbing.contains("3m"),
+                withProbing.contains("\"interval\":\"10m\""));
+    }
+
     @Test
     public void theConfigurationDoesNotGrowSurprises() {
         // the tunnel must never be able to fall through to "no outbound at all"

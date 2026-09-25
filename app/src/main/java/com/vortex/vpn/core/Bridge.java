@@ -214,6 +214,7 @@ public class Bridge implements CommandClientHandler {
         stats.connectionsIn = message.getConnectionsIn();
         stats.connectionsOut = message.getConnectionsOut();
         stats.memory = message.getMemory();
+        stats.trafficAvailable = message.getTrafficAvailable();
         stats.goroutines = message.getGoroutines();
         stats.timestamp = System.currentTimeMillis();
         VpnState.stats.postValue(stats);
