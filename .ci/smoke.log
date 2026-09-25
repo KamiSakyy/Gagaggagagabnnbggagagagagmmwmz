@@ -1,124 +1,112 @@
-2257
-+ adb shell dumpsys window
-+ grep -E 'mCurrentFocus|mFocusedApp'
-  mCurrentFocus=Window{8409eb7 u0 com.vortex.vpn/com.vortex.vpn.ui.MainActivity}
-  mFocusedApp=ActivityRecord{2e35f94 u0 com.vortex.vpn/.ui.MainActivity t9}
-+ adb logcat -d
-+ grep -q 'FATAL EXCEPTION'
-+ adb shell pidof com.vortex.vpn
-+ echo '--- on-device engine self test ---'
---- on-device engine self test ---
-+ adb shell am start -n com.vortex.vpn/.ui.MainActivity --ez vortex_selftest true
-Warning: Activity not started, intent has been delivered to currently running top-most instance.
-++ seq 1 24
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ grep -q 'SELFTEST OK'
-+ adb logcat -d -s VortexSelfTest:I
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ grep -q 'SELFTEST OK'
-+ adb logcat -d -s VortexSelfTest:I
-+ sleep 5
-+ for i in $(seq 1 24)
-+ grep -q 'SELFTEST OK'
-+ adb logcat -d -s VortexSelfTest:I
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ grep -q 'SELFTEST OK'
-+ adb logcat -d -s VortexSelfTest:I
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ grep -q 'SELFTEST OK'
-+ adb logcat -d -s VortexSelfTest:I
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
-+ for i in $(seq 1 24)
-+ grep -q 'SELFTEST OK'
-+ adb logcat -d -s VortexSelfTest:I
-+ sleep 5
-+ for i in $(seq 1 24)
-+ adb logcat -d -s VortexSelfTest:I
-+ grep -q 'SELFTEST OK'
-+ sleep 5
 + adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ grep -q SELFTEST
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ grep -q SELFTEST
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ grep -q SELFTEST
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ grep -q SELFTEST
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ grep -q SELFTEST
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ for i in $(seq 1 30)
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ grep -q SELFTEST
++ sleep 5
++ echo '--- self test verdict ---'
+--- self test verdict ---
 + tail -n 40
---------- beginning of system
---------- beginning of main
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
 --------- beginning of kernel
+--------- beginning of main
+--------- beginning of system
 + echo '--- visiting every screen ---'
 --- visiting every screen ---
 + for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
 + adb shell am start -n com.vortex.vpn/.ui.ServersActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ServersActivity } from null (pid=2413, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ServersActivity } from null (pid=2496, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -143,7 +131,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.ProfilesActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ProfilesActivity } from null (pid=2425, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ProfilesActivity } from null (pid=2508, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -168,7 +156,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.SettingsActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.SettingsActivity } from null (pid=2432, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.SettingsActivity } from null (pid=2515, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -193,7 +181,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.LogsActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.LogsActivity } from null (pid=2444, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.LogsActivity } from null (pid=2527, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -218,7 +206,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.ConnectionsActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConnectionsActivity } from null (pid=2451, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConnectionsActivity } from null (pid=2534, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -243,7 +231,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.AboutActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AboutActivity } from null (pid=2463, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AboutActivity } from null (pid=2546, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -268,7 +256,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.ConfigEditorActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConfigEditorActivity } from null (pid=2470, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConfigEditorActivity } from null (pid=2553, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -293,7 +281,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.AppListActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AppListActivity } from null (pid=2482, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AppListActivity } from null (pid=2565, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -333,7 +321,7 @@ args: [-p, com.vortex.vpn, --throttle, 300, -v, 150]
 data="com.vortex.vpn"
 arg="--throttle" mCurArgData="null" mNextArg=3 argwas="--throttle" nextarg="300"
 data="300"
-:Monkey: seed=1790527512722 count=150
+:Monkey: seed=1790475230678 count=150
 :AllowPackage: com.vortex.vpn
 :IncludeCategory: android.intent.category.LAUNCHER
 :IncludeCategory: android.intent.category.MONKEY
@@ -352,130 +340,142 @@ data="300"
 //   11: 13.0%
 :Switch: #Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;component=com.vortex.vpn/.ui.MainActivity;end
     // Allowing start of Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.vortex.vpn/.ui.MainActivity } in package com.vortex.vpn
-:Sending Touch (ACTION_DOWN): 0:(81.0,633.0)
-:Sending Touch (ACTION_UP): 0:(75.91448,613.4655)
-:Sending Touch (ACTION_DOWN): 0:(2.0,147.0)
-:Sending Touch (ACTION_UP): 0:(0.0,184.41602)
-:Sending Touch (ACTION_DOWN): 0:(264.0,238.0)
-:Sending Touch (ACTION_UP): 0:(257.11194,226.36981)
+:Sending Trackball (ACTION_MOVE): 0:(-5.0,4.0)
+:Sending Touch (ACTION_DOWN): 0:(214.0,171.0)
+:Sending Touch (ACTION_UP): 0:(196.46005,216.81415)
+:Sending Trackball (ACTION_MOVE): 0:(1.0,3.0)
+:Switch: #Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;component=com.vortex.vpn/.ui.MainActivity;end
+    // Allowing start of Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.vortex.vpn/.ui.MainActivity } in package com.vortex.vpn
+:Sending Touch (ACTION_DOWN): 0:(298.0,73.0)
+:Sending Touch (ACTION_UP): 0:(284.8598,86.74353)
+:Sending Touch (ACTION_DOWN): 0:(308.0,91.0)
+:Sending Touch (ACTION_UP): 0:(306.73657,91.86579)
+:Sending Touch (ACTION_DOWN): 0:(92.0,614.0)
+:Sending Touch (ACTION_UP): 0:(99.874176,620.5402)
     // Allowing start of Intent { cmp=com.vortex.vpn/.ui.ProfilesActivity } in package com.vortex.vpn
-:Sending Touch (ACTION_DOWN): 0:(23.0,322.0)
-:Sending Touch (ACTION_UP): 0:(11.763359,301.6884)
-:Sending Trackball (ACTION_MOVE): 0:(2.0,2.0)
-:Sending Touch (ACTION_DOWN): 0:(263.0,54.0)
-:Sending Touch (ACTION_UP): 0:(284.4269,51.883904)
-:Sending Trackball (ACTION_MOVE): 0:(1.0,0.0)
-:Sending Touch (ACTION_DOWN): 0:(125.0,103.0)
-:Sending Touch (ACTION_UP): 0:(203.29799,51.40648)
-:Sending Touch (ACTION_DOWN): 0:(38.0,616.0)
-:Sending Touch (ACTION_UP): 0:(20.335064,605.9347)
-:Sending Touch (ACTION_DOWN): 0:(13.0,156.0)
-:Sending Touch (ACTION_UP): 0:(0.0,84.1187)
-:Sending Touch (ACTION_DOWN): 0:(297.0,512.0)
-:Sending Touch (ACTION_UP): 0:(291.00528,511.76324)
-:Sending Trackball (ACTION_MOVE): 0:(-3.0,-5.0)
-    //[calendar_time:2026-09-25 09:59:03.337  system_uptime:210760]
+:Sending Touch (ACTION_DOWN): 0:(9.0,209.0)
+:Sending Touch (ACTION_UP): 0:(3.3410487,207.69522)
+:Sending Touch (ACTION_DOWN): 0:(51.0,56.0)
+:Sending Touch (ACTION_UP): 0:(49.694416,56.848206)
+:Sending Trackball (ACTION_MOVE): 0:(-4.0,2.0)
+:Sending Trackball (ACTION_MOVE): 0:(2.0,1.0)
+    //[calendar_time:2026-09-25 10:07:19.633  system_uptime:242067]
     // Sending event #100
-:Sending Touch (ACTION_DOWN): 0:(50.0,170.0)
-:Sending Touch (ACTION_UP): 0:(49.115147,156.30316)
-:Sending Trackball (ACTION_MOVE): 0:(-4.0,-4.0)
-:Sending Touch (ACTION_DOWN): 0:(88.0,540.0)
-:Sending Touch (ACTION_UP): 0:(189.26384,584.5688)
-:Sending Touch (ACTION_DOWN): 0:(180.0,465.0)
-:Sending Touch (ACTION_UP): 0:(187.89413,446.96802)
-:Sending Touch (ACTION_DOWN): 0:(55.0,269.0)
+:Sending Touch (ACTION_DOWN): 0:(316.0,539.0)
+:Sending Touch (ACTION_UP): 0:(311.39066,541.2274)
+:Sending Touch (ACTION_DOWN): 0:(81.0,310.0)
+:Sending Touch (ACTION_UP): 0:(100.22066,304.37442)
+:Sending Touch (ACTION_DOWN): 0:(161.0,140.0)
+:Sending Touch (ACTION_UP): 0:(112.728264,202.1837)
+:Sending Touch (ACTION_DOWN): 0:(141.0,197.0)
+:Sending Touch (ACTION_UP): 0:(146.60173,198.82996)
+:Sending Touch (ACTION_DOWN): 0:(117.0,140.0)
+:Sending Touch (ACTION_UP): 0:(123.665665,128.24226)
+:Switch: #Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;component=com.vortex.vpn/.ui.MainActivity;end
+    // Allowing start of Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.vortex.vpn/.ui.MainActivity } in package com.vortex.vpn
+:Sending Touch (ACTION_DOWN): 0:(60.0,488.0)
+:Sending Touch (ACTION_UP): 0:(48.705498,477.8125)
+:Sending Touch (ACTION_DOWN): 0:(222.0,266.0)
+:Sending Touch (ACTION_UP): 0:(191.05142,301.3179)
+:Sending Touch (ACTION_DOWN): 0:(114.0,584.0)
+:Sending Touch (ACTION_UP): 0:(112.729706,595.8873)
+    // Allowing start of Intent { cmp=com.vortex.vpn/.ui.SettingsActivity } in package com.vortex.vpn
 Events injected: 150
 :Sending rotation degree=0, persist=false
 :Dropped: keys=0 pointers=0 trackballs=0 flips=0 rotations=0
-## Network stats: elapsed time=11149ms (0ms mobile, 0ms wifi, 11149ms not connected)
+## Network stats: elapsed time=14520ms (0ms mobile, 0ms wifi, 14520ms not connected)
 // Monkey finished
 + sleep 3
 + adb shell pidof com.vortex.vpn
 + adb logcat -d
 + grep -q 'FATAL EXCEPTION'
-+ adb logcat -d -s VortexSelfTest:I
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
 + grep -q 'SELFTEST OK'
 + echo 'engine self test did not report OK'
 engine self test did not report OK
++ adb logcat -d
++ grep -a SELFTEST
++ tail -n 20
+09-25 10:04:00.495  2322  2391 I VortexSelfTest: SELFTEST OK configs=4 engine=1.14.1 go=go1.26.8, android/amd64 smart-mixed=ok(9262b) global-gvisor=ok(9091b) hardened=ok(11010b) direct-only=ok outbounds=31 protocols=15/[vless, vmess, trojan, shadowsocks, hysteria2, tuic, anytls, socks, wireguard, snell, shadowtls, ssh, http, naive, hysteria]
 + exit 1
 === emulator output (tail) ===
-DEBUG   | onGuestSendCommand: [0x56380c837e10] Adb connected, start proxing data
-DEBUG   | Started new RenderThread (total 7) @0x56380c6b09c0
-DEBUG   | Started new RenderThread (total 8) @0x56380c6b04e0
-DEBUG   | ColorBuffer 7, 1x1, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 16, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 8, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | Started new RenderThread (total 9) @0x56380c6b1d40
-DEBUG   | ColorBuffer 10, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 11, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | Started new RenderThread (total 10) @0x56380c6b1ba0
-DEBUG   | Started new RenderThread (total 11) @0x56380c2211e0
-DEBUG   | ColorBuffer 15, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
-DEBUG   | Started new RenderThread (total 12) @0x56380c2216c0
-DEBUG   | Started new RenderThread (total 13) @0x56380c6b1a00
-DEBUG   | ColorBuffer 17, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 20, 1x1, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 16, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 21, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 23, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 24, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 25, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | Started new RenderThread (total 14) @0x56380c220b60
-VERBOSE | glReadPixels seems OK for tex(internal:0x8058 fmt:0x1908 type:0x1401) read(fmt:0x1908 type:0x1401).
-DEBUG   | ColorBuffer 26, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 27, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 28, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 30, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
-DEBUG   | Waiting for exit signal RenderThread @0x56380c6b04e0
-DEBUG   | ColorBuffer 32, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | Exited a RenderThread @0x56380c6b04e0
-DEBUG   | Started new RenderThread (total 14) @0x56380c6b16c0
-DEBUG   | ColorBuffer 35, 1x1, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 16, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 36, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
-DEBUG   | Started new RenderThread (total 15) @0x56381b1ac340
-DEBUG   | ColorBuffer 37, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 39, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 41, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 42, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 43, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 44, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 46, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 47, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 49, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 50, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-INFO         | Boot completed in 26070 ms
+DEBUG   | ColorBuffer 37, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 39, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
+DEBUG   | Waiting for exit signal RenderThread @0x55b8bb3b0340
+DEBUG   | ColorBuffer 40, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 41, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | Exited a RenderThread @0x55b8bb3b0340
+DEBUG   | Started new RenderThread (total 14) @0x55b8bb3b1860
+DEBUG   | ColorBuffer 44, 1x1, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 16, type: 0, props: 15 / 1]
+DEBUG   | Started new RenderThread (total 15) @0x55b8bb3b0340
+DEBUG   | ColorBuffer 45, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
+INFO         | Boot completed in 26260 ms
 INFO         | Increasing screen off timeout, logcat buffer size to 2M.
-DEBUG   | ColorBuffer 51, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 47, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 48, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 50, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 51, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 53, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 54, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
 DEBUG   | Registering pipe service multidisplay
-DEBUG   | MultiDisplayPipe created 0x56381b421c00
+DEBUG   | MultiDisplayPipe created 0x55b8ba455a40
 DEBUG   | MultiDisplayPipe recevied QUERY
 DEBUG   | MultiDisplayPipe send add id 0 width 320 height 640 dpi 0 flag 0
-DEBUG   | ColorBuffer 52, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | Started new RenderThread (total 16) @0x56381b1ac1a0
-DEBUG   | ColorBuffer 55, 1x1, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 16, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 56, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | Started new RenderThread (total 17) @0x56380c6b04e0
-DEBUG   | ColorBuffer 58, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 55, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | Started new RenderThread (total 16) @0x55b8bb840b60
+DEBUG   | ColorBuffer 58, 1x1, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 16, type: 0, props: 15 / 1]
 DEBUG   | ColorBuffer 59, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 60, 312x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 62400, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 62, 312x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 62400, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 63, 312x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 62400, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 64, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 66, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 67, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 68, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 70, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 71, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 72, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 74, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 75, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 76, 328x489, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 642880, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 78, 328x489, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 642880, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 79, 328x489, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 642880, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 80, 88x340, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 119680, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 82, 88x340, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 119680, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 83, 88x340, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 119680, type: 0, props: 15 / 1]
+DEBUG   | Started new RenderThread (total 17) @0x55b8bb3b0680
+DEBUG   | ColorBuffer 61, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 62, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 63, 320x177, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 227840, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 65, 320x177, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 227840, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 66, 320x177, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 227840, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 67, 312x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 62400, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 69, 312x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 62400, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 70, 312x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 62400, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 71, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 73, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 74, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 75, 312x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 62400, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 77, 312x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 62400, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 78, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 80, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 81, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 82, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
 DEBUG   | ColorBuffer 84, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 85, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
 DEBUG   | ColorBuffer 86, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 87, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
 DEBUG   | ColorBuffer 88, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 89, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
 DEBUG   | ColorBuffer 90, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
-DEBUG   | ColorBuffer 91, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 92, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 93, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 94, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 96, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 97, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 98, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 100, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 101, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | Started new RenderThread (total 18) @0x55b8bb3b1380
+DEBUG   | ColorBuffer 104, 1x1, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 16, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 105, 384x285, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 439296, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 107, 384x285, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 439296, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 108, 384x285, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 439296, type: 0, props: 15 / 1]
+DEBUG   | Waiting for exit signal RenderThread @0x55b8bb3b1380
+DEBUG   | ColorBuffer 109, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 111, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 112, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 113, 203x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 40800, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 115, 203x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 40800, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 116, 203x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 40800, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 117, 312x252, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 314496, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 119, 312x252, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 314496, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 120, 312x252, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 314496, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 121, 312x252, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 314496, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 123, 312x252, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 314496, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 124, 312x252, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 314496, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 125, 312x252, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 314496, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 126, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 128, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 129, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
