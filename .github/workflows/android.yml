@@ -428,6 +428,28 @@ jobs:
             exit 1
           fi
 
+          echo "--- screenshots of the real app ---"
+          adb shell am force-stop $PKG
+          sleep 2
+          adb shell am start -n $PKG/.ui.MainActivity --ez vortex_demo_servers true || true
+          sleep 12
+          mkdir -p ci-out/screens
+          adb exec-out screencap -p > ci-out/screens/01-dashboard.png || true
+          adb shell am start -n $PKG/.ui.ServersActivity || true
+          sleep 6
+          adb exec-out screencap -p > ci-out/screens/02-locations.png || true
+          adb shell am start -n $PKG/.ui.ProfilesActivity || true
+          sleep 6
+          adb exec-out screencap -p > ci-out/screens/03-profiles.png || true
+          adb shell am start -n $PKG/.ui.SettingsActivity || true
+          sleep 6
+          adb exec-out screencap -p > ci-out/screens/04-settings.png || true
+          ls -la ci-out/screens || true
+          adb shell am force-stop $PKG
+          sleep 2
+          adb shell am start -n $PKG/.ui.MainActivity > /dev/null || true
+          sleep 8
+
           echo "--- ui monkey (no --ignore-crashes on purpose) ---"
           adb shell monkey -p $PKG --throttle 300 150 || true
           sleep 3
@@ -456,6 +478,8 @@ jobs:
           mkdir -p .ci
           if [ -f ci-out/smoke.log ]; then
             cp ci-out/smoke.log .ci/smoke.log
+            mkdir -p .ci/screens
+            cp ci-out/screens/*.png .ci/screens/ 2>/dev/null || true
             {
               echo "=== verdict ==="
               grep -a -E "SMOKE OK|SMOKE SKIPPED|self test verdict|screen audit verdict|EMULATOR BOOTED|Permission Denial|FATAL|did not" ci-out/smoke.log | head -n 40 || true
@@ -531,6 +555,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f .ci/build.log .ci/config-check.log
+          [ -d .ci/screens ] && git add -f .ci/screens || true
           [ -f .ci/smoke.log ] && git add -f .ci/smoke.log || true
           [ -f .ci/unit-tests.log ] && git add -f .ci/unit-tests.log || true
           if git diff --cached --quiet; then

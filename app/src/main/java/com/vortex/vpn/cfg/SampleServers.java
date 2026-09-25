@@ -29,13 +29,17 @@ public final class SampleServers {
         return list;
     }
 
-    /**
-     * Validates the subscription pipeline: share links (raw and base64 v2ray format) and
-     * Clash YAML are parsed into outbounds, exactly like the application does when it
-     * "unpacks" a subscription into locations.
-     */
-    public static List<Outbound> subscriptions() {
-        List<String> links = Arrays.asList(
+    /** The very links below, as a subscription body (CI uses this to fill the dashboard). */
+    public static String subscriptionText() {
+        StringBuilder builder = new StringBuilder();
+        for (String link : links()) {
+            builder.append(link).append('\n');
+        }
+        return builder.toString();
+    }
+
+    private static List<String> links() {
+        return Arrays.asList(
                 "vless://0f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e11@example.com:443"
                         + "?security=reality&pbk=8hRk3Q0m5m3XhI1K6m3n0dHIZt6WZ1nYk5K0aVpG1S0"
                         + "&sid=6ba85179e30d4fc2&fp=chrome&flow=xtls-rprx-vision&type=tcp"
@@ -60,9 +64,16 @@ public final class SampleServers {
                         + "@wg.example.com:2408?address=10.10.0.2%2F32&mtu=1408"
                         + "&public_key=ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0A="
                         + "&preshared_key=QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A="
-                        + "&keepalive=25#WireGuard"
-        );
+                        + "&keepalive=25#WireGuard");
+    }
 
+    /**
+     * Validates the subscription pipeline: share links (raw and base64 v2ray format) and
+     * Clash YAML are parsed into outbounds, exactly like the application does when it
+     * "unpacks" a subscription into locations.
+     */
+    public static List<Outbound> subscriptions() {
+        List<String> links = links();
         List<Outbound> raw = SubImporter.parse(String.join("\n", links)).servers;
         require(!raw.isEmpty(), "share links produced no outbounds");
         List<Outbound> base64 = SubImporter.parse(B64.encode(

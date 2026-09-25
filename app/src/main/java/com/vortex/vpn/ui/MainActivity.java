@@ -27,11 +27,13 @@ import com.vortex.vpn.Prefs;
 import com.vortex.vpn.R;
 import com.vortex.vpn.cfg.ConfigSettings;
 import com.vortex.vpn.core.ConfigTags;
+import com.vortex.vpn.cfg.SampleServers;
 import com.vortex.vpn.core.EngineError;
 import com.vortex.vpn.core.EngineSelfTest;
 import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.core.VpnServiceVortex;
 import com.vortex.vpn.core.VpnState;
+import com.vortex.vpn.core.SubscriptionUpdater;
 import com.vortex.vpn.db.Repo;
 import com.vortex.vpn.model.Server;
 import com.vortex.vpn.ui.view.PowerView;
@@ -40,6 +42,7 @@ import com.vortex.vpn.sub.Geo;
 import com.vortex.vpn.sub.SubImporter;
 import com.vortex.vpn.sub.SubFetcher;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -50,6 +53,12 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_VPN = 0x5611;
     /** Set by the CI smoke test: {@code adb shell am start ... --ez vortex_selftest true}. */
     private static final String EXTRA_SELF_TEST = "vortex_selftest";
+    /**
+     * Set by the CI smoke test to fill the dashboard with the sample locations before taking
+     * screenshots: {@code adb shell am start ... --ez vortex_demo_servers true}. It only ever
+     * imports the sample links that ship inside the app (see {@link SampleServers}).
+     */
+    private static final String EXTRA_DEMO = "vortex_demo_servers";
     private static final long SAMPLE_INTERVAL = 900L;
 
     private PowerView power;
@@ -86,6 +95,10 @@ public class MainActivity extends AppCompatActivity {
         if (getIntent() != null && getIntent().getBooleanExtra(EXTRA_SELF_TEST, false)) {
             runEngineSelfTest();
         }
+        // CI fills the screen with sample locations before taking screenshots (see below).
+        if (getIntent() != null && getIntent().getBooleanExtra(EXTRA_DEMO, false)) {
+            loadDemoServers();
+        }
         // CI walks through every screen from here (see ScreenAudit); a no-op in normal use.
         ScreenAudit.handOff(this);
     }
@@ -105,6 +118,34 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         }, "engine-self-test").start();
+    }
+
+    /** Imports the sample locations so CI can screenshot a filled dashboard. */
+    private void loadDemoServers() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SubscriptionUpdater.Result result =
+                            SubscriptionUpdater.addFromInputDetailed(MainActivity.this,
+                                    SampleServers.subscriptionText(), "Демо-локации");
+                    final List<Server> servers = Repo.servers(MainActivity.this);
+                    if (!servers.isEmpty()) {
+                        Prefs.setSelectedServerId(servers.get(0).id);
+                    }
+                    Log.i(TAG, "demo locations: " + result.imported + " imported, "
+                            + servers.size() + " in the list");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateServerCard();
+                        }
+                    });
+                } catch (Throwable error) {
+                    Log.e(TAG, "demo locations failed", error);
+                }
+            }
+        }, "demo-servers").start();
     }
 
     private void requestNotificationPermission() {
