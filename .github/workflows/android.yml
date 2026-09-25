@@ -18,12 +18,13 @@ concurrency:
 
 env:
   BUILD_LOG: ${{ github.workspace }}/ci-out/build.log
-  PKG: com.echidna.studio
   SMOKE_LOG: ${{ github.workspace }}/ci-out/smoke.log
+  PKG: com.echidna.studio
+  SCREENS: ${{ github.workspace }}/ci-out/screens
 
 jobs:
   build:
-    name: Build APK and verify on an emulator
+    name: Build, test and run on an emulator
     runs-on: ubuntu-24.04
     timeout-minutes: 150
 
@@ -32,14 +33,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: true
 
-      - name: Prepare workspace
+      - name: Prepare the workspace
         run: |
           mkdir -p ci-out app/libs
           {
-            echo "== Echidna Studio build $(date -u +%FT%TZ) =="
-            echo "ref=$GITHUB_REF_NAME commit=$GITHUB_SHA"
+            echo "== Echidna Studio build =="
+            echo "ветка=$GITHUB_REF_NAME коммит=$GITHUB_SHA"
           } > "$BUILD_LOG"
 
       - name: Set up JDK 17
@@ -48,19 +48,18 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
+      - name: Set up the Android SDK
         run: |
-          set -x
           java -version
-          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
-          [ -d "$SDK" ] || SDK=/usr/local/lib/android/sdk
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
           echo "SDK=$SDK" >> "$GITHUB_ENV"
           ls "$SDK/platforms" || true
           ls "$SDK/build-tools" || true
           SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
           if [ -x "$SM" ]; then
             yes | "$SM" --licenses > /dev/null 2>&1 || true
-            "$SM" --install "platforms;android-34" "build-tools;34.0.0" "platform-tools" || true
+            "$SM" --install "platforms;android-34" "build-tools;34.0.0" "platform-tools" \
+              >> "$BUILD_LOG" 2>&1 || true
           fi
 
       - name: Set up Gradle
@@ -76,35 +75,36 @@ jobs:
       - name: Fetch the MediaPipe face model
         run: |
           set -o pipefail
-          bash tools/fetch_face_model.sh app/src/main/assets/models/face_landmarker.task 2>&1 | tee -a "$BUILD_LOG"
-          ls -la app/src/main/assets/models/ || true
-          if [ ! -f app/src/main/assets/models/face_landmarker.task ]; then
-            echo "ВНИМАНИЕ: модели MediaPipe нет, трекером будет ML Kit (без blendshape)"
-          fi
+          bash tools/fetch_face_model.sh app/src/main/assets/models/face_landmarker.task \
+            2>&1 | tee -a "$BUILD_LOG"
+          if [ -f app/src/main/assets/models/face_landmarker.task ]; then
+            echo "МОДЕЛЬ ТРЕКЕРА В СБОРКЕ"
+          else
+            echo "ВНИМАНИЕ: модели MediaPipe нет, приложение будет трекать через ML Kit"
+          fi | tee -a "$BUILD_LOG"
 
       - name: Check the bundled assets
         run: |
           set -o pipefail
           {
             echo "--- модель Echidna ---"
-            ls app/src/main/assets/live2d/Echidna/ | head -5
-            echo "мошенов: $(ls app/src/main/assets/live2d/Echidna/motions | wc -l)"
-            ls app/src/main/assets/models/ 2>/dev/null || echo "модели MediaPipe нет"
-            echo "текстур: $(ls app/src/main/assets/live2d/Echidna/textures | wc -l)"
+            ls app/src/main/assets/live2d/Echidna/ | head -n 5 || true
+            echo "мошенов: $(ls app/src/main/assets/live2d/Echidna/motions 2>/dev/null | wc -l)"
+            echo "текстур: $(ls app/src/main/assets/live2d/Echidna/textures 2>/dev/null | wc -l)"
             echo "размер модели: $(du -sh app/src/main/assets/live2d | cut -f1)"
+            ls app/src/main/assets/models/ 2>/dev/null || echo "модели MediaPipe нет"
             echo "--- нативное ядро Live2D ---"
-            unzip -l app/libs/Live2DCubismCore.aar | grep -E "\.so|classes.jar"
+            unzip -l app/libs/Live2DCubismCore.aar | grep -E "\.so|classes.jar" || true
           } 2>&1 | tee -a "$BUILD_LOG"
 
-      - name: Ensure release signing keystore
+      - name: Ensure the release signing keystore
         run: |
           set -o pipefail
           {
-            set -e
             if [ ! -f keystore.jks ]; then
-              # The keystore is committed so that every build produces an APK signed with the same
-              # key and a new build installs over the previous one. This regeneration only runs if
-              # the file ever goes missing.
+              # The keystore is committed, so every build is signed with the same key and a new
+              # build installs straight over the previous one. This branch only runs if the file
+              # ever goes missing.
               keytool -genkeypair -v -keystore keystore.jks -alias echidna \
                 -keyalg RSA -keysize 2048 -validity 10000 \
                 -storepass echidnastudio -keypass echidnastudio \
@@ -113,45 +113,42 @@ jobs:
               git config user.name "github-actions[bot]"
               git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
               git add -f keystore.jks keystore.properties
-              git commit -m "ci: recreate the release signing keystore"
+              git commit -m "ci: recreate the release signing keystore" || true
               git push origin HEAD:${GITHUB_REF_NAME} || true
             fi
-            ls -l keystore.jks keystore.properties
+            ls -l keystore.jks keystore.properties || true
           } 2>&1 | tee -a "$BUILD_LOG"
 
-      - name: Run unit tests on the JVM
+      - name: Run the unit tests
         run: |
           set -o pipefail
+          gradle --no-daemon testDebugUnitTest 2>&1 | tee -a "$BUILD_LOG"
           {
-            gradle --no-daemon testDebugUnitTest
-          } 2>&1 | tee -a "$BUILD_LOG"
-          {
-            echo "=== результаты ==="
-            grep -ho 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' \
-              app/build/test-results/testDebugUnitTest/*.xml 2>/dev/null | sort | uniq -c || true
-            echo "=== итог по классам ==="
-            grep -h -o 'name="[A-Za-z.]*" tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' \
+            echo "=== итог юнит-тестов ==="
+            grep -h -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' \
               app/build/test-results/testDebugUnitTest/*.xml 2>/dev/null || true
-          } | tee .ci-unit-tests.txt
-          mkdir -p .ci && cp .ci-unit-tests.txt .ci/unit-tests.log
+            grep -h -o 'name="[A-Za-z.]*" tests="[0-9]*"[^>]*' \
+              app/build/test-results/testDebugUnitTest/*.xml 2>/dev/null || true
+          } > ci-out/unit-tests.log
+          cat ci-out/unit-tests.log | tee -a "$BUILD_LOG"
+          mkdir -p .ci && cp ci-out/unit-tests.log .ci/unit-tests.log
 
       - name: Build the release APKs
         run: |
           set -o pipefail
-          {
-            gradle --no-daemon --stacktrace assembleRelease -PabiX86_64=true
-          } 2>&1 | tee -a "$BUILD_LOG"
+          gradle --no-daemon --stacktrace assembleRelease -PabiX86_64=true 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Collect the handoff artifacts
         run: |
           set -o pipefail
           {
-            set -e
             mkdir -p handoff
             rm -f handoff/*.apk
             VERSION=$(grep -o 'versionName "[^"]*"' app/build.gradle | cut -d'"' -f2)
             for apk in app/build/outputs/apk/release/*.apk; do
-              [ -f "$apk" ] || continue
+              if [ ! -f "$apk" ]; then
+                continue
+              fi
               case "$apk" in
                 *x86_64*) target="handoff/EchidnaStudio-$VERSION-x86_64.apk" ;;
                 *arm64*)  target="handoff/EchidnaStudio-$VERSION-arm64-v8a.apk" ;;
@@ -159,32 +156,37 @@ jobs:
               esac
               cp "$apk" "$target"
             done
-            ls -la handoff
+            ls -la handoff || true
             echo "=== содержимое APK ==="
-            APK=$(ls handoff/*x86_64*.apk 2>/dev/null | head -1)
-            [ -n "$APK" ] || APK=$(ls handoff/*.apk | head -1)
+            APK=$(ls handoff/*x86_64*.apk 2>/dev/null | head -n 1)
+            if [ -z "$APK" ]; then
+              APK=$(ls handoff/*.apk 2>/dev/null | head -n 1)
+            fi
+            if [ -z "$APK" ]; then
+              echo "APK НЕ СОБРАЛСЯ"
+              exit 1
+            fi
             echo "проверяю $APK"
-            unzip -l "$APK" | grep -E "lib/|assets/models|assets/live2d/Echidna/Echidna.moc3|assets/live2d/Echidna/motions/" | head -20
-            echo "нативных библиотек: $(unzip -l "$APK" | grep -c '\.so')"
-            echo "размер APK: $(du -h "$APK" | cut -f1)"
+            unzip -l "$APK" | grep -E "lib/|assets/models|assets/live2d/Echidna/(Echidna.moc3|motions/)" | head -n 20 || true
+            echo "нативных библиотек: $(unzip -l "$APK" | grep -c '\.so' || true)"
+            echo "модель трекера внутри: $(unzip -l "$APK" | grep -c 'face_landmarker.task' || true)"
+            echo "весит: $(du -h "$APK" | cut -f1)"
           } 2>&1 | tee -a "$BUILD_LOG"
 
-      - name: Check emulator acceleration
+      - name: Check the emulator acceleration
         run: |
-          echo "--- kvm ---"
           ls -l /dev/kvm 2>&1 || true
           sudo chmod 666 /dev/kvm 2>/dev/null || true
           if [ -w /dev/kvm ]; then
             echo "KVM_OK=1" >> "$GITHUB_ENV"
+            echo "KVM есть, проверка на эмуляторе пойдёт" | tee -a "$BUILD_LOG"
           else
             echo "KVM_OK=0" >> "$GITHUB_ENV"
-            echo "нет /dev/kvm: проверка на эмуляторе будет пропущена"
+            echo "нет /dev/kvm, проверка на эмуляторе будет пропущена" | tee -a "$BUILD_LOG"
           fi
 
       - name: Run the app on an Android emulator
         if: env.KVM_OK == '1'
-        env:
-          SCREENS: ${{ github.workspace }}/ci-out/screens
         run: |
           exec > >(stdbuf -oL tee "$SMOKE_LOG") 2>&1
           set -o pipefail
@@ -194,83 +196,104 @@ jobs:
           export ANDROID_SDK_ROOT="$SDK"
           export ANDROID_AVD_HOME="$HOME/.android/avd"
 
-          APK=$(ls handoff/*x86_64*.apk 2>/dev/null | head -1)
+          dump_logs() {
+            echo "--- последние строки приложения ---"
+            adb logcat -d -s EchidnaStudio:* 2>/dev/null | tail -n 120 || true
+            echo "--- исключения ---"
+            adb logcat -d -s AndroidRuntime:E 2>/dev/null | tail -n 120 || true
+          }
+
+          APK=$(ls handoff/*x86_64*.apk 2>/dev/null | head -n 1)
           if [ -z "$APK" ]; then
-            echo "SMOKE SKIPPED: нет x86_64 сборки"
+            echo "SMOKE SKIPPED: нет сборки под x86_64"
             exit 0
           fi
 
           SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
           AV="$SDK/cmdline-tools/latest/bin/avdmanager"
           IMAGE="system-images;android-30;default;x86_64"
-          [ -x "$SM" ] && { yes | "$SM" --licenses > /dev/null 2>&1 || true; }
-          [ -x "$SM" ] && "$SM" --install "platform-tools" "emulator" "$IMAGE" > ci-out/sdkmanager.log 2>&1 || true
+          if [ -x "$SM" ]; then
+            yes | "$SM" --licenses > /dev/null 2>&1 || true
+            "$SM" --install "platform-tools" "emulator" "$IMAGE" > ci-out/sdkmanager.log 2>&1 || true
+          fi
           echo no | "$AV" create avd -n echidna -k "$IMAGE" --force || true
           "$SDK/emulator/emulator" -list-avds || true
 
-          # Both cameras are emulated: that gives the app a real camera pipeline to talk to.
+          # Both cameras are emulated, which gives the app a real camera pipeline to talk to.
           nohup "$SDK/emulator/emulator" -avd echidna -no-window -no-audio -no-boot-anim \
             -gpu swiftshader_indirect -no-snapshot -camera-back emulated -camera-front emulated \
             -verbose > ci-out/emulator.log 2>&1 &
           echo "эмулятор запущен, pid $!"
 
-          echo "--- ждём загрузку ---"
+          echo "--- жду загрузку ---"
           adb wait-for-device
+          BOOTED=0
           for i in $(seq 1 90); do
             if [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
               echo "EMULATOR BOOTED"
+              BOOTED=1
               break
             fi
             sleep 5
           done
+          if [ "$BOOTED" != "1" ]; then
+            echo "ЭМУЛЯТОР НЕ ЗАГРУЗИЛСЯ"
+            tail -n 200 ci-out/emulator.log
+            exit 1
+          fi
           adb shell getprop sys.boot_completed
           adb shell wm size || true
           adb shell input keyevent 82 || true
           sleep 5
 
           echo "--- установка ---"
-          adb install -r -g "$APK"
+          if ! adb install -r -g "$APK"; then
+            echo "APK НЕ УСТАНОВИЛСЯ"
+            exit 1
+          fi
           adb shell pm grant $PKG android.permission.CAMERA || true
           adb shell pm grant $PKG android.permission.RECORD_AUDIO || true
-          adb shell dumpsys package $PKG | grep -E "versionName|granted=true" | head -5 || true
+          adb shell dumpsys package $PKG | grep -E "versionName|granted=true" | head -n 5 || true
 
           echo "--- запуск ---"
           adb logcat -c || true
           adb shell am start -n $PKG/.MainActivity --ez echidna_autoplay true
           READY=0
           for i in $(seq 1 30); do
-            if adb logcat -d | grep -q "APPREADY"; then READY=1; break; fi
+            if adb logcat -d | grep -q "APPREADY"; then
+              READY=1
+              break
+            fi
             sleep 4
           done
           echo "--- отчёт приложения ---"
-          adb logcat -d | grep -a -E "APPREADY|MODEL \||GL \|" | tail -n 20
+          adb logcat -d | grep -a -E "APPREADY|MODEL \||GL \|" | tail -n 20 || true
           if [ "$READY" != "1" ]; then
             echo "ПРИЛОЖЕНИЕ НЕ ЗАГРУЗИЛО МОДЕЛЬ"
-            adb logcat -d -s AndroidRuntime:E | tail -n 200
-            adb logcat -d -s EchidnaStudio | tail -n 100
+            dump_logs
             exit 1
           fi
           if adb logcat -d | grep -q "UnsatisfiedLinkError"; then
             echo "НАТИВНАЯ БИБЛИОТЕКА НЕ ЗАГРУЗИЛАСЬ"
-            adb logcat -d | grep -a -A 20 "UnsatisfiedLinkError" | head -60
+            adb logcat -d | grep -a -A 20 "UnsatisfiedLinkError" | head -n 60 || true
             exit 1
           fi
           if adb logcat -d | grep -q "FATAL EXCEPTION"; then
             echo "ПРИЛОЖЕНИЕ УПАЛО ПРИ ЗАПУСКЕ"
-            adb logcat -d -s AndroidRuntime:E | tail -n 200
+            dump_logs
             exit 1
           fi
           mkdir -p "$SCREENS"
           adb exec-out screencap -p > "$SCREENS/00-start.png" || true
 
-          echo "--- скриншоты каждого шоу ---"
+          echo "--- скриншоты всех номеров ---"
           for show in cute dance charm greet surprise; do
             adb shell am start -n $PKG/.MainActivity --ez echidna_show $show > /dev/null || true
             sleep 4
             adb exec-out screencap -p > "$SCREENS/show-$show.png" || true
           done
 
-          echo "--- скриншот с хромакеем для OBS ---"
+          echo "--- хромакей для OBS ---"
           adb shell am start -n $PKG/.MainActivity --ez echidna_show greet \
             --es echidna_background CHROMA_GREEN > /dev/null || true
           sleep 4
@@ -287,8 +310,8 @@ jobs:
           adb shell am start -n $PKG/.MainActivity --ez echidna_camera true > /dev/null || true
           sleep 8
           adb exec-out screencap -p > "$SCREENS/camera.png" || true
-          adb logcat -d | grep -a -E "CAMERA \||TRACK \|" | tail -n 20
-          adb logcat -d | grep -a "CAMERA | кадров" | tail -n 3 > ci-out/camera-frames.txt || true
+          adb logcat -d | grep -a -E "CAMERA \||TRACK \||VIDEO \|" | tail -n 20 || true
+          adb logcat -d | grep -a "кадров камеры" | tail -n 3 > ci-out/camera-frames.txt || true
           cat ci-out/camera-frames.txt || true
 
           echo "--- самопроверка внутри приложения ---"
@@ -297,37 +320,43 @@ jobs:
           adb logcat -c || true
           adb shell am start -n $PKG/.MainActivity --ez echidna_selftest true \
             --ez echidna_selftest_camera true > /dev/null || true
-          SELFTEST_OK=0
+          SELFTEST_DONE=0
           for i in $(seq 1 45); do
             adb logcat -d | grep -a "SELFTEST | ИТОГ" > ci-out/selftest.txt || true
-            if [ -s ci-out/selftest.txt ]; then SELFTEST_OK=1; break; fi
+            if [ -s ci-out/selftest.txt ]; then
+              SELFTEST_DONE=1
+              break
+            fi
             sleep 5
           done
           echo "--- шаги самопроверки ---"
-          adb logcat -d | grep -a "SELFTEST" | tail -n 60
-          if [ "$SELFTEST_OK" != "1" ]; then
+          adb logcat -d | grep -a "SELFTEST" | tail -n 60 || true
+          adb exec-out screencap -p > "$SCREENS/selftest.png" || true
+          if [ "$SELFTEST_DONE" != "1" ]; then
             echo "САМОПРОВЕРКА НЕ ЗАВЕРШИЛАСЬ"
-            adb logcat -d | grep -a -E "SELFTEST|AndroidRuntime" | tail -n 80
+            dump_logs
             exit 1
           fi
-          adb exec-out screencap -p > "$SCREENS/selftest.png" || true
           if ! grep -q "ИТОГ OK" ci-out/selftest.txt; then
             echo "САМОПРОВЕРКА СООБЩИЛА О ПРОВАЛЕ"
             cat ci-out/selftest.txt
+            dump_logs
             exit 1
           fi
+          echo "САМОПРОВЕРКА ПРОЙДЕНА"
+          cat ci-out/selftest.txt
 
-          echo "--- стресс: долгий прогон без падений ---"
+          echo "--- стресс: случайные нажатия ---"
           adb shell monkey -p $PKG --throttle 250 120 > /dev/null 2>&1 || true
           sleep 3
           if ! adb shell pidof "$PKG" > /dev/null; then
             echo "ПРИЛОЖЕНИЕ УМЕРЛО ПОСЛЕ MONKEY"
-            adb logcat -d -s AndroidRuntime:E | tail -n 100
+            dump_logs
             exit 1
           fi
           if adb logcat -d | grep -q "FATAL EXCEPTION"; then
             echo "ПРИЛОЖЕНИЕ УПАЛО"
-            adb logcat -d -s AndroidRuntime:E | tail -n 200
+            dump_logs
             exit 1
           fi
           adb shell am start -n $PKG/.MainActivity --ez echidna_show dance > /dev/null || true
@@ -336,24 +365,33 @@ jobs:
 
           echo "--- анализ скриншотов ---"
           pip install --quiet pillow > /dev/null 2>&1 || true
+          COUNT=$(ls "$SCREENS"/*.png 2>/dev/null | wc -l)
+          echo "кадров снято: $COUNT"
+          if [ "$COUNT" -lt 8 ]; then
+            echo "СКРИНШОТОВ СЛИШКОМ МАЛО"
+            exit 1
+          fi
           FAILED=0
           for shot in "$SCREENS"/*.png; do
             name=$(basename "$shot")
             case "$name" in
               background-chroma.png)
-                python3 tools/verify_screens.py "$shot" 1.0 --chroma 5,217,33 || FAILED=1 ;;
+                python3 tools/verify_screens.py "$shot" 1.0 --chroma 5,217,33 || FAILED=1
+                ;;
               gallery.png)
-                python3 tools/verify_screens.py "$shot" 1.0 || FAILED=1 ;;
+                python3 tools/verify_screens.py "$shot" 1.0 || FAILED=1
+                ;;
               *)
-                python3 tools/verify_screens.py "$shot" 3.0 || FAILED=1 ;;
+                python3 tools/verify_screens.py "$shot" 3.0 || FAILED=1
+                ;;
             esac
           done
           if [ "$FAILED" != "0" ]; then
-            echo "ЧАСТЬ КАДРОВ ПУСТАЯ - МОДЕЛЬ НЕ НАРИСОВАЛАСЬ"
+            echo "ЧАСТЬ КАДРОВ ПУСТАЯ: МОДЕЛЬ НЕ НАРИСОВАЛАСЬ"
             exit 1
           fi
 
-          echo "SMOKE OK: приложение собралось, запустилось, нарисовало модель во всех режимах, камера работает, самопроверка пройдена"
+          echo "SMOKE OK: приложение запустилось, нарисовало модель во всех режимах, камера работает, самопроверка пройдена"
 
       - name: Save the smoke test report
         if: always()
@@ -372,26 +410,28 @@ jobs:
             echo "проверка на эмуляторе не запускалась" > .ci/smoke.log
             echo "нет отчёта" > .ci/smoke-verdict.log
           fi
-          tail -n 400 .ci/smoke.log > /tmp/smoke-tail.log && mv /tmp/smoke-tail.log .ci/smoke.log
+          if [ "$(wc -l < .ci/smoke.log)" -gt 400 ]; then
+            tail -n 400 .ci/smoke.log > /tmp/smoke-tail.log
+            mv /tmp/smoke-tail.log .ci/smoke.log
+          fi
           cp ci-out/selftest.txt .ci/selftest.log 2>/dev/null || true
-          wc -l .ci/smoke.log
+          wc -l .ci/smoke.log || true
 
       - name: Package the sources into the handoff
         if: always()
         run: |
           set -o pipefail
           {
-            set -e
             mkdir -p handoff
             rm -f handoff/EchidnaStudio-source.zip
             zip -qr handoff/EchidnaStudio-source.zip \
               app/src app/libs app/build.gradle app/proguard-rules.pro \
               build.gradle settings.gradle gradle.properties \
               tools .github README.md Live2D-LICENSE.md
-            ls -la handoff
+            ls -la handoff || true
           } 2>&1 | tee -a "$BUILD_LOG"
 
-      - name: Upload the APK
+      - name: Upload the APKs
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -422,7 +462,6 @@ jobs:
         run: |
           set -o pipefail
           {
-            set -e
             if [ ! -d handoff ]; then
               echo "handoff пуст, коммитить нечего"
               exit 0
@@ -433,8 +472,8 @@ jobs:
             if git diff --cached --quiet; then
               echo "handoff без изменений"
             else
-              git commit -m "handoff: signed APK build ($(date -u +%Y-%m-%dT%H:%MZ))"
-              git push origin HEAD:${GITHUB_REF_NAME}
+              git commit -m "handoff: сборка APK" || true
+              git push origin HEAD:${GITHUB_REF_NAME} || true
             fi
           } 2>&1 | tee -a "$BUILD_LOG"
 
@@ -442,27 +481,22 @@ jobs:
         if: always()
         run: |
           mkdir -p .ci
-          sed -E 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z?//g; s/[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?//g' \
-            "$BUILD_LOG" > /tmp/clean.log || cp "$BUILD_LOG" /tmp/clean.log
+          sed -E 's/[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?//g' "$BUILD_LOG" > /tmp/clean.log 2>/dev/null \
+            || cp "$BUILD_LOG" /tmp/clean.log
           {
             echo "=== маркеры проблем ==="
-            grep -nE "error:|FAILURE:|Execution failed|Caused by:|> Task .*FAILED|Could not (find|resolve|download)|No such file|not found|Exception" /tmp/clean.log | head -n 120 || true
+            grep -nE "error:|FAILURE:|Execution failed|Caused by:|> Task .*FAILED|Could not (find|resolve|download)|No such file|Exception" /tmp/clean.log | head -n 120 || true
             echo
             echo "=== хвост ==="
             tail -n 400 /tmp/clean.log
-          } > .ci/build.log
+          } > .ci/build.log 2>/dev/null || cp /tmp/clean.log .ci/build.log
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f .ci/build.log
-          [ -f .ci/smoke.log ] && git add -f .ci/smoke.log || true
-          [ -f .ci/smoke-verdict.log ] && git add -f .ci/smoke-verdict.log || true
-          [ -f .ci/unit-tests.log ] && git add -f .ci/unit-tests.log || true
-          [ -f .ci/selftest.log ] && git add -f .ci/selftest.log || true
-          [ -d .ci/screens ] && git add -f .ci/screens || true
+          git add -f .ci || true
           if git diff --cached --quiet; then
             echo "логи без изменений"
           else
-            git commit -m "ci: build logs" || true
+            git commit -m "ci: логи сборки" || true
             git push origin HEAD:${GITHUB_REF_NAME} || true
           fi
 
@@ -475,27 +509,33 @@ jobs:
             if grep -q "BUILD SUCCESSFUL" .ci/build.log 2>/dev/null; then
               echo "Сборка APK: **успешно**"
             else
-              echo "Сборка APK: **нужно посмотреть лог**"
+              echo "Сборка APK: **смотри .ci/build.log**"
             fi
-            if grep -qE 'failures="0" errors="0"' .ci/unit-tests.log 2>/dev/null; then
-              echo "Юнит-тесты логики (JUnit): **пройдены**"
+            if grep -qE 'tests="[0-9]+" skipped="[0-9]+" failures="0" errors="0"' .ci/unit-tests.log 2>/dev/null; then
+              echo "Юнит-тесты логики: **пройдены**"
             else
-              echo "Юнит-тесты: **проверь .ci/unit-tests.log**"
+              echo "Юнит-тесты: **смотри .ci/unit-tests.log**"
             fi
             if grep -q "SMOKE OK" .ci/smoke.log 2>/dev/null; then
-              echo "Проверка на эмуляторе: **пройдена** (модель нарисовалась, камера работает, самопроверка OK)"
+              echo "Прогон на эмуляторе: **пройден** — модель рисуется во всех режимах, камера работает, самопроверка OK"
             elif grep -q "SMOKE SKIPPED" .ci/smoke.log 2>/dev/null; then
-              echo "Проверка на эмуляторе: **пропущена** (нет KVM)"
+              echo "Прогон на эмуляторе: **пропущен** (нет KVM)"
+            elif grep -q "нет отчёта" .ci/smoke.log 2>/dev/null; then
+              echo "Прогон на эмуляторе: **не запускался**"
             else
-              echo "Проверка на эмуляторе: **не пройдена** (см. .ci/smoke.log)"
+              echo "Прогон на эмуляторе: **не пройден** (смотри .ci/smoke.log)"
             fi
             if grep -q "ИТОГ OK" .ci/selftest.log 2>/dev/null; then
               echo "Самопроверка внутри приложения: **OK**"
+            elif [ -f .ci/selftest.log ]; then
+              echo "Самопроверка внутри приложения: **провал** (смотри .ci/selftest.log)"
             fi
             echo
             echo "| файл | размер |"
             echo "| --- | --- |"
             for f in handoff/*.apk handoff/*.zip; do
-              [ -f "$f" ] && echo "| $(basename "$f") | $(du -h "$f" | cut -f1) |"
+              if [ -f "$f" ]; then
+                echo "| $(basename "$f") | $(du -h "$f" | cut -f1) |"
+              fi
             done
           } >> "$GITHUB_STEP_SUMMARY"
