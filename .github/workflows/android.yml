@@ -185,213 +185,19 @@ jobs:
             echo "нет /dev/kvm, проверка на эмуляторе будет пропущена" | tee -a "$BUILD_LOG"
           fi
 
-      - name: Run the app on an Android emulator
+      - name: Run the app on an emulator
         if: env.KVM_OK == '1'
         run: |
-          exec > >(stdbuf -oL tee "$SMOKE_LOG") 2>&1
           set -o pipefail
-          set -x
-          SDK="${SDK:-/usr/local/lib/android/sdk}"
-          export PATH="$SDK/platform-tools:$SDK/emulator:$PATH"
-          export ANDROID_SDK_ROOT="$SDK"
-          export ANDROID_AVD_HOME="$HOME/.android/avd"
-
-          dump_logs() {
-            echo "--- последние строки приложения ---"
-            adb logcat -d -s EchidnaStudio:* 2>/dev/null | tail -n 120 || true
-            echo "--- исключения ---"
-            adb logcat -d -s AndroidRuntime:E 2>/dev/null | tail -n 120 || true
-          }
-
           APK=$(ls handoff/*x86_64*.apk 2>/dev/null | head -n 1)
           if [ -z "$APK" ]; then
             echo "SMOKE SKIPPED: нет сборки под x86_64"
             exit 0
           fi
-
-          SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
-          AV="$SDK/cmdline-tools/latest/bin/avdmanager"
-          IMAGE="system-images;android-30;default;x86_64"
-          if [ -x "$SM" ]; then
-            yes | "$SM" --licenses > /dev/null 2>&1 || true
-            "$SM" --install "platform-tools" "emulator" "$IMAGE" > ci-out/sdkmanager.log 2>&1 || true
-          fi
-          echo no | "$AV" create avd -n echidna -k "$IMAGE" --force || true
-          "$SDK/emulator/emulator" -list-avds || true
-
-          # Both cameras are emulated, which gives the app a real camera pipeline to talk to.
-          nohup "$SDK/emulator/emulator" -avd echidna -no-window -no-audio -no-boot-anim \
-            -gpu swiftshader_indirect -no-snapshot -camera-back emulated -camera-front emulated \
-            -verbose > ci-out/emulator.log 2>&1 &
-          echo "эмулятор запущен, pid $!"
-
-          echo "--- жду загрузку ---"
-          adb wait-for-device
-          BOOTED=0
-          for i in $(seq 1 90); do
-            if [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
-              echo "EMULATOR BOOTED"
-              BOOTED=1
-              break
-            fi
-            sleep 5
-          done
-          if [ "$BOOTED" != "1" ]; then
-            echo "ЭМУЛЯТОР НЕ ЗАГРУЗИЛСЯ"
-            tail -n 200 ci-out/emulator.log
-            exit 1
-          fi
-          adb shell getprop sys.boot_completed
-          adb shell wm size || true
-          adb shell input keyevent 82 || true
-          sleep 5
-
-          echo "--- установка ---"
-          if ! adb install -r -g "$APK"; then
-            echo "APK НЕ УСТАНОВИЛСЯ"
-            exit 1
-          fi
-          adb shell pm grant $PKG android.permission.CAMERA || true
-          adb shell pm grant $PKG android.permission.RECORD_AUDIO || true
-          adb shell dumpsys package $PKG | grep -E "versionName|granted=true" | head -n 5 || true
-
-          echo "--- запуск ---"
-          adb logcat -c || true
-          adb shell am start -n $PKG/.MainActivity --ez echidna_autoplay true
-          READY=0
-          for i in $(seq 1 30); do
-            if adb logcat -d | grep -q "APPREADY"; then
-              READY=1
-              break
-            fi
-            sleep 4
-          done
-          echo "--- отчёт приложения ---"
-          adb logcat -d | grep -a -E "APPREADY|MODEL \||GL \|" | tail -n 20 || true
-          if [ "$READY" != "1" ]; then
-            echo "ПРИЛОЖЕНИЕ НЕ ЗАГРУЗИЛО МОДЕЛЬ"
-            dump_logs
-            exit 1
-          fi
-          if adb logcat -d | grep -q "UnsatisfiedLinkError"; then
-            echo "НАТИВНАЯ БИБЛИОТЕКА НЕ ЗАГРУЗИЛАСЬ"
-            adb logcat -d | grep -a -A 20 "UnsatisfiedLinkError" | head -n 60 || true
-            exit 1
-          fi
-          if adb logcat -d | grep -q "FATAL EXCEPTION"; then
-            echo "ПРИЛОЖЕНИЕ УПАЛО ПРИ ЗАПУСКЕ"
-            dump_logs
-            exit 1
-          fi
-          mkdir -p "$SCREENS"
-          adb exec-out screencap -p > "$SCREENS/00-start.png" || true
-
-          echo "--- скриншоты всех номеров ---"
-          for show in cute dance charm greet surprise; do
-            adb shell am start -n $PKG/.MainActivity --ez echidna_show $show > /dev/null || true
-            sleep 4
-            adb exec-out screencap -p > "$SCREENS/show-$show.png" || true
-          done
-
-          echo "--- хромакей для OBS ---"
-          adb shell am start -n $PKG/.MainActivity --ez echidna_show greet \
-            --es echidna_background CHROMA_GREEN > /dev/null || true
-          sleep 4
-          adb exec-out screencap -p > "$SCREENS/background-chroma.png" || true
-          adb shell am start -n $PKG/.MainActivity --es echidna_background NIGHT > /dev/null || true
-          sleep 2
-
-          echo "--- галерея всех анимаций ---"
-          adb shell am start -n $PKG/.MainActivity --ez echidna_gallery true > /dev/null || true
-          sleep 3
-          adb exec-out screencap -p > "$SCREENS/gallery.png" || true
-
-          echo "--- режим камеры ---"
-          adb shell am start -n $PKG/.MainActivity --ez echidna_camera true > /dev/null || true
-          sleep 8
-          adb exec-out screencap -p > "$SCREENS/camera.png" || true
-          adb logcat -d | grep -a -E "CAMERA \||TRACK \||VIDEO \|" | tail -n 20 || true
-          adb logcat -d | grep -a "кадров камеры" | tail -n 3 > ci-out/camera-frames.txt || true
-          cat ci-out/camera-frames.txt || true
-
-          echo "--- самопроверка внутри приложения ---"
-          adb shell am force-stop $PKG
-          sleep 2
-          adb logcat -c || true
-          adb shell am start -n $PKG/.MainActivity --ez echidna_selftest true \
-            --ez echidna_selftest_camera true > /dev/null || true
-          SELFTEST_DONE=0
-          for i in $(seq 1 45); do
-            adb logcat -d | grep -a "SELFTEST | ИТОГ" > ci-out/selftest.txt || true
-            if [ -s ci-out/selftest.txt ]; then
-              SELFTEST_DONE=1
-              break
-            fi
-            sleep 5
-          done
-          echo "--- шаги самопроверки ---"
-          adb logcat -d | grep -a "SELFTEST" | tail -n 60 || true
-          adb exec-out screencap -p > "$SCREENS/selftest.png" || true
-          if [ "$SELFTEST_DONE" != "1" ]; then
-            echo "САМОПРОВЕРКА НЕ ЗАВЕРШИЛАСЬ"
-            dump_logs
-            exit 1
-          fi
-          if ! grep -q "ИТОГ OK" ci-out/selftest.txt; then
-            echo "САМОПРОВЕРКА СООБЩИЛА О ПРОВАЛЕ"
-            cat ci-out/selftest.txt
-            dump_logs
-            exit 1
-          fi
-          echo "САМОПРОВЕРКА ПРОЙДЕНА"
-          cat ci-out/selftest.txt
-
-          echo "--- стресс: случайные нажатия ---"
-          adb shell monkey -p $PKG --throttle 250 120 > /dev/null 2>&1 || true
-          sleep 3
-          if ! adb shell pidof "$PKG" > /dev/null; then
-            echo "ПРИЛОЖЕНИЕ УМЕРЛО ПОСЛЕ MONKEY"
-            dump_logs
-            exit 1
-          fi
-          if adb logcat -d | grep -q "FATAL EXCEPTION"; then
-            echo "ПРИЛОЖЕНИЕ УПАЛО"
-            dump_logs
-            exit 1
-          fi
-          adb shell am start -n $PKG/.MainActivity --ez echidna_show dance > /dev/null || true
-          sleep 12
-          adb exec-out screencap -p > "$SCREENS/after-stress.png" || true
-
-          echo "--- анализ скриншотов ---"
-          pip install --quiet pillow > /dev/null 2>&1 || true
-          COUNT=$(ls "$SCREENS"/*.png 2>/dev/null | wc -l)
-          echo "кадров снято: $COUNT"
-          if [ "$COUNT" -lt 8 ]; then
-            echo "СКРИНШОТОВ СЛИШКОМ МАЛО"
-            exit 1
-          fi
-          FAILED=0
-          for shot in "$SCREENS"/*.png; do
-            name=$(basename "$shot")
-            case "$name" in
-              background-chroma.png)
-                python3 tools/verify_screens.py "$shot" 1.0 --chroma 5,217,33 || FAILED=1
-                ;;
-              gallery.png)
-                python3 tools/verify_screens.py "$shot" 1.0 || FAILED=1
-                ;;
-              *)
-                python3 tools/verify_screens.py "$shot" 3.0 || FAILED=1
-                ;;
-            esac
-          done
-          if [ "$FAILED" != "0" ]; then
-            echo "ЧАСТЬ КАДРОВ ПУСТАЯ: МОДЕЛЬ НЕ НАРИСОВАЛАСЬ"
-            exit 1
-          fi
-
-          echo "SMOKE OK: приложение запустилось, нарисовало модель во всех режимах, камера работает, самопроверка пройдена"
+          # One step, so the emulator is definitely alive for the test that follows.
+          bash tools/start_emulator.sh "system-images;android-30;default;x86_64" 30 \
+            2>&1 | tee ci-out/start-emulator.log
+          bash tools/smoke_test.sh "$APK" "$SCREENS" 2>&1 | tee "$SMOKE_LOG"
 
       - name: Save the smoke test report
         if: always()
@@ -415,6 +221,7 @@ jobs:
             mv /tmp/smoke-tail.log .ci/smoke.log
           fi
           cp ci-out/selftest.txt .ci/selftest.log 2>/dev/null || true
+          cp ci-out/start-emulator.log .ci/start-emulator.log 2>/dev/null || true
           wc -l .ci/smoke.log || true
 
       - name: Package the sources into the handoff
