@@ -1,250 +1,250 @@
-harness done
-+ curl -fsSL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.14.1/sing-box-1.14.1-linux-amd64.tar.gz
-++ du -h /tmp/sing-box.tar.gz
-++ cut -f1
-+ echo 'engine downloaded: 31M'
-engine downloaded: 31M
-+ tar -xzf /tmp/sing-box.tar.gz -C /tmp
-+ ls /tmp
-+ grep -i sing-box
-sing-box-1.14.1-linux-amd64
-sing-box.tar.gz
-+ ENGINE=/tmp/sing-box-1.14.1-linux-amd64/sing-box
-+ chmod +x /tmp/sing-box-1.14.1-linux-amd64/sing-box
-+ echo 'engine: /tmp/sing-box-1.14.1-linux-amd64/sing-box'
-engine: /tmp/sing-box-1.14.1-linux-amd64/sing-box
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box version
-sing-box version 1.14.1
-
-Environment: go1.26.8 linux/amd64
-Tags: with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,with_ccm,with_ocm,with_cloudflared,with_naive_outbound,with_usbip,with_openvpn,with_openconnect,badlinkname,tfogo_checklinkname0,with_purego
-Revision: 1ac1a339cb1223e9c70eae14c44411c75033c02d
-CGO: disabled
-+ FAILED=0
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/direct-only.json
-+ echo '--- check direct-only.json'
---- check direct-only.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/direct-only.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/hardened.json
-+ echo '--- check hardened.json'
---- check hardened.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/hardened.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/minimal.json
-+ echo '--- check minimal.json'
---- check minimal.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/minimal.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/mode0-gvisor.json
-+ echo '--- check mode0-gvisor.json'
---- check mode0-gvisor.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode0-gvisor.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/mode0-mixed.json
-+ echo '--- check mode0-mixed.json'
---- check mode0-mixed.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode0-mixed.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/mode0-system.json
-+ echo '--- check mode0-system.json'
---- check mode0-system.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode0-system.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/mode1-gvisor.json
-+ echo '--- check mode1-gvisor.json'
---- check mode1-gvisor.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode1-gvisor.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/mode1-mixed.json
-+ echo '--- check mode1-mixed.json'
---- check mode1-mixed.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode1-mixed.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/mode1-system.json
-+ echo '--- check mode1-system.json'
---- check mode1-system.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode1-system.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/mode2-gvisor.json
-+ echo '--- check mode2-gvisor.json'
---- check mode2-gvisor.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode2-gvisor.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/mode2-mixed.json
-+ echo '--- check mode2-mixed.json'
---- check mode2-mixed.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode2-mixed.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/mode2-system.json
-+ echo '--- check mode2-system.json'
---- check mode2-system.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode2-system.json
-+ '[' 0 -ne 0 ']'
-+ START_FAILED=0
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/direct-only.json .json
-+ name=direct-only
-+ python3 tools/start_config.py ci-out/configs/direct-only.json /tmp/start-direct-only.json
-+ set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-direct-only.json
-+ set -e
-+ grep -aq 'sing-box started' /tmp/start-direct-only.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-direct-only.log
-+ echo '--- start direct-only: the engine started and stayed up'
---- start direct-only: the engine started and stayed up
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/hardened.json .json
-+ name=hardened
-+ python3 tools/start_config.py ci-out/configs/hardened.json /tmp/start-hardened.json
-+ set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-hardened.json
-+ set -e
-+ grep -aq 'sing-box started' /tmp/start-hardened.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-hardened.log
-+ echo '--- start hardened: THE ENGINE REFUSED TO START'
---- start hardened: THE ENGINE REFUSED TO START
-+ tail -n 25 /tmp/start-hardened.log
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard]: routine: encryption worker 1 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard]: routine: encryption worker 4 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: receive incoming v6 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: peer(ISIj…+P0A) - stopping
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: peer(ISIj…+P0A) - routine: sequential sender - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: peer(ISIj…+P0A) - routine: sequential receiver - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: interface state was Up, requested Down, now Down
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: device closing
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: tun reader - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: event worker - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: device closed
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: decryption worker 1 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: decryption worker 3 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: handshake worker 1 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: decryption worker 2 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: decryption worker 4 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: handshake worker 2 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: handshake worker 4 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: handshake worker 3 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: encryption worker 2 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: encryption worker 3 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: encryption worker 4 - stopped
-+0000 2026-09-25 12:10:15 [37mDEBUG[0m endpoint/wireguard[WireGuard #2]: routine: encryption worker 1 - stopped
-+0000 2026-09-25 12:10:20 [33mWARN[0m outbound: close outbound/vmess[VMess grpc] take too much time to finish!
-[31mFATAL[0m[0034] sing-box did not close!
-+ START_FAILED=1
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/minimal.json .json
-+ name=minimal
 + python3 tools/start_config.py ci-out/configs/minimal.json /tmp/start-minimal.json
++ startlog=/tmp/start-minimal.log
 + set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-minimal.json
-+ set -e
++ pid=2803
++ started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-minimal.json
+++ seq 1 20
++ for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-minimal.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-minimal.log
-+ echo '--- start minimal: the engine started and stayed up'
---- start minimal: the engine started and stayed up
++ kill -0 2803
++ sleep 1
++ for i in $(seq 1 20)
++ grep -aq 'sing-box started' /tmp/start-minimal.log
++ started=1
++ break
++ '[' 1 = 1 ']'
++ kill -0 2803
++ echo '--- start minimal: the engine accepted the configuration and is running'
+--- start minimal: the engine accepted the configuration and is running
++ kill -INT 2803
++ wait 2803
++ set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode0-gvisor.json .json
 + name=mode0-gvisor
 + python3 tools/start_config.py ci-out/configs/mode0-gvisor.json /tmp/start-mode0-gvisor.json
++ startlog=/tmp/start-mode0-gvisor.log
 + set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-gvisor.json
-+ set -e
++ pid=2826
++ started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-gvisor.json
+++ seq 1 20
++ for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-gvisor.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode0-gvisor.log
-+ echo '--- start mode0-gvisor: the engine started and stayed up'
---- start mode0-gvisor: the engine started and stayed up
++ kill -0 2826
++ sleep 1
++ for i in $(seq 1 20)
++ grep -aq 'sing-box started' /tmp/start-mode0-gvisor.log
++ started=1
++ break
++ '[' 1 = 1 ']'
++ kill -0 2826
++ echo '--- start mode0-gvisor: the engine accepted the configuration and is running'
+--- start mode0-gvisor: the engine accepted the configuration and is running
++ kill -INT 2826
++ wait 2826
++ set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode0-mixed.json .json
 + name=mode0-mixed
 + python3 tools/start_config.py ci-out/configs/mode0-mixed.json /tmp/start-mode0-mixed.json
++ startlog=/tmp/start-mode0-mixed.log
 + set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-mixed.json
-+ set -e
++ pid=2849
++ started=0
+++ seq 1 20
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-mixed.json
++ for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-mixed.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode0-mixed.log
-+ echo '--- start mode0-mixed: the engine started and stayed up'
---- start mode0-mixed: the engine started and stayed up
++ kill -0 2849
++ sleep 1
++ for i in $(seq 1 20)
++ grep -aq 'sing-box started' /tmp/start-mode0-mixed.log
++ started=1
++ break
++ '[' 1 = 1 ']'
++ kill -0 2849
++ echo '--- start mode0-mixed: the engine accepted the configuration and is running'
+--- start mode0-mixed: the engine accepted the configuration and is running
++ kill -INT 2849
++ wait 2849
++ set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode0-system.json .json
 + name=mode0-system
 + python3 tools/start_config.py ci-out/configs/mode0-system.json /tmp/start-mode0-system.json
++ startlog=/tmp/start-mode0-system.log
 + set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-system.json
-+ set -e
++ pid=2873
++ started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-system.json
+++ seq 1 20
++ for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-system.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode0-system.log
-+ echo '--- start mode0-system: the engine started and stayed up'
---- start mode0-system: the engine started and stayed up
++ kill -0 2873
++ sleep 1
++ for i in $(seq 1 20)
++ grep -aq 'sing-box started' /tmp/start-mode0-system.log
++ started=1
++ break
++ '[' 1 = 1 ']'
++ kill -0 2873
++ echo '--- start mode0-system: the engine accepted the configuration and is running'
+--- start mode0-system: the engine accepted the configuration and is running
++ kill -INT 2873
++ wait 2873
++ set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode1-gvisor.json .json
 + name=mode1-gvisor
 + python3 tools/start_config.py ci-out/configs/mode1-gvisor.json /tmp/start-mode1-gvisor.json
++ startlog=/tmp/start-mode1-gvisor.log
 + set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-gvisor.json
-+ set -e
++ pid=2896
++ started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-gvisor.json
+++ seq 1 20
++ for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-gvisor.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode1-gvisor.log
-+ echo '--- start mode1-gvisor: the engine started and stayed up'
---- start mode1-gvisor: the engine started and stayed up
++ kill -0 2896
++ sleep 1
++ for i in $(seq 1 20)
++ grep -aq 'sing-box started' /tmp/start-mode1-gvisor.log
++ started=1
++ break
++ '[' 1 = 1 ']'
++ kill -0 2896
++ echo '--- start mode1-gvisor: the engine accepted the configuration and is running'
+--- start mode1-gvisor: the engine accepted the configuration and is running
++ kill -INT 2896
++ wait 2896
++ set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode1-mixed.json .json
 + name=mode1-mixed
 + python3 tools/start_config.py ci-out/configs/mode1-mixed.json /tmp/start-mode1-mixed.json
++ startlog=/tmp/start-mode1-mixed.log
 + set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-mixed.json
-+ set -e
++ pid=2919
++ started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-mixed.json
+++ seq 1 20
++ for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-mixed.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode1-mixed.log
-+ echo '--- start mode1-mixed: the engine started and stayed up'
---- start mode1-mixed: the engine started and stayed up
++ kill -0 2919
++ sleep 1
++ for i in $(seq 1 20)
++ grep -aq 'sing-box started' /tmp/start-mode1-mixed.log
++ started=1
++ break
++ '[' 1 = 1 ']'
++ kill -0 2919
++ echo '--- start mode1-mixed: the engine accepted the configuration and is running'
+--- start mode1-mixed: the engine accepted the configuration and is running
++ kill -INT 2919
++ wait 2919
++ set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode1-system.json .json
 + name=mode1-system
 + python3 tools/start_config.py ci-out/configs/mode1-system.json /tmp/start-mode1-system.json
++ startlog=/tmp/start-mode1-system.log
 + set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-system.json
-+ set -e
++ pid=2943
++ started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-system.json
+++ seq 1 20
++ for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-system.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode1-system.log
-+ echo '--- start mode1-system: the engine started and stayed up'
---- start mode1-system: the engine started and stayed up
++ kill -0 2943
++ sleep 1
++ for i in $(seq 1 20)
++ grep -aq 'sing-box started' /tmp/start-mode1-system.log
++ started=1
++ break
++ '[' 1 = 1 ']'
++ kill -0 2943
++ echo '--- start mode1-system: the engine accepted the configuration and is running'
+--- start mode1-system: the engine accepted the configuration and is running
++ kill -INT 2943
++ wait 2943
++ set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode2-gvisor.json .json
 + name=mode2-gvisor
 + python3 tools/start_config.py ci-out/configs/mode2-gvisor.json /tmp/start-mode2-gvisor.json
++ startlog=/tmp/start-mode2-gvisor.log
 + set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-gvisor.json
-+ set -e
++ pid=2966
++ started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-gvisor.json
+++ seq 1 20
++ for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-gvisor.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode2-gvisor.log
-+ echo '--- start mode2-gvisor: the engine started and stayed up'
---- start mode2-gvisor: the engine started and stayed up
++ kill -0 2966
++ sleep 1
++ for i in $(seq 1 20)
++ grep -aq 'sing-box started' /tmp/start-mode2-gvisor.log
++ started=1
++ break
++ '[' 1 = 1 ']'
++ kill -0 2966
++ echo '--- start mode2-gvisor: the engine accepted the configuration and is running'
+--- start mode2-gvisor: the engine accepted the configuration and is running
++ kill -INT 2966
++ wait 2966
++ set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode2-mixed.json .json
 + name=mode2-mixed
 + python3 tools/start_config.py ci-out/configs/mode2-mixed.json /tmp/start-mode2-mixed.json
++ startlog=/tmp/start-mode2-mixed.log
 + set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-mixed.json
-+ set -e
++ pid=2989
++ started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-mixed.json
+++ seq 1 20
++ for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-mixed.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode2-mixed.log
-+ echo '--- start mode2-mixed: the engine started and stayed up'
---- start mode2-mixed: the engine started and stayed up
++ kill -0 2989
++ sleep 1
++ for i in $(seq 1 20)
++ grep -aq 'sing-box started' /tmp/start-mode2-mixed.log
++ started=1
++ break
++ '[' 1 = 1 ']'
++ kill -0 2989
++ echo '--- start mode2-mixed: the engine accepted the configuration and is running'
+--- start mode2-mixed: the engine accepted the configuration and is running
++ kill -INT 2989
++ wait 2989
++ set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode2-system.json .json
 + name=mode2-system
 + python3 tools/start_config.py ci-out/configs/mode2-system.json /tmp/start-mode2-system.json
++ startlog=/tmp/start-mode2-system.log
 + set +e
-+ timeout 25 /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-system.json
-+ set -e
++ pid=3012
++ started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-system.json
+++ seq 1 20
++ for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-system.log
-+ grep -aqE 'FATAL|detour to an empty' /tmp/start-mode2-system.log
-+ echo '--- start mode2-system: the engine started and stayed up'
---- start mode2-system: the engine started and stayed up
-+ echo '=== configuration check finished (check failed=0, start failed=1) ==='
-=== configuration check finished (check failed=0, start failed=1) ===
-+ '[' 1 -ne 0 ']'
-+ echo 'some configurations could not be started by the engine'
-some configurations could not be started by the engine
-+ FAILED=1
++ kill -0 3012
++ sleep 1
++ for i in $(seq 1 20)
++ grep -aq 'sing-box started' /tmp/start-mode2-system.log
++ started=1
++ break
++ '[' 1 = 1 ']'
++ kill -0 3012
++ echo '--- start mode2-system: the engine accepted the configuration and is running'
+--- start mode2-system: the engine accepted the configuration and is running
++ kill -INT 3012
++ wait 3012
++ set -e
++ echo '=== configuration check finished (check failed=0, start failed=0) ==='
+=== configuration check finished (check failed=0, start failed=0) ===
++ '[' 0 -ne 0 ']'

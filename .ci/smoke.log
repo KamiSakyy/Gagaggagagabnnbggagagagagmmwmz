@@ -37,14 +37,14 @@ Loading local repository...                                                     
 Auto-selecting single ABI x86_64
 Do you wish to create a custom hardware profile? [no] + ls -l /home/runner/.android/avd
 total 8
-drwxr-xr-x 2 runner runner 4096 Sep 25 12:17 smoke.avd
--rw-r--r-- 1 runner runner  105 Sep 25 12:17 smoke.ini
+drwxr-xr-x 2 runner runner 4096 Sep 25 12:25 smoke.avd
+-rw-r--r-- 1 runner runner  105 Sep 25 12:25 smoke.ini
 + /usr/local/lib/android/sdk/emulator/emulator -list-avds
 smoke
 + /usr/local/lib/android/sdk/emulator/emulator -list-avds
 + grep -qx smoke
-+ echo 'emulator pid 3993'
-emulator pid 3993
++ echo 'emulator pid 3854'
+emulator pid 3854
 + adb start-server
 + nohup /usr/local/lib/android/sdk/emulator/emulator -avd smoke -no-window -no-audio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect -accel auto -camera-back none -camera-front none -verbose
 * daemon not running; starting now at tcp:5037
@@ -81,8 +81,8 @@ boot attempt 3: [1]
 + '[' 1 '!=' 1 ']'
 + adb shell input keyevent 82
 + adb logcat -G 16M
-++ tr -d '\r'
 ++ adb shell getprop ro.build.version.release
+++ tr -d '\r'
 ++ adb shell getprop ro.product.cpu.abi
 ++ tr -d '\r'
 + echo 'EMULATOR BOOTED: android 11 x86_64'
@@ -105,8 +105,8 @@ Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity }
 Status: ok
 LaunchState: COLD
 Activity: com.vortex.vpn/.ui.MainActivity
-TotalTime: 1309
-WaitTime: 1312
+TotalTime: 1189
+WaitTime: 1190
 Complete
 + set -e
 + grep -qi error /tmp/start.log
@@ -114,11 +114,11 @@ Complete
 + echo '--- process after launch ---'
 --- process after launch ---
 + adb shell pidof com.vortex.vpn
-2263
+2268
 + adb shell dumpsys window
 + grep -E 'mCurrentFocus|mFocusedApp'
-  mCurrentFocus=Window{7554844 u0 com.vortex.vpn/com.vortex.vpn.ui.MainActivity}
-  mFocusedApp=ActivityRecord{a5ee9dd u0 com.vortex.vpn/.ui.MainActivity t9}
+  mCurrentFocus=Window{47a0080 u0 com.vortex.vpn/com.vortex.vpn.ui.MainActivity}
+  mFocusedApp=ActivityRecord{aeb24ee u0 com.vortex.vpn/.ui.MainActivity t9}
 + adb logcat -d
 + grep -q 'FATAL EXCEPTION'
 + adb shell pidof com.vortex.vpn
@@ -132,8 +132,8 @@ Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
 + rm -f ci-out/selftest.txt
 ++ seq 1 24
 + for i in $(seq 1 24)
-+ grep -a SELFTEST
 + adb logcat -d
++ grep -a SELFTEST
 + true
 + '[' -s ci-out/selftest.txt ']'
 + sleep 5
@@ -145,7 +145,7 @@ Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
 + echo '--- self test verdict ---'
 --- self test verdict ---
 + cat ci-out/selftest.txt
-09-25 12:18:23.231  2372  2409 I VortexSelfTest: SELFTEST OK configs=4 engine=1.14.1 go=go1.26.8, android/amd64 smart-mixed=ok(9304b) global-gvisor=ok(9133b) hardened=ok(11052b) direct-only=ok outbounds=31 protocols=15/[vless, vmess, trojan, shadowsocks, hysteria2, tuic, anytls, socks, wireguard, snell, shadowtls, ssh, http, naive, hysteria]
+09-25 12:26:12.579  2363  2401 I VortexSelfTest: SELFTEST OK configs=4 engine=1.14.1 go=go1.26.8, android/amd64 smart-mixed=ok(9304b) global-gvisor=ok(9133b) hardened=ok(11052b) direct-only=ok outbounds=31 protocols=15/[vless, vmess, trojan, shadowsocks, hysteria2, tuic, anytls, socks, wireguard, snell, shadowtls, ssh, http, naive, hysteria]
 + echo '--- opening every screen on the device ---'
 --- opening every screen on the device ---
 + adb shell am force-stop com.vortex.vpn
@@ -169,17 +169,113 @@ Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
 + echo '--- screen audit verdict ---'
 --- screen audit verdict ---
 + cat ci-out/screenaudit.txt
-09-25 12:18:29.155  2435  2435 I VortexSelfTest: SCREENAUDIT step=0 ServersActivity
-09-25 12:18:30.395  2435  2435 I VortexSelfTest: SCREENAUDIT step=1 ProfilesActivity
-09-25 12:18:30.416  2435  2435 I VortexSelfTest: SCREENAUDIT step=2 SettingsActivity
-09-25 12:18:30.445  2435  2435 I VortexSelfTest: SCREENAUDIT step=3 LogsActivity
-09-25 12:18:30.456  2435  2435 I VortexSelfTest: SCREENAUDIT step=4 ConnectionsActivity
-09-25 12:18:30.469  2435  2435 I VortexSelfTest: SCREENAUDIT step=5 AboutActivity
-09-25 12:18:30.478  2435  2435 I VortexSelfTest: SCREENAUDIT step=6 ConfigEditorActivity
-09-25 12:18:30.489  2435  2435 I VortexSelfTest: SCREENAUDIT step=7 AppListActivity
-09-25 12:18:30.502  2435  2435 I VortexSelfTest: SCREENAUDIT step=8 MainActivity
-09-25 12:18:30.525  2435  2435 I VortexSelfTest: SCREENAUDIT OK opened=8
+09-25 12:26:18.777  2426  2426 I VortexSelfTest: SCREENAUDIT step=0 ServersActivity
+09-25 12:26:19.913  2426  2426 I VortexSelfTest: SCREENAUDIT step=1 ProfilesActivity
+09-25 12:26:19.932  2426  2426 I VortexSelfTest: SCREENAUDIT step=2 SettingsActivity
+09-25 12:26:19.960  2426  2426 I VortexSelfTest: SCREENAUDIT step=3 LogsActivity
+09-25 12:26:19.970  2426  2426 I VortexSelfTest: SCREENAUDIT step=4 ConnectionsActivity
+09-25 12:26:19.981  2426  2426 I VortexSelfTest: SCREENAUDIT step=5 AboutActivity
+09-25 12:26:19.992  2426  2426 I VortexSelfTest: SCREENAUDIT step=6 ConfigEditorActivity
+09-25 12:26:20.005  2426  2426 I VortexSelfTest: SCREENAUDIT step=7 AppListActivity
+09-25 12:26:20.017  2426  2426 I VortexSelfTest: SCREENAUDIT step=8 MainActivity
+09-25 12:26:20.043  2426  2426 I VortexSelfTest: SCREENAUDIT OK opened=8
 + grep -q 'SCREENAUDIT OK' ci-out/screenaudit.txt
++ echo '--- screenshots of the real app ---'
+--- screenshots of the real app ---
++ adb shell am force-stop com.vortex.vpn
++ sleep 2
++ adb shell am start -n com.vortex.vpn/.ui.MainActivity --ez vortex_demo_servers true
+Starting: Intent { cmp=com.vortex.vpn/.ui.MainActivity (has extras) }
++ sleep 12
++ mkdir -p ci-out/screens
++ adb exec-out screencap -p
++ adb shell am start -n com.vortex.vpn/.ui.ServersActivity
+Starting: Intent { cmp=com.vortex.vpn/.ui.ServersActivity }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ServersActivity } from null (pid=2540, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 6
++ adb exec-out screencap -p
++ adb shell am start -n com.vortex.vpn/.ui.ProfilesActivity
+Starting: Intent { cmp=com.vortex.vpn/.ui.ProfilesActivity }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ProfilesActivity } from null (pid=2555, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 6
++ adb exec-out screencap -p
++ adb shell am start -n com.vortex.vpn/.ui.SettingsActivity
+Starting: Intent { cmp=com.vortex.vpn/.ui.SettingsActivity }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.SettingsActivity } from null (pid=2569, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 6
++ adb exec-out screencap -p
++ ls -la ci-out/screens
+total 216
+drwxr-xr-x 2 runner runner  4096 Sep 25 12:26 .
+drwxr-xr-x 5 runner runner  4096 Sep 25 12:26 ..
+-rw-r--r-- 1 runner runner 50180 Sep 25 12:26 01-dashboard.png
+-rw-r--r-- 1 runner runner 50180 Sep 25 12:26 02-locations.png
+-rw-r--r-- 1 runner runner 50180 Sep 25 12:26 03-profiles.png
+-rw-r--r-- 1 runner runner 50180 Sep 25 12:26 04-settings.png
++ adb shell am force-stop com.vortex.vpn
++ sleep 2
++ adb shell am start -n com.vortex.vpn/.ui.MainActivity
++ sleep 8
 + echo '--- ui monkey (no --ignore-crashes on purpose) ---'
 --- ui monkey (no --ignore-crashes on purpose) ---
 + adb shell monkey -p com.vortex.vpn --throttle 300 150
@@ -197,17 +293,8 @@ args: [-p, com.vortex.vpn, --throttle, 300, 150]
 data="com.vortex.vpn"
 arg="--throttle" mCurArgData="null" mNextArg=3 argwas="--throttle" nextarg="300"
 data="300"
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
-    // Injection Failed
 Events injected: 150
-## Network stats: elapsed time=11607ms (0ms mobile, 0ms wifi, 11607ms not connected)
+## Network stats: elapsed time=11853ms (0ms mobile, 0ms wifi, 11853ms not connected)
 + sleep 3
 + adb shell pidof com.vortex.vpn
 + adb logcat -d
