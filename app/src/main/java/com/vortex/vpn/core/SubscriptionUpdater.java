@@ -296,7 +296,7 @@ public final class SubscriptionUpdater {
     private static Result addFromInputInternal(Context context, String input, String title) {
         String trimmed = input == null ? "" : input.trim();
         if (trimmed.isEmpty()) {
-            return -1;
+            return new Result();
         }
         Subscription subscription = new Subscription();
         subscription.name = TextUtils.isEmpty(title) ? defaultName(trimmed) : title;
