@@ -280,6 +280,10 @@ jobs:
           export ANDROID_SDK_ROOT="$SDK"
           export ANDROID_HOME="$SDK"
           export PATH="$SDK/platform-tools:$SDK/emulator:$PATH"
+          # cmdline-tools and the emulator must agree where the AVDs live
+          export ANDROID_USER_HOME="$HOME/.android"
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
           PKG=com.vortex.vpn
 
           APK=$(ls app/build/outputs/apk/release/*x86_64*.apk 2>/dev/null | head -1)
@@ -298,6 +302,12 @@ jobs:
           tail -n 3 ci-out/sdkmanager.log || true
           ls "$SDK/emulator/emulator" "$SDK/platform-tools/adb"
           echo no | "$AV" create avd -n smoke -k "$IMAGE" --force || true
+          ls -l "$ANDROID_AVD_HOME" || true
+          "$SDK/emulator/emulator" -list-avds || true
+          if ! "$SDK/emulator/emulator" -list-avds | grep -qx smoke; then
+            echo "the emulator cannot see the freshly created AVD"
+            exit 1
+          fi
 
           nohup "$SDK/emulator/emulator" -avd smoke -no-window -no-audio -no-boot-anim \
             -no-snapshot -wipe-data -gpu swiftshader_indirect -accel auto \
