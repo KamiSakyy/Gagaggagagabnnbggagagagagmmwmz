@@ -36,6 +36,13 @@ android {
         }
     }
 
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+            returnDefaultValues = true
+        }
+    }
+
     signingConfigs {
         release {
             if (keystorePropsFile.exists()) {
@@ -98,6 +105,10 @@ android {
 dependencies {
     // sing-box engine (full protocol set) - downloaded by CI into app/libs
     implementation fileTree(dir: 'libs', include: ['*.aar'])
+
+    // Unit tests start every screen on the JVM: an inflation or cast error fails the build.
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1' 
 
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'

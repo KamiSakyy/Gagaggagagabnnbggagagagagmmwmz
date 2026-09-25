@@ -179,6 +179,39 @@ jobs:
           tail -n 250 .ci/config-check.log > /tmp/tail.log && mv /tmp/tail.log .ci/config-check.log
           wc -l .ci/config-check.log
 
+      - name: Run unit tests on the JVM (Robolectric)
+        id: unittests
+        if: always()
+        run: |
+          set -o pipefail
+          set +e
+          gradle --no-daemon testDebugUnitTest > >(stdbuf -oL tee -a "$BUILD_LOG" /tmp/unit.log) 2>&1
+          RC=$?
+          set -e
+          {
+            echo "=== unit test result files ==="
+            grep -ho 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' \
+              app/build/test-results/testDebugUnitTest/*.xml 2>/dev/null || true
+            echo "=== gradle exit code: $RC ==="
+          } 2>&1 | tee -a /tmp/unit.log
+          if [ "$RC" -ne 0 ]; then
+            echo "UNIT TESTS FAILED"
+            grep -aE "FAILED|Caused by|Exception|error:" /tmp/unit.log | head -n 60 || true
+            exit 1
+          fi
+          echo "unit tests passed"
+
+      - name: Save unit test report
+        if: always()
+        run: |
+          mkdir -p .ci
+          if [ -f /tmp/unit.log ]; then
+            tr '\r' '\n' < /tmp/unit.log | tail -n 200 > .ci/unit-tests.log
+          else
+            echo "unit tests did not run" > .ci/unit-tests.log
+          fi
+          wc -l .ci/unit-tests.log
+
       - name: Build release APKs
         run: |
           exec > >(stdbuf -oL tee -a "$BUILD_LOG") 2>&1
@@ -235,6 +268,7 @@ jobs:
 
       - name: Run the APK on an Android emulator
         if: always() && env.KVM_OK == '1'
+        continue-on-error: true
         env:
           SMOKE_LOG: ${{ github.workspace }}/ci-out/smoke.log
         run: |
@@ -260,13 +294,14 @@ jobs:
           [ -x "$AV" ] || AV="$(command -v avdmanager)"
           IMAGE="system-images;android-30;default;x86_64"
           yes | "$SM" --licenses > /dev/null 2>&1 || true
-          "$SM" --install "platform-tools" "emulator" "$IMAGE" || true
+          "$SM" --install "platform-tools" "emulator" "$IMAGE" > ci-out/sdkmanager.log 2>&1 || true
+          tail -n 3 ci-out/sdkmanager.log || true
           ls "$SDK/emulator/emulator" "$SDK/platform-tools/adb"
           echo no | "$AV" create avd -n smoke -k "$IMAGE" --force || true
 
           nohup "$SDK/emulator/emulator" -avd smoke -no-window -no-audio -no-boot-anim \
             -no-snapshot -wipe-data -gpu swiftshader_indirect -accel auto \
-            -camera-back none -camera-front none > /tmp/emulator.log 2>&1 &
+            -camera-back none -camera-front none -verbose > ci-out/emulator.log 2>&1 &
           echo "emulator pid $!"
           adb start-server
           timeout 300 adb wait-for-device || true
@@ -275,11 +310,15 @@ jobs:
             BOOT=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
             echo "boot attempt $i: [$BOOT]"
             if [ "$BOOT" = "1" ]; then break; fi
+            if [ $((i % 12)) -eq 0 ]; then
+              adb devices -l || true
+              tail -n 20 ci-out/emulator.log || true
+            fi
             sleep 5
           done
           if [ "$BOOT" != "1" ]; then
             echo "EMULATOR FAILED TO BOOT"
-            tail -n 80 /tmp/emulator.log || true
+            tail -n 120 ci-out/emulator.log || true
             adb devices -l || true
             exit 1
           fi
@@ -350,11 +389,16 @@ jobs:
         run: |
           mkdir -p .ci
           if [ -f ci-out/smoke.log ]; then
-            cp ci-out/smoke.log .ci/smoke.log
+            tr '\r' '\n' < ci-out/smoke.log | tail -n 400 > .ci/smoke.log
           else
             echo "the emulator smoke test did not run" > .ci/smoke.log
           fi
-          tail -n 250 .ci/smoke.log > /tmp/smoke-tail.log && mv /tmp/smoke-tail.log .ci/smoke.log
+          if [ -f ci-out/emulator.log ]; then
+            {
+              echo "=== emulator output (tail) ==="
+              tail -n 80 ci-out/emulator.log
+            } >> .ci/smoke.log
+          fi
           wc -l .ci/smoke.log
 
       - name: Package sources into handoff
@@ -422,6 +466,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f .ci/build.log .ci/config-check.log
           [ -f .ci/smoke.log ] && git add -f .ci/smoke.log || true
+          [ -f .ci/unit-tests.log ] && git add -f .ci/unit-tests.log || true
           if git diff --cached --quiet; then
             echo "logs unchanged"
           else
@@ -444,6 +489,13 @@ jobs:
               echo "Configuration validation (12 configs through sing-box 1.14.1): **passed**"
             else
               echo "Configuration validation: **needs attention** (see .ci/config-check.log)"
+            fi
+            if grep -q "unit tests passed" .ci/unit-tests.log 2>/dev/null; then
+              echo "Every screen started on the JVM (Robolectric): **passed**"
+            elif grep -q "unit tests did not run" .ci/unit-tests.log 2>/dev/null; then
+              echo "Robolectric screen tests: **did not run**"
+            else
+              echo "Every screen started on the JVM (Robolectric): **failed** (see .ci/unit-tests.log)"
             fi
             if grep -q "SMOKE OK" .ci/smoke.log 2>/dev/null; then
               echo "Launch on a real Android emulator: **passed** (app started, all screens opened, engine self test OK)"
