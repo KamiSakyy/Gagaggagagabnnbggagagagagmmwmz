@@ -68,7 +68,8 @@ try_lfs() {
     return 1
   fi
   echo "  ссылка получена"
-  return try_url "Git LFS $repo" "$href"
+  try_url "Git LFS $repo" "$href"
+  return $?
 }
 
 echo "=== загрузка модели Face Landmarker ==="
@@ -77,10 +78,11 @@ if [ -f "$DEST" ] && verify "$DEST"; then
   exit 0
 fi
 
-try_url "официальный Google Storage" \
-  "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task" \
-  || try_url "GitHub raw (mediapipe samples mirror)" \
-    "https://raw.githubusercontent.com/google-ai-edge/mediapipe-samples/main/examples/face_landmarker/android/app/src/main/assets/face_landmarker.task" \
+GCS="https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16"
+try_url "официальный Google Storage (релиз 1)" "$GCS/1/face_landmarker.task" \
+  || try_url "официальный Google Storage (последний)" "$GCS/latest/face_landmarker.task" \
+  || try_url "официальный Google Storage (blendshapes v2)" \
+    "https://storage.googleapis.com/mediapipe-assets/face_landmarker_v2_with_blendshapes.task" \
   || try_lfs "devp1866/face-recognition" "face_landmarker_v2_with_blendshapes.task" \
   || try_lfs "DCP0001/face-render" "face_landmarker_v2_with_blendshapes.task" \
   || try_lfs "sandipan004/SmartCompanion" "tasks/face_landmarker.task"

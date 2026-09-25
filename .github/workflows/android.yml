@@ -95,7 +95,11 @@ jobs:
         run: |
           set -o pipefail
           {
+            set -e
             if [ ! -f keystore.jks ]; then
+              # The keystore is committed so that every build produces an APK signed with the same
+              # key and a new build installs over the previous one. This regeneration only runs if
+              # the file ever goes missing.
               keytool -genkeypair -v -keystore keystore.jks -alias echidna \
                 -keyalg RSA -keysize 2048 -validity 10000 \
                 -storepass echidnastudio -keypass echidnastudio \
@@ -103,8 +107,8 @@ jobs:
               printf 'storeFile=keystore.jks\nstorePassword=echidnastudio\nkeyAlias=echidna\nkeyPassword=echidnastudio\n' > keystore.properties
               git config user.name "github-actions[bot]"
               git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-              git add -f keystore.jks
-              git commit -m "ci: add the release signing keystore"
+              git add -f keystore.jks keystore.properties
+              git commit -m "ci: recreate the release signing keystore"
               git push origin HEAD:${GITHUB_REF_NAME} || true
             fi
             ls -l keystore.jks keystore.properties

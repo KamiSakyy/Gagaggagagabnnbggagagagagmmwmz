@@ -49,6 +49,7 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
     private CubismId idTouchEyeY;
 
     private StatusListener statusListener;
+    private ModelStage.Listener stageListener;
     private volatile boolean modelRequested = true;
     private volatile String pendingShowId;
     private volatile String pendingMotion;
@@ -90,6 +91,11 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
 
     public void setStatusListener(StatusListener listener) {
         statusListener = listener;
+    }
+
+    /** The stage reports its state to the UI through this. */
+    public void setStageListener(ModelStage.Listener listener) {
+        stageListener = listener;
     }
 
     // ---------------------------------------------------------------- commands
@@ -183,7 +189,7 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         model = new EchidnaModel(assets);
         try {
             model.load();
-            stage.attach(model, null);
+            stage.attach(model, stageListener);
             ready.set(true);
             EchidnaLog.i("GL", "модель готова: " + model.loadReport());
             if (statusListener != null) {

@@ -55,9 +55,12 @@ public final class ModelStage implements Motions {
     private Mode mode = Mode.IDLE;
     private Listener listener;
 
-    private final FaceSignals signals = new FaceSignals();
+    /**
+     * The newest tracking frame, published by the analysis thread and consumed by the GL thread.
+     * Snapshots are immutable, so a single volatile reference is all the synchronisation needed.
+     */
+    private volatile FaceSignals pendingSignals;
     private final FaceSignals lostSignals = new FaceSignals();
-    private boolean signalsFresh;
     private float signalTimeout = 10.0f;
 
     private float micLevel;
@@ -195,9 +198,7 @@ public final class ModelStage implements Motions {
     }
 
     public void setSignals(FaceSignals frame) {
-        signals.set(frame);
-        signalsFresh = true;
-        signalTimeout = 0.0f;
+        pendingSignals = frame;
     }
 
     // -------------------------------------------------------------------- update
@@ -209,9 +210,10 @@ public final class ModelStage implements Motions {
         }
         time += dt;
 
-        if (signalsFresh) {
-            tracker.onSignals(signals, dt);
-            signalsFresh = false;
+        final FaceSignals frame = pendingSignals;
+        if (frame != null) {
+            pendingSignals = null;
+            tracker.onSignals(frame, dt);
             signalTimeout = 0.0f;
         } else {
             signalTimeout += dt;

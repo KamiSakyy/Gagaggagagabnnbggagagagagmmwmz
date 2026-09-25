@@ -91,6 +91,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         stage = new ModelStage();
         renderer = new EchidnaRenderer(getAssets(), stage);
         renderer.setStatusListener(this);
+        renderer.setStageListener(this);
         hub = new TrackingHub(this);
         hub.setSignalsListener(this::onSignals);
         hub.setPreviewListener(this::onPreview);

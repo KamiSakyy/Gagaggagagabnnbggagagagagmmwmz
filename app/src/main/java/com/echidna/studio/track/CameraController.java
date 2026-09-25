@@ -67,6 +67,7 @@ public final class CameraController {
     private volatile long frames;
     private volatile int frameWidth;
     private volatile int frameHeight;
+    private final BitmapPool pool = new BitmapPool();
     private long lastFrameLog;
 
     public CameraController(Context context) {
@@ -358,7 +359,9 @@ public final class CameraController {
             final long timestampMs = System.currentTimeMillis();
 
             final int rotation = rotationDegrees();
-            final Bitmap published = convertYuvToArgb(image, rotation);
+            // Buffers are recycled: at thirty frames per second a fresh 1.2 MB bitmap for every
+            // frame would mean forty megabytes of garbage per second, and a stream runs for hours.
+            final Bitmap published = convertYuvToArgb(image, rotation, pool.acquire(width, height, rotation));
 
             if (frameListener != null) {
                 frameListener.onFrame(published, timestampMs);
@@ -407,12 +410,22 @@ public final class CameraController {
      * @param rotation clockwise rotation in degrees: 0, 90, 180 or 270
      */
     static Bitmap convertYuvToArgb(Image image, int rotation) {
+        return convertYuvToArgb(image, rotation, null);
+    }
+
+    /**
+     * @param target bitmap to write into, or null to allocate a new one; it must already be the
+     *               right size, which is what {@link BitmapPool} takes care of
+     */
+    static Bitmap convertYuvToArgb(Image image, int rotation, Bitmap target) {
         final int width = image.getWidth();
         final int height = image.getHeight();
         final boolean quarter = rotation == 90 || rotation == 270;
         final int outWidth = quarter ? height : width;
         final int outHeight = quarter ? width : height;
-        final Bitmap out = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.ARGB_8888);
+        final Bitmap out = target != null
+                ? target
+                : Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.ARGB_8888);
 
         final Image.Plane[] planes = image.getPlanes();
         final ByteBuffer yPlane = planes[0].getBuffer();
@@ -486,6 +499,41 @@ public final class CameraController {
         }
         out.setPixels(pixels, 0, outWidth, 0, 0, outWidth, outHeight);
         return out;
+    }
+
+    /**
+     * A rotating set of camera frames.
+     *
+     * <p>Each buffer is handed out once per {@link #SLOTS} frames, which is far longer than the
+     * lifetime of a single frame: the renderer uploads it as a texture within one frame and the
+     * tracker finishes with it in a few dozen milliseconds, while a slot comes back only after
+     * roughly a tenth of a second. The rotation therefore removes the allocation churn without
+     * ever overwriting a buffer somebody is still reading.</p>
+     */
+    static final class BitmapPool {
+        private static final int SLOTS = 4;
+        private final Bitmap[] slots = new Bitmap[SLOTS];
+        private int cursor;
+
+        Bitmap acquire(int sourceWidth, int sourceHeight, int rotation) {
+            final boolean quarter = rotation == 90 || rotation == 270;
+            final int width = quarter ? sourceHeight : sourceWidth;
+            final int height = quarter ? sourceWidth : sourceHeight;
+            for (int i = 0; i < SLOTS; i++) {
+                final int index = (cursor + i) % SLOTS;
+                final Bitmap candidate = slots[index];
+                if (candidate != null
+                        && candidate.getWidth() == width
+                        && candidate.getHeight() == height) {
+                    cursor = (index + 1) % SLOTS;
+                    return candidate;
+                }
+            }
+            final Bitmap created = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            slots[cursor] = created;
+            cursor = (cursor + 1) % SLOTS;
+            return created;
+        }
     }
 
     private void startThread() {
