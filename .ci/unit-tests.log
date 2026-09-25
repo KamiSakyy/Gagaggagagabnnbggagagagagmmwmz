@@ -1,0 +1,13 @@
+=== результаты ===
+      2 tests="10" skipped="0" failures="0" errors="0"
+      1 tests="5" skipped="0" failures="0" errors="0"
+      1 tests="7" skipped="0" failures="0" errors="0"
+      1 tests="8" skipped="0" failures="0" errors="0"
+      1 tests="9" skipped="0" failures="0" errors="0"
+=== итог по классам ===
+name="com.echidna.studio.ModelStageTest" tests="10" skipped="0" failures="0" errors="0"
+name="com.echidna.studio.anim.IdleDirectorTest" tests="5" skipped="0" failures="0" errors="0"
+name="com.echidna.studio.anim.ShowLibraryTest" tests="10" skipped="0" failures="0" errors="0"
+name="com.echidna.studio.anim.ShowPlayerTest" tests="8" skipped="0" failures="0" errors="0"
+name="com.echidna.studio.track.FacePoseTest" tests="7" skipped="0" failures="0" errors="0"
+name="com.echidna.studio.track.TrackingMapperTest" tests="9" skipped="0" failures="0" errors="0"

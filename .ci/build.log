@@ -1,57 +1,27 @@
 === маркеры проблем ===
-88:> Task :app:processDebugResources FAILED
-91:FAILURE: Build failed with an exception.
-94:Execution failed for task ':app:processDebugResources'.
-97:     ERROR: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/res/drawable/ic_launcher_foreground.xml:17: AAPT: error: '#FF00000000' is incompatible with attribute fillColor (attr) color.
+162:grep: write error: Broken pipe
 
 === хвост ===
 == Echidna Studio build  ==
-ref=arena/01a0d529-gagaggagagabnnbggagagagagmmwmz commit=b948284975abe07219c3f7b7fbf8ed1ef98aec75
+ref=arena/01a0d529-gagaggagagabnnbggagagagagmmwmz commit=d9b2a53ea987cee4ffd06e2895ef766cebdfebbc
+проверено файлов ресурсов: 8
+РЕСУРСЫ ОК
 === загрузка модели Face Landmarker ===
 --- источник: официальный Google Storage (релиз 1)
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 65 3670k   65 2415k    0     0  24.9M      0 --:--:-- --:--:-- --:--:-- 24.8M100 3670k  100 3670k    0     0  35.2M      0 --:--:-- --:--:-- --:--:-- 35.1M
-  файл не является zip-контейнером задачи
---- источник: официальный Google Storage (последний)
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  26.2M      0 --:--:-- --:--:-- --:--:-- 26.3M
-  файл не является zip-контейнером задачи
---- источник: официальный Google Storage (blendshapes v2)
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 2302k  100 2302k    0     0  12.9M      0 --:--:-- --:--:-- --:--:-- 13.0M
-  файл не является zip-контейнером задачи
---- источник: Git LFS devp1866/face-recognition/face_landmarker_v2_with_blendshapes.task
-  ссылка получена
---- источник: Git LFS devp1866/face-recognition
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  12.1M      0 --:--:-- --:--:-- --:--:-- 12.1M
-  файл не является zip-контейнером задачи
---- источник: Git LFS DCP0001/face-render/face_landmarker_v2_with_blendshapes.task
-  ссылка получена
---- источник: Git LFS DCP0001/face-render
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  11.4M      0 --:--:-- --:--:-- --:--:-- 11.4M
-  файл не является zip-контейнером задачи
---- источник: Git LFS sandipan004/SmartCompanion/tasks/face_landmarker.task
-  ссылка получена
---- источник: Git LFS sandipan004/SmartCompanion
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 58 3670k   58 2134k    0     0  5568k      0 --:--:-- --:--:-- --:--:-- 5557k100 3670k  100 3670k    0     0  8530k      0 --:--:-- --:--:-- --:--:-- 8516k
-  файл не является zip-контейнером задачи
-НЕ УДАЛОСЬ СКАЧАТЬ МОДЕЛЬ MEDIAPIPE
-приложение соберётся и будет работать, но трекером станет ML Kit (без blendshape)
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0 3670k    0  6881    0     0  96533      0  0:00:38 --:--:--  0:00:38 95569100 3670k  100 3670k    0     0  18.2M      0 --:--:-- --:--:-- --:--:-- 18.1M
+  получено 3758596 байт, sha256=64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff
+  это ровно официальная модель
+модель получена из: официальный Google Storage (релиз 1)
+МОДЕЛЬ ГОТОВА: 3758596 байт
 --- модель Echidna ---
 Echidna.moc3
 Echidna.model3.json
 motions
 textures
 мошенов: 68
+face_landmarker.task
 текстур: 1
 размер модели: 2.5M
 --- нативное ядро Live2D ---
@@ -59,8 +29,8 @@ textures
     94072  1980-02-01 00:00   jni/arm64-v8a/libLive2DCubismCoreJNI.so
     97064  1980-02-01 00:00   jni/x86/libLive2DCubismCoreJNI.so
    110728  1980-02-01 00:00   jni/x86_64/libLive2DCubismCoreJNI.so
--rw-r--r-- 1 runner runner 2730 Sep 25 19:38 keystore.jks
--rw-r--r-- 1 runner runner   94 Sep 25 19:38 keystore.properties
+-rw-r--r-- 1 runner runner 2730 Sep 25 19:40 keystore.jks
+-rw-r--r-- 1 runner runner   94 Sep 25 19:40 keystore.properties
 
 Welcome to Gradle 8.10.2!
 
@@ -92,31 +62,117 @@ Daemon will be stopped at the end of the build
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
 > Task :app:processDebugManifestForPackage
-> Task :app:processDebugResources FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_6-1790365110998.json
+> Task :app:processDebugResources
 
-FAILURE: Build failed with an exception.
+> Task :app:compileDebugJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/java/com/live2d/sdk/cubism/framework/model/CubismUserModel.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
 
-* What went wrong:
-Execution failed for task ':app:processDebugResources'.
-> A failure occurred while executing com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask$TaskAction
-   > Android resource linking failed
-     ERROR: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/res/drawable/ic_launcher_foreground.xml:17: AAPT: error: '#FF00000000' is incompatible with attribute fillColor (attr) color.
-         
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:compileDebugUnitTestJavaWithJavac
+> Task :app:testDebugUnitTest
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_7-1790365263939.json
 
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
+BUILD SUCCESSFUL in 54s
+20 actionable tasks: 19 executed, 1 from cache
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders
+> Task :app:mergeReleaseNativeLibs
+> Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:generateReleaseResValues FROM-CACHE
+> Task :app:checkReleaseAarMetadata
 
-BUILD FAILED in 49s
-15 actionable tasks: 14 executed, 1 from cache
-total 1976
-drwxr-xr-x  2 runner runner    4096 Sep 25 19:39 .
-drwxr-xr-x 10 runner runner    4096 Sep 25 19:38 ..
--rw-r--r--  1 runner runner 2011687 Sep 25 19:39 EchidnaStudio-source.zip
-[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 9ad2c79] handoff: signed APK build ()
- 1 file changed, 0 insertions(+), 0 deletions(-)
+> Task :app:stripReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libLive2DCubismCoreJNI.so, libface_detector_v2_jni.so, libmediapipe_tasks_jni.so.
+
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:generateReleaseResources
+> Task :app:extractReleaseNativeSymbolTables
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:packageReleaseResources
+> Task :app:parseReleaseLocalResources FROM-CACHE
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease FROM-CACHE
+> Task :app:mergeReleaseResources
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:desugarReleaseFileDependencies
+> Task :app:mergeReleaseStartupProfile
+> Task :app:processReleaseManifestForPackage
+> Task :app:mergeReleaseArtProfile
+> Task :app:mergeReleaseShaders
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:processReleaseJavaRes NO-SOURCE
+> Task :app:compressReleaseAssets
+> Task :app:collectReleaseDependencies
+> Task :app:processReleaseResources
+> Task :app:sdkReleaseDependencyData
+> Task :app:mergeReleaseJavaResource
+> Task :app:compileReleaseJavaWithJavac FROM-CACHE
+> Task :app:dexBuilderRelease
+> Task :app:mergeReleaseGlobalSynthetics
+> Task :app:validateSigningRelease
+> Task :app:writeReleaseAppMetadata
+> Task :app:writeReleaseSigningConfigVersions
+> Task :app:optimizeReleaseResources
+> Task :app:mergeExtDexRelease
+> Task :app:mergeDexRelease
+> Task :app:compileReleaseArtProfile
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect
+> Task :app:assembleRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_8-1790365316088.json
+
+BUILD SUCCESSFUL in 45s
+41 actionable tasks: 36 executed, 5 from cache
+total 70696
+drwxr-xr-x  2 runner runner     4096 Sep 25 19:42 .
+drwxr-xr-x 10 runner runner     4096 Sep 25 19:41 ..
+-rw-r--r--  1 runner runner 33260237 Sep 25 19:42 EchidnaStudio-1.0.0-arm64-v8a.apk
+-rw-r--r--  1 runner runner 37102500 Sep 25 19:42 EchidnaStudio-1.0.0-x86_64.apk
+-rw-r--r--  1 runner runner  2011687 Sep 25 19:40 EchidnaStudio-source.zip
+=== содержимое APK ===
+проверяю handoff/EchidnaStudio-1.0.0-x86_64.apk
+   110728  1981-01-01 01:01   lib/x86_64/libLive2DCubismCoreJNI.so
+  9685400  1981-01-01 01:01   lib/x86_64/libface_detector_v2_jni.so
+ 13677720  1981-01-01 01:01   lib/x86_64/libmediapipe_tasks_jni.so
+   636352  1981-01-01 01:01   assets/live2d/Echidna/Echidna.moc3
+    16367  1981-01-01 01:01   assets/live2d/Echidna/motions/act_bikkuri.motion3.json
+    12173  1981-01-01 01:01   assets/live2d/Echidna/motions/act_bikkuri_w.motion3.json
+    14588  1981-01-01 01:01   assets/live2d/Echidna/motions/act_egao.motion3.json
+    14709  1981-01-01 01:01   assets/live2d/Echidna/motions/act_egao02.motion3.json
+    11699  1981-01-01 01:01   assets/live2d/Echidna/motions/act_egao02_w.motion3.json
+    16550  1981-01-01 01:01   assets/live2d/Echidna/motions/act_egao03.motion3.json
+    11673  1981-01-01 01:01   assets/live2d/Echidna/motions/act_egao03_w.motion3.json
+    12159  1981-01-01 01:01   assets/live2d/Echidna/motions/act_egao_w.motion3.json
+    14338  1981-01-01 01:01   assets/live2d/Echidna/motions/act_hohoemu.motion3.json
+    12188  1981-01-01 01:01   assets/live2d/Echidna/motions/act_hohoemu_w.motion3.json
+    13232  1981-01-01 01:01   assets/live2d/Echidna/motions/act_ikaru.motion3.json
+    12190  1981-01-01 01:01   assets/live2d/Echidna/motions/act_ikaru_w.motion3.json
+    16552  1981-01-01 01:01   assets/live2d/Echidna/motions/act_konwaku.motion3.json
+    12197  1981-01-01 01:01   assets/live2d/Echidna/motions/act_konwaku_w.motion3.json
+    14263  1981-01-01 01:01   assets/live2d/Echidna/motions/act_kouyou.motion3.json
+    12173  1981-01-01 01:01   assets/live2d/Echidna/motions/act_kouyou_w.motion3.json
+grep: write error: Broken pipe
+total 73952
+drwxr-xr-x  2 runner runner     4096 Sep 25 19:42 .
+drwxr-xr-x 10 runner runner     4096 Sep 25 19:41 ..
+-rw-r--r--  1 runner runner 33260237 Sep 25 19:42 EchidnaStudio-1.0.0-arm64-v8a.apk
+-rw-r--r--  1 runner runner 37102500 Sep 25 19:42 EchidnaStudio-1.0.0-x86_64.apk
+-rw-r--r--  1 runner runner  5347122 Sep 25 19:42 EchidnaStudio-source.zip
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 432c650] handoff: signed APK build ()
+ 3 files changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 handoff/EchidnaStudio-1.0.0-arm64-v8a.apk
+ create mode 100644 handoff/EchidnaStudio-1.0.0-x86_64.apk
 To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
-   b948284..9ad2c79  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+   d9b2a53..432c650  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
