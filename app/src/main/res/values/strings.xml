@@ -117,7 +117,7 @@
     <string name="profile_importing">Загрузка профиля…</string>
 
     <string name="title_servers">Локации</string>
-    <string name="title_profiles">Профили и подписки</string>
+    <string name="title_profiles">Профили</string>
     <string name="title_settings">Настройки</string>
     <string name="title_logs">Журнал</string>
     <string name="title_connections">Соединения</string>

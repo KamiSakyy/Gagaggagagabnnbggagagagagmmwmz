@@ -128,15 +128,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 try {
-                    SubscriptionUpdater.Result result =
-                            SubscriptionUpdater.addFromInputDetailed(MainActivity.this,
-                                    SampleServers.subscriptionText(), "Демо-локации");
+                    if (Repo.countServers(MainActivity.this) == 0) {
+                        SubscriptionUpdater.Result result =
+                                SubscriptionUpdater.addFromInputDetailed(MainActivity.this,
+                                        SampleServers.subscriptionText(), "Демо-локации");
+                        Log.i(TAG, "demo locations: " + result.imported + " imported");
+                    }
                     final List<Server> servers = Repo.servers(MainActivity.this);
                     if (!servers.isEmpty()) {
                         Prefs.setSelectedServerId(servers.get(0).id);
                     }
-                    Log.i(TAG, "demo locations: " + result.imported + " imported, "
-                            + servers.size() + " in the list");
+                    Log.i(TAG, "demo locations: " + servers.size() + " in the list");
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
