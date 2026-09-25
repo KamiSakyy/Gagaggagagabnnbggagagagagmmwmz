@@ -71,8 +71,11 @@ jobs:
       - name: Fetch the MediaPipe face model
         run: |
           set -o pipefail
-          ./tools/fetch_face_model.sh app/src/main/assets/models/face_landmarker.task 2>&1 | tee -a "$BUILD_LOG"
+          bash tools/fetch_face_model.sh app/src/main/assets/models/face_landmarker.task 2>&1 | tee -a "$BUILD_LOG"
           ls -la app/src/main/assets/models/ || true
+          if [ ! -f app/src/main/assets/models/face_landmarker.task ]; then
+            echo "ВНИМАНИЕ: модели MediaPipe нет, трекером будет ML Kit (без blendshape)"
+          fi
 
       - name: Check the bundled assets
         run: |
@@ -81,6 +84,7 @@ jobs:
             echo "--- модель Echidna ---"
             ls app/src/main/assets/live2d/Echidna/ | head -5
             echo "мошенов: $(ls app/src/main/assets/live2d/Echidna/motions | wc -l)"
+            ls app/src/main/assets/models/ 2>/dev/null || echo "модели MediaPipe нет"
             echo "текстур: $(ls app/src/main/assets/live2d/Echidna/textures | wc -l)"
             echo "размер модели: $(du -sh app/src/main/assets/live2d | cut -f1)"
             echo "--- нативное ядро Live2D ---"
@@ -136,7 +140,16 @@ jobs:
             set -e
             mkdir -p handoff
             rm -f handoff/*.apk
-            cp app/build/outputs/apk/release/*.apk handoff/ 2>/dev/null || true
+            VERSION=$(grep -o 'versionName "[^"]*"' app/build.gradle | cut -d'"' -f2)
+            for apk in app/build/outputs/apk/release/*.apk; do
+              [ -f "$apk" ] || continue
+              case "$apk" in
+                *x86_64*) target="handoff/EchidnaStudio-$VERSION-x86_64.apk" ;;
+                *arm64*)  target="handoff/EchidnaStudio-$VERSION-arm64-v8a.apk" ;;
+                *)        target="handoff/EchidnaStudio-$VERSION.apk" ;;
+              esac
+              cp "$apk" "$target"
+            done
             ls -la handoff
             echo "=== содержимое APK ==="
             APK=$(ls handoff/*x86_64*.apk 2>/dev/null | head -1)
@@ -360,6 +373,7 @@ jobs:
           set -o pipefail
           {
             set -e
+            mkdir -p handoff
             rm -f handoff/EchidnaStudio-source.zip
             zip -qr handoff/EchidnaStudio-source.zip \
               app/src app/libs app/build.gradle app/proguard-rules.pro \
@@ -374,7 +388,7 @@ jobs:
         with:
           name: echidna-studio-apk
           path: handoff/*.apk
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 90
 
       - name: Upload the screenshots
@@ -400,6 +414,10 @@ jobs:
           set -o pipefail
           {
             set -e
+            if [ ! -d handoff ]; then
+              echo "handoff пуст, коммитить нечего"
+              exit 0
+            fi
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add -f handoff
