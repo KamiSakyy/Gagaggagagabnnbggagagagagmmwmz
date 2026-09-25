@@ -1,4 +1,10 @@
 === failure markers ===
+190:/home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/java/com/vortex/vpn/core/SubscriptionUpdater.java:299: error: incompatible types: int cannot be converted to Result
+199:> Task :app:compileDebugJavaWithJavac FAILED
+202:FAILURE: Build failed with an exception.
+204:* What went wrong:
+205:Execution failed for task ':app:compileDebugJavaWithJavac'.
+214:find: ‘app/build/outputs/apk/release’: No such file or directory
 
 === tail ===
 == build  ==
@@ -37,18 +43,18 @@ Loading package information...                                                  
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-  8  112M    8 10.0M    0     0  23.5M      0  0:00:04 --:--:--  0:00:04 23.5M 98  112M   98  110M    0     0  75.9M      0  0:00:01  0:00:01 --:--:-- 97.6M100  112M  100  112M    0     0  77.0M      0  0:00:01  0:00:01 --:--:-- 99.1M
--rw-r--r-- 1 runner runner 113M Sep 25 10:17 app/libs/libbox.aar
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  112M  100  112M    0     0   241M      0 --:--:-- --:--:-- --:--:--  378M
+-rw-r--r-- 1 runner runner 113M Sep 25 10:57 app/libs/libbox.aar
  72706412  1980-00-00 00:00   jni/armeabi-v7a/libbox.so
  80751056  1980-00-00 00:00   jni/arm64-v8a/libbox.so
  78457644  1980-00-00 00:00   jni/x86/libbox.so
  85478392  1980-00-00 00:00   jni/x86_64/libbox.so
--rw-r--r-- 1 runner runner 2696 Sep 25 10:17 keystore.jks
--rw-r--r-- 1 runner runner   85 Sep 25 10:17 keystore.properties
+-rw-r--r-- 1 runner runner 2696 Sep 25 10:57 keystore.jks
+-rw-r--r-- 1 runner runner   85 Sep 25 10:57 keystore.properties
 + mkdir -p ci-out/cfgcheck
 + curl -fsSL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/snakeyaml.jar https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar
 ++ find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model app/src/main/java/com/vortex/vpn/sub -name '*.java'
-+ javac -cp /tmp/snakeyaml.jar -d ci-out/cfgcheck app/src/main/java/com/vortex/vpn/cfg/SampleServers.java app/src/main/java/com/vortex/vpn/cfg/JsonReader.java app/src/main/java/com/vortex/vpn/cfg/ConfigBuilder.java app/src/main/java/com/vortex/vpn/cfg/ConfigSettings.java app/src/main/java/com/vortex/vpn/cfg/Json.java app/src/main/java/com/vortex/vpn/model/Subscription.java app/src/main/java/com/vortex/vpn/model/Server.java app/src/main/java/com/vortex/vpn/model/Outbound.java app/src/main/java/com/vortex/vpn/sub/B64.java app/src/main/java/com/vortex/vpn/sub/LinkParser.java app/src/main/java/com/vortex/vpn/sub/ClashParser.java app/src/main/java/com/vortex/vpn/sub/SubImporter.java app/src/main/java/com/vortex/vpn/sub/SubFetcher.java app/src/main/java/com/vortex/vpn/sub/Geo.java tools/ConfigCheck.java
++ javac -cp /tmp/snakeyaml.jar -d ci-out/cfgcheck app/src/main/java/com/vortex/vpn/cfg/SampleServers.java app/src/main/java/com/vortex/vpn/cfg/JsonReader.java app/src/main/java/com/vortex/vpn/cfg/ConfigBuilder.java app/src/main/java/com/vortex/vpn/cfg/ConfigSettings.java app/src/main/java/com/vortex/vpn/cfg/Json.java app/src/main/java/com/vortex/vpn/model/Subscription.java app/src/main/java/com/vortex/vpn/model/Server.java app/src/main/java/com/vortex/vpn/model/Outbound.java app/src/main/java/com/vortex/vpn/sub/B64.java app/src/main/java/com/vortex/vpn/sub/LinkParser.java app/src/main/java/com/vortex/vpn/sub/ClashParser.java app/src/main/java/com/vortex/vpn/sub/SubImporter.java app/src/main/java/com/vortex/vpn/sub/SubFetcher.java app/src/main/java/com/vortex/vpn/sub/PageImporter.java app/src/main/java/com/vortex/vpn/sub/Geo.java tools/ConfigCheck.java
 Note: app/src/main/java/com/vortex/vpn/cfg/JsonReader.java uses unchecked or unsafe operations.
 Note: Recompile with -Xlint:unchecked for details.
 + javac -version
@@ -181,118 +187,52 @@ Daemon will be stopped at the end of the build
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
 > Task :app:mergeDebugShaders
-> Task :app:processDebugManifestForPackage
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:processDebugManifestForPackage
 > Task :app:mergeDebugAssets
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
+/home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/java/com/vortex/vpn/core/SubscriptionUpdater.java:299: error: incompatible types: int cannot be converted to Result
+            return -1;
+                   ^
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/java/com/vortex/vpn/cfg/JsonReader.java uses unchecked or unsafe operations.
 Note: Recompile with -Xlint:unchecked for details.
+1 error
 
-> Task :app:bundleDebugClassesToCompileJar
-> Task :app:bundleDebugClassesToRuntimeJar
-> Task :app:packageDebugUnitTestForUnitTest
-> Task :app:compileDebugUnitTestJavaWithJavac
-> Task :app:generateDebugUnitTestConfig
-> Task :app:testDebugUnitTest
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790331488004.json
+> Task :app:compileDebugJavaWithJavac FAILED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790333851154.json
 
-BUILD SUCCESSFUL in 1m 15s
-25 actionable tasks: 24 executed, 1 from cache
-libbox.aar ships x86_64: the emulator ABI is built as well
-=== gradle assembleRelease -PabiX86_64=true ===
-To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
-Daemon will be stopped at the end of the build 
-> Task :app:preBuild UP-TO-DATE
-> Task :app:preReleaseBuild UP-TO-DATE
-> Task :app:mergeReleaseJniLibFolders
-> Task :app:mergeReleaseNativeLibs
-> Task :app:checkReleaseDuplicateClasses
-> Task :app:generateReleaseBuildConfig
-> Task :app:javaPreCompileRelease FROM-CACHE
-> Task :app:generateReleaseResValues FROM-CACHE
-> Task :app:checkReleaseAarMetadata
+FAILURE: Build failed with an exception.
 
-> Task :app:stripReleaseDebugSymbols
-Unable to strip the following libraries, packaging them as they are: libbox.so.
+* What went wrong:
+Execution failed for task ':app:compileDebugJavaWithJavac'.
+> Compilation failed; see the compiler error output for details.
 
-> Task :app:mapReleaseSourceSetPaths
-> Task :app:generateReleaseResources
-> Task :app:extractReleaseNativeSymbolTables
-> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
-> Task :app:packageReleaseResources
-> Task :app:parseReleaseLocalResources FROM-CACHE
-> Task :app:createReleaseCompatibleScreenManifests
-> Task :app:extractDeepLinksRelease FROM-CACHE
-> Task :app:processReleaseMainManifest
-> Task :app:processReleaseManifest
-> Task :app:processReleaseManifestForPackage
-> Task :app:mergeReleaseStartupProfile
-> Task :app:mergeReleaseResources
-> Task :app:mergeReleaseArtProfile
-> Task :app:mergeReleaseShaders
-> Task :app:compileReleaseShaders NO-SOURCE
-> Task :app:generateReleaseAssets UP-TO-DATE
-> Task :app:mergeReleaseAssets
-> Task :app:compressReleaseAssets
-> Task :app:extractReleaseVersionControlInfo
-> Task :app:processReleaseJavaRes NO-SOURCE
-> Task :app:collectReleaseDependencies
-> Task :app:sdkReleaseDependencyData
-> Task :app:validateSigningRelease
-> Task :app:writeReleaseAppMetadata
-> Task :app:writeReleaseSigningConfigVersions
-> Task :app:mergeReleaseJavaResource
-> Task :app:processReleaseResources
-> Task :app:desugarReleaseFileDependencies
+* Try:
+> Run with --info option to get more log output.
+> Run with --scan to get full insights.
 
-> Task :app:compileReleaseJavaWithJavac
-Note: Some input files use or override a deprecated API.
-Note: Recompile with -Xlint:deprecation for details.
-Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/java/com/vortex/vpn/cfg/JsonReader.java uses unchecked or unsafe operations.
-Note: Recompile with -Xlint:unchecked for details.
-
-> Task :app:dexBuilderRelease
-> Task :app:mergeReleaseGlobalSynthetics
-> Task :app:optimizeReleaseResources
-> Task :app:mergeExtDexRelease
-> Task :app:mergeDexRelease
-> Task :app:compileReleaseArtProfile
-> Task :app:packageRelease
-> Task :app:createReleaseApkListingFileRedirect
-> Task :app:assembleRelease
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_10-1790331561089.json
-
-BUILD SUCCESSFUL in 58s
-42 actionable tasks: 38 executed, 4 from cache
-=== gradle finished ===
-app/build/outputs/apk/release/app-x86_64-release.apk
-app/build/outputs/apk/release/app-armeabi-v7a-release.apk
-app/build/outputs/apk/release/app-arm64-v8a-release.apk
-not published to handoff: app-x86_64-release.apk
-total 63M
--rw-r--r-- 1 runner runner 3.5K Sep 25 10:17 README.md
--rw-r--r-- 1 runner runner  32M Sep 25 10:20 VortexVPN-1.0.0-arm64-v8a.apk
--rw-r--r-- 1 runner runner  32M Sep 25 10:20 VortexVPN-1.0.0-armeabi-v7a.apk
--rw-r--r-- 1 runner runner 208K Sep 25 10:17 VortexVPN-source.zip
+BUILD FAILED in 49s
+19 actionable tasks: 18 executed, 1 from cache
+find: ‘app/build/outputs/apk/release’: No such file or directory
 --- kvm ---
-crw-rw---- 1 root kvm 10, 232 Sep 25 10:16 /dev/kvm
+crw-rw---- 1 root kvm 10, 232 Sep 25 10:55 /dev/kvm
 hardware acceleration is available
 4
                total        used        free      shared  buff/cache   available
-Mem:           15988        1091        9570          49        5722       14896
-total 63M
--rw-r--r-- 1 runner runner 3.5K Sep 25 10:17 README.md
--rw-r--r-- 1 runner runner  32M Sep 25 10:20 VortexVPN-1.0.0-arm64-v8a.apk
--rw-r--r-- 1 runner runner  32M Sep 25 10:20 VortexVPN-1.0.0-armeabi-v7a.apk
--rw-r--r-- 1 runner runner 208K Sep 25 10:25 VortexVPN-source.zip
-[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 5773c3f] handoff: signed APK build ()
+Mem:           15989        1075       11059          48        4248       14913
+total 228K
+-rw-r--r-- 1 runner runner 3.5K Sep 25 10:57 README.md
+-rw-r--r-- 1 runner runner 224K Sep 25 10:58 VortexVPN-source.zip
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 9babed7] handoff: signed APK build ()
  3 files changed, 0 insertions(+), 0 deletions(-)
+ delete mode 100644 handoff/VortexVPN-1.0.0-arm64-v8a.apk
+ delete mode 100644 handoff/VortexVPN-1.0.0-armeabi-v7a.apk
 To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
-   8d1bd9d..5773c3f  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+   1471589..9babed7  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
