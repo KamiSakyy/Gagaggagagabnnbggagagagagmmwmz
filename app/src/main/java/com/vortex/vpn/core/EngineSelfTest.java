@@ -7,6 +7,7 @@ import com.vortex.vpn.cfg.ConfigSettings;
 import com.vortex.vpn.cfg.SampleServers;
 import com.vortex.vpn.model.Outbound;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -25,6 +26,7 @@ import io.nekohasekai.libbox.Libbox;
 public final class EngineSelfTest {
 
     public static final String TAG = "VortexSelfTest";
+    public static final String REPORT_FILE = "selftest.txt";
 
     private EngineSelfTest() {
     }
@@ -98,6 +100,36 @@ public final class EngineSelfTest {
         }
     }
 
+    /**
+     * Keeps the verdict on disk ({@code Android/data/<package>/files/selftest.txt}) so it can be
+     * checked without touching logcat - CI does exactly that on the emulator.
+     */
+    public static void writeReport(String result, String source) {
+        try {
+            com.vortex.vpn.App app = com.vortex.vpn.App.get();
+            if (app == null) {
+                return;
+            }
+            File dir = app.getExternalFilesDir(null);
+            if (dir == null) {
+                dir = app.getFilesDir();
+            }
+            if (dir == null) {
+                return;
+            }
+            //noinspection ResultOfMethodCallIgnored
+            dir.mkdirs();
+            java.io.FileWriter writer = new java.io.FileWriter(new File(dir, REPORT_FILE), false);
+            writer.write(java.text.DateFormat.getDateTimeInstance()
+                    .format(new java.util.Date()) + "  " + source + "\n");
+            writer.write(result);
+            writer.write("\n");
+            writer.close();
+        } catch (Throwable ignored) {
+            // diagnostics must never break the app
+        }
+    }
+
     private static String describe(Throwable error) {
         String message = error.getMessage();
         if (message == null || message.isEmpty()) {
@@ -113,6 +145,7 @@ public final class EngineSelfTest {
 
     /** Records an already computed verdict in logcat and in the in-app log. */
     public static void logResult(String result, String source) {
+        writeReport(result, source);
         if (result.startsWith("SELFTEST OK")) {
             Log.i(TAG, result);
             Bridge.appendLog("I", "проверка ядра (" + source + "): " + result);

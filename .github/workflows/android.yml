@@ -361,15 +361,24 @@ jobs:
           fi
 
           echo "--- on-device engine self test ---"
+          adb shell rm -f /sdcard/Android/data/$PKG/files/selftest.txt || true
+          adb shell am force-stop $PKG
+          sleep 2
+          adb logcat -c || true
           adb shell am start -n $PKG/.ui.MainActivity --ez vortex_selftest true || true
           rm -f ci-out/selftest.txt
           for i in $(seq 1 30); do
-            adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | grep -a "SELFTEST" > ci-out/selftest.txt || true
+            adb shell cat /sdcard/Android/data/$PKG/files/selftest.txt > ci-out/selftest.txt 2>/dev/null || true
+            if [ ! -s ci-out/selftest.txt ]; then
+              adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | grep -a "SELFTEST" > ci-out/selftest.txt || true
+            fi
             if [ -s ci-out/selftest.txt ]; then break; fi
             sleep 5
           done
-          echo "--- self test verdict (captured right away) ---"
+          echo "--- self test verdict ---"
           cat ci-out/selftest.txt
+          echo "--- crash buffer ---"
+          adb logcat -d -b crash | tail -n 40 || true
 
           echo "--- visiting every screen ---"
           for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity; do
@@ -412,8 +421,11 @@ jobs:
               grep -aE "SMOKE OK|SMOKE SKIPPED|SELFTEST|EMULATOR BOOTED|FATAL EXCEPTION|CRASH|killed the app|did not report|could not start|not running" \
                 ci-out/smoke.log | tail -n 40 || true
               echo
+              echo "=== engine self test ==="
+              cat ci-out/selftest.txt 2>/dev/null || true
+              echo
               echo "=== log tail ==="
-              tr '\r' '\n' < ci-out/smoke.log | tail -n 250
+              tr '\r' '\n' < ci-out/smoke.log | tail -n 400
             } > .ci/smoke.log
           else
             echo "the emulator smoke test did not run" > .ci/smoke.log
