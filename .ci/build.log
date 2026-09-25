@@ -37,14 +37,14 @@ Loading package information...                                                  
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-  0  112M    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  112M  100  112M    0     0   230M      0 --:--:-- --:--:-- --:--:--  375M
--rw-r--r-- 1 runner runner 113M Sep 25 11:02 app/libs/libbox.aar
+ 66  112M   66 74.4M    0     0   250M      0 --:--:-- --:--:-- --:--:--  250M100  112M  100  112M    0     0   302M      0 --:--:-- --:--:-- --:--:--  516M
+-rw-r--r-- 1 runner runner 113M Sep 25 11:11 app/libs/libbox.aar
  72706412  1980-00-00 00:00   jni/armeabi-v7a/libbox.so
  80751056  1980-00-00 00:00   jni/arm64-v8a/libbox.so
  78457644  1980-00-00 00:00   jni/x86/libbox.so
  85478392  1980-00-00 00:00   jni/x86_64/libbox.so
--rw-r--r-- 1 runner runner 2696 Sep 25 11:01 keystore.jks
--rw-r--r-- 1 runner runner   85 Sep 25 11:01 keystore.properties
+-rw-r--r-- 1 runner runner 2696 Sep 25 11:11 keystore.jks
+-rw-r--r-- 1 runner runner   85 Sep 25 11:11 keystore.properties
 + mkdir -p ci-out/cfgcheck
 + curl -fsSL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/snakeyaml.jar https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar
 ++ find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model app/src/main/java/com/vortex/vpn/sub -name '*.java'
@@ -172,9 +172,9 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
-> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
+> Task :app:mergeDebugResources
 > Task :app:parseDebugLocalResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
@@ -182,11 +182,11 @@ Daemon will be stopped at the end of the build
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
-> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
@@ -195,8 +195,8 @@ Note: Recompile with -Xlint:deprecation for details.
 Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/java/com/vortex/vpn/cfg/JsonReader.java uses unchecked or unsafe operations.
 Note: Recompile with -Xlint:unchecked for details.
 
-> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:packageDebugUnitTestForUnitTest
+> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:bundleDebugClassesToCompileJar
 > Task :app:generateDebugUnitTestConfig
 
@@ -205,9 +205,9 @@ Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagag
 Note: Recompile with -Xlint:deprecation for details.
 
 > Task :app:testDebugUnitTest
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790334135902.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790334687370.json
 
-BUILD SUCCESSFUL in 1m 18s
+BUILD SUCCESSFUL in 1m 5s
 25 actionable tasks: 24 executed, 1 from cache
 libbox.aar ships x86_64: the emulator ABI is built as well
 === gradle assembleRelease -PabiX86_64=true ===
@@ -216,10 +216,10 @@ Daemon will be stopped at the end of the build
 > Task :app:preBuild UP-TO-DATE
 > Task :app:preReleaseBuild UP-TO-DATE
 > Task :app:mergeReleaseJniLibFolders
+> Task :app:checkReleaseDuplicateClasses
 > Task :app:mergeReleaseNativeLibs
 > Task :app:generateReleaseBuildConfig
 > Task :app:javaPreCompileRelease FROM-CACHE
-> Task :app:checkReleaseDuplicateClasses
 > Task :app:generateReleaseResValues FROM-CACHE
 > Task :app:checkReleaseAarMetadata
 
@@ -235,8 +235,8 @@ Unable to strip the following libraries, packaging them as they are: libbox.so.
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
-> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifest
+> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifestForPackage
 > Task :app:mergeReleaseStartupProfile
 > Task :app:mergeReleaseArtProfile
@@ -271,9 +271,9 @@ Note: Recompile with -Xlint:unchecked for details.
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_10-1790334211091.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_10-1790334750640.json
 
-BUILD SUCCESSFUL in 1m 2s
+BUILD SUCCESSFUL in 48s
 42 actionable tasks: 38 executed, 4 from cache
 === gradle finished ===
 app/build/outputs/apk/release/app-x86_64-release.apk
@@ -281,24 +281,22 @@ app/build/outputs/apk/release/app-armeabi-v7a-release.apk
 app/build/outputs/apk/release/app-arm64-v8a-release.apk
 not published to handoff: app-x86_64-release.apk
 total 63M
--rw-r--r-- 1 runner runner 3.5K Sep 25 11:01 README.md
--rw-r--r-- 1 runner runner  32M Sep 25 11:04 VortexVPN-1.0.0-arm64-v8a.apk
--rw-r--r-- 1 runner runner  32M Sep 25 11:04 VortexVPN-1.0.0-armeabi-v7a.apk
--rw-r--r-- 1 runner runner 224K Sep 25 11:01 VortexVPN-source.zip
+-rw-r--r-- 1 runner runner 3.5K Sep 25 11:11 README.md
+-rw-r--r-- 1 runner runner  32M Sep 25 11:13 VortexVPN-1.0.0-arm64-v8a.apk
+-rw-r--r-- 1 runner runner  32M Sep 25 11:13 VortexVPN-1.0.0-armeabi-v7a.apk
+-rw-r--r-- 1 runner runner 224K Sep 25 11:11 VortexVPN-source.zip
 --- kvm ---
-crw-rw---- 1 root kvm 10, 232 Sep 25 10:51 /dev/kvm
+crw-rw---- 1 root kvm 10, 232 Sep 25 11:10 /dev/kvm
 hardware acceleration is available
 4
                total        used        free      shared  buff/cache   available
-Mem:           15989        1053        9604          49        5727       14936
+Mem:           15989        1012        9746          49        5625       14976
 total 63M
--rw-r--r-- 1 runner runner 3.5K Sep 25 11:01 README.md
--rw-r--r-- 1 runner runner  32M Sep 25 11:04 VortexVPN-1.0.0-arm64-v8a.apk
--rw-r--r-- 1 runner runner  32M Sep 25 11:04 VortexVPN-1.0.0-armeabi-v7a.apk
--rw-r--r-- 1 runner runner 224K Sep 25 11:09 VortexVPN-source.zip
-[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 3db7eee] handoff: signed APK build ()
+-rw-r--r-- 1 runner runner 3.5K Sep 25 11:11 README.md
+-rw-r--r-- 1 runner runner  32M Sep 25 11:13 VortexVPN-1.0.0-arm64-v8a.apk
+-rw-r--r-- 1 runner runner  32M Sep 25 11:13 VortexVPN-1.0.0-armeabi-v7a.apk
+-rw-r--r-- 1 runner runner 224K Sep 25 11:18 VortexVPN-source.zip
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 862cbd9] handoff: signed APK build ()
  3 files changed, 0 insertions(+), 0 deletions(-)
- create mode 100644 handoff/VortexVPN-1.0.0-arm64-v8a.apk
- create mode 100644 handoff/VortexVPN-1.0.0-armeabi-v7a.apk
 To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
-   2061a88..3db7eee  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+   015a23f..862cbd9  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
