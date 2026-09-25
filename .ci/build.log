@@ -1,50 +1,49 @@
 === маркеры проблем ===
-13:curl: (22) The requested URL returned error: 404
-17:curl: (22) The requested URL returned error: 404
-21:curl: (22) The requested URL returned error: 404
-25:curl: (22) The requested URL returned error: 404
-29:curl: (22) The requested URL returned error: 404
-54:ls: cannot access 'keystore.properties': No such file or directory
+88:> Task :app:processDebugResources FAILED
+91:FAILURE: Build failed with an exception.
+94:Execution failed for task ':app:processDebugResources'.
+97:     ERROR: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/res/drawable/ic_launcher_foreground.xml:17: AAPT: error: '#FF00000000' is incompatible with attribute fillColor (attr) color.
 
 === хвост ===
 == Echidna Studio build  ==
-ref=arena/01a0d529-gagaggagagabnnbggagagagagmmwmz commit=6c561f90f82afaeeb4033cb29e6399c8b34b09eb
+ref=arena/01a0d529-gagaggagagabnnbggagagagagmmwmz commit=b948284975abe07219c3f7b7fbf8ed1ef98aec75
 === загрузка модели Face Landmarker ===
---- источник: официальный Google Storage
+--- источник: официальный Google Storage (релиз 1)
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  33.4M      0 --:--:-- --:--:-- --:--:-- 33.8M
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 65 3670k   65 2415k    0     0  24.9M      0 --:--:-- --:--:-- --:--:-- 24.8M100 3670k  100 3670k    0     0  35.2M      0 --:--:-- --:--:-- --:--:-- 35.1M
   файл не является zip-контейнером задачи
---- источник: GitHub raw (mediapipe samples mirror)
+--- источник: официальный Google Storage (последний)
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    14    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-curl: (22) The requested URL returned error: 404
-Warning: Problem (retrying all errors). Will retry in 4 seconds. 4 retries 
-Warning: left.
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    14    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-curl: (22) The requested URL returned error: 404
-Warning: Problem (retrying all errors). Will retry in 4 seconds. 3 retries 
-Warning: left.
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    14    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-curl: (22) The requested URL returned error: 404
-Warning: Problem (retrying all errors). Will retry in 4 seconds. 2 retries 
-Warning: left.
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    14    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-curl: (22) The requested URL returned error: 404
-Warning: Problem (retrying all errors). Will retry in 4 seconds. 1 retries 
-Warning: left.
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    14    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-curl: (22) The requested URL returned error: 404
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  26.2M      0 --:--:-- --:--:-- --:--:-- 26.3M
+  файл не является zip-контейнером задачи
+--- источник: официальный Google Storage (blendshapes v2)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 2302k  100 2302k    0     0  12.9M      0 --:--:-- --:--:-- --:--:-- 13.0M
+  файл не является zip-контейнером задачи
 --- источник: Git LFS devp1866/face-recognition/face_landmarker_v2_with_blendshapes.task
   ссылка получена
-tools/fetch_face_model.sh: line 71: return: try_url: numeric argument required
+--- источник: Git LFS devp1866/face-recognition
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  12.1M      0 --:--:-- --:--:-- --:--:-- 12.1M
+  файл не является zip-контейнером задачи
 --- источник: Git LFS DCP0001/face-render/face_landmarker_v2_with_blendshapes.task
   ссылка получена
-tools/fetch_face_model.sh: line 71: return: try_url: numeric argument required
+--- источник: Git LFS DCP0001/face-render
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  11.4M      0 --:--:-- --:--:-- --:--:-- 11.4M
+  файл не является zip-контейнером задачи
 --- источник: Git LFS sandipan004/SmartCompanion/tasks/face_landmarker.task
   ссылка получена
-tools/fetch_face_model.sh: line 71: return: try_url: numeric argument required
+--- источник: Git LFS sandipan004/SmartCompanion
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 58 3670k   58 2134k    0     0  5568k      0 --:--:-- --:--:-- --:--:-- 5557k100 3670k  100 3670k    0     0  8530k      0 --:--:-- --:--:-- --:--:-- 8516k
+  файл не является zip-контейнером задачи
 НЕ УДАЛОСЬ СКАЧАТЬ МОДЕЛЬ MEDIAPIPE
 приложение соберётся и будет работать, но трекером станет ML Kit (без blendshape)
 --- модель Echidna ---
@@ -60,14 +59,64 @@ textures
     94072  1980-02-01 00:00   jni/arm64-v8a/libLive2DCubismCoreJNI.so
     97064  1980-02-01 00:00   jni/x86/libLive2DCubismCoreJNI.so
    110728  1980-02-01 00:00   jni/x86_64/libLive2DCubismCoreJNI.so
-ls: cannot access 'keystore.properties': No such file or directory
--rw-r--r-- 1 runner runner 2696 Sep 25 19:35 keystore.jks
-total 1968
-drwxr-xr-x 2 runner runner    4096 Sep 25 19:36 .
-drwxr-xr-x 9 runner runner    4096 Sep 25 19:36 ..
--rw-r--r-- 1 runner runner 2005163 Sep 25 19:36 EchidnaStudio-source.zip
-[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz fae0bba] handoff: signed APK build ()
+-rw-r--r-- 1 runner runner 2730 Sep 25 19:38 keystore.jks
+-rw-r--r-- 1 runner runner   94 Sep 25 19:38 keystore.properties
+
+Welcome to Gradle 8.10.2!
+
+Here are the highlights of this release:
+ - Support for Java 23
+ - Faster configuration cache
+ - Better configuration cache reports
+
+For more details see https://docs.gradle.org/8.10.2/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:javaPreCompileDebug
+> Task :app:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:mergeDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :app:processDebugJavaRes NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes NO-SOURCE
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources FAILED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_6-1790365110998.json
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:processDebugResources'.
+> A failure occurred while executing com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask$TaskAction
+   > Android resource linking failed
+     ERROR: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/res/drawable/ic_launcher_foreground.xml:17: AAPT: error: '#FF00000000' is incompatible with attribute fillColor (attr) color.
+         
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 49s
+15 actionable tasks: 14 executed, 1 from cache
+total 1976
+drwxr-xr-x  2 runner runner    4096 Sep 25 19:39 .
+drwxr-xr-x 10 runner runner    4096 Sep 25 19:38 ..
+-rw-r--r--  1 runner runner 2011687 Sep 25 19:39 EchidnaStudio-source.zip
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 9ad2c79] handoff: signed APK build ()
  1 file changed, 0 insertions(+), 0 deletions(-)
- create mode 100644 handoff/EchidnaStudio-source.zip
 To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
-   6c561f9..fae0bba  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+   b948284..9ad2c79  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
