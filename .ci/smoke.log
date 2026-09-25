@@ -3,65 +3,69 @@
 + echo 'EMULATOR BOOTED: android 11 x86_64'
 EMULATOR BOOTED: android 11 x86_64
 + grep -q 'FATAL EXCEPTION'
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
-+ grep -q SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
++ grep -a SELFTEST
 + grep -q 'FATAL EXCEPTION'
-+ grep -q 'SELFTEST OK'
++ grep -q 'SELFTEST OK' ci-out/selftest.txt
 + echo 'engine self test did not report OK'
 engine self test did not report OK
-+ grep -a SELFTEST
-09-25 10:13:05.029  2313  2379 I VortexSelfTest: SELFTEST OK configs=4 engine=1.14.1 go=go1.26.8, android/amd64 smart-mixed=ok(9262b) global-gvisor=ok(9091b) hardened=ok(11010b) direct-only=ok outbounds=31 protocols=15/[vless, vmess, trojan, shadowsocks, hysteria2, tuic, anytls, socks, wireguard, snell, shadowtls, ssh, http, naive, hysteria]
 
 === log tail ===
 + adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
-+ grep -q SELFTEST
++ grep -a SELFTEST
++ true
++ '[' -s ci-out/selftest.txt ']'
 + sleep 5
 + for i in $(seq 1 30)
 + adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
-+ grep -q SELFTEST
++ grep -a SELFTEST
++ true
++ '[' -s ci-out/selftest.txt ']'
 + sleep 5
-+ echo '--- self test verdict ---'
---- self test verdict ---
++ for i in $(seq 1 30)
 + adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
-+ tail -n 40
---------- beginning of kernel
---------- beginning of main
---------- beginning of system
++ grep -a SELFTEST
++ true
++ '[' -s ci-out/selftest.txt ']'
++ sleep 5
++ echo '--- self test verdict (captured right away) ---'
+--- self test verdict (captured right away) ---
++ cat ci-out/selftest.txt
 + echo '--- visiting every screen ---'
 --- visiting every screen ---
 + for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
 + adb shell am start -n com.vortex.vpn/.ui.ServersActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ServersActivity } from null (pid=2483, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ServersActivity } from null (pid=2434, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -86,7 +90,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.ProfilesActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ProfilesActivity } from null (pid=2495, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ProfilesActivity } from null (pid=2446, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -111,7 +115,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.SettingsActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.SettingsActivity } from null (pid=2502, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.SettingsActivity } from null (pid=2453, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -136,7 +140,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.LogsActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.LogsActivity } from null (pid=2514, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.LogsActivity } from null (pid=2465, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -161,7 +165,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.ConnectionsActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConnectionsActivity } from null (pid=2521, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConnectionsActivity } from null (pid=2472, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -186,7 +190,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.AboutActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AboutActivity } from null (pid=2533, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AboutActivity } from null (pid=2484, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -211,7 +215,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.ConfigEditorActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConfigEditorActivity } from null (pid=2540, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConfigEditorActivity } from null (pid=2491, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -236,7 +240,7 @@ java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000
 + adb shell am start -n com.vortex.vpn/.ui.AppListActivity
 
 Exception occurred while executing 'start':
-java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AppListActivity } from null (pid=2552, uid=2000) not exported from uid 10130
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AppListActivity } from null (pid=2503, uid=2000) not exported from uid 10130
 	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
@@ -274,20 +278,14 @@ args: [-p, com.vortex.vpn, --throttle, 300, 150]
 data="com.vortex.vpn"
 arg="--throttle" mCurArgData="null" mNextArg=3 argwas="--throttle" nextarg="300"
 data="300"
-Got IOException performing flipjava.io.FileNotFoundException: /dev/input/event0: open failed: EACCES (Permission denied)
-    // Injection Failed
 Events injected: 150
-## Network stats: elapsed time=10711ms (0ms mobile, 0ms wifi, 10711ms not connected)
+## Network stats: elapsed time=12747ms (0ms mobile, 0ms wifi, 12747ms not connected)
 + sleep 3
 + adb shell pidof com.vortex.vpn
 + adb logcat -d
 + grep -q 'FATAL EXCEPTION'
-+ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
-+ grep -q 'SELFTEST OK'
++ grep -q 'SELFTEST OK' ci-out/selftest.txt
 + echo 'engine self test did not report OK'
 engine self test did not report OK
-+ adb logcat -d
-+ grep -a SELFTEST
-+ tail -n 20
-09-25 10:13:05.029  2313  2379 I VortexSelfTest: SELFTEST OK configs=4 engine=1.14.1 go=go1.26.8, android/amd64 smart-mixed=ok(9262b) global-gvisor=ok(9091b) hardened=ok(11010b) direct-only=ok outbounds=31 protocols=15/[vless, vmess, trojan, shadowsocks, hysteria2, tuic, anytls, socks, wireguard, snell, shadowtls, ssh, http, naive, hysteria]
++ cat ci-out/selftest.txt
 + exit 1
