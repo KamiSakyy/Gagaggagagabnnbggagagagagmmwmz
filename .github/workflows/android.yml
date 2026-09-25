@@ -333,6 +333,7 @@ jobs:
             exit 1
           fi
           adb shell input keyevent 82 || true
+          adb logcat -G 16M || true
           echo "EMULATOR BOOTED: android $(adb shell getprop ro.build.version.release | tr -d '\r') $(adb shell getprop ro.product.cpu.abi | tr -d '\r')"
 
           echo "installing $APK ($(du -h "$APK" | cut -f1))"
@@ -361,12 +362,14 @@ jobs:
 
           echo "--- on-device engine self test ---"
           adb shell am start -n $PKG/.ui.MainActivity --ez vortex_selftest true || true
+          rm -f ci-out/selftest.txt
           for i in $(seq 1 30); do
-            if adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | grep -q "SELFTEST"; then break; fi
+            adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | grep -a "SELFTEST" > ci-out/selftest.txt || true
+            if [ -s ci-out/selftest.txt ]; then break; fi
             sleep 5
           done
-          echo "--- self test verdict ---"
-          adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | tail -n 40
+          echo "--- self test verdict (captured right away) ---"
+          cat ci-out/selftest.txt
 
           echo "--- visiting every screen ---"
           for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity; do
@@ -392,9 +395,9 @@ jobs:
             adb logcat -d -s AndroidRuntime:E | tail -n 200
             exit 1
           fi
-          if ! adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | grep -q "SELFTEST OK"; then
+          if ! grep -q "SELFTEST OK" ci-out/selftest.txt; then
             echo "engine self test did not report OK"
-            adb logcat -d | grep -a "SELFTEST" | tail -n 20 || true
+            cat ci-out/selftest.txt || true
             exit 1
           fi
           echo "SMOKE OK: app launched, stayed alive, every screen opened, engine self test passed"
