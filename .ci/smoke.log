@@ -1,249 +1,481 @@
-+ SDK=/usr/local/lib/android/sdk
-+ export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-+ ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-+ export ANDROID_HOME=/usr/local/lib/android/sdk
-+ ANDROID_HOME=/usr/local/lib/android/sdk
-+ export PATH=/usr/local/lib/android/sdk/platform-tools:/usr/local/lib/android/sdk/emulator:/home/runner/work/_temp/.gradle-actions/gradle-installations/installs/gradle-8.10.2/bin:/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64/bin:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
-+ PATH=/usr/local/lib/android/sdk/platform-tools:/usr/local/lib/android/sdk/emulator:/home/runner/work/_temp/.gradle-actions/gradle-installations/installs/gradle-8.10.2/bin:/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64/bin:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
-+ PKG=com.vortex.vpn
-++ ls app/build/outputs/apk/release/app-x86_64-release.apk
-++ head -1
-+ APK=app/build/outputs/apk/release/app-x86_64-release.apk
-+ '[' -z app/build/outputs/apk/release/app-x86_64-release.apk ']'
-+ SM=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager
-+ '[' -x /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager ']'
-+ AV=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/avdmanager
-+ '[' -x /usr/local/lib/android/sdk/cmdline-tools/latest/bin/avdmanager ']'
-+ IMAGE='system-images;android-30;default;x86_64'
-+ yes
-+ /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-yes: standard output: Broken pipe
+2257
++ adb shell dumpsys window
++ grep -E 'mCurrentFocus|mFocusedApp'
+  mCurrentFocus=Window{8409eb7 u0 com.vortex.vpn/com.vortex.vpn.ui.MainActivity}
+  mFocusedApp=ActivityRecord{2e35f94 u0 com.vortex.vpn/.ui.MainActivity t9}
++ adb logcat -d
++ grep -q 'FATAL EXCEPTION'
++ adb shell pidof com.vortex.vpn
++ echo '--- on-device engine self test ---'
+--- on-device engine self test ---
++ adb shell am start -n com.vortex.vpn/.ui.MainActivity --ez vortex_selftest true
+Warning: Activity not started, intent has been delivered to currently running top-most instance.
+++ seq 1 24
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ grep -q 'SELFTEST OK'
++ adb logcat -d -s VortexSelfTest:I
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ grep -q 'SELFTEST OK'
++ adb logcat -d -s VortexSelfTest:I
++ sleep 5
++ for i in $(seq 1 24)
++ grep -q 'SELFTEST OK'
++ adb logcat -d -s VortexSelfTest:I
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ grep -q 'SELFTEST OK'
++ adb logcat -d -s VortexSelfTest:I
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ grep -q 'SELFTEST OK'
++ adb logcat -d -s VortexSelfTest:I
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ for i in $(seq 1 24)
++ grep -q 'SELFTEST OK'
++ adb logcat -d -s VortexSelfTest:I
++ sleep 5
++ for i in $(seq 1 24)
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ sleep 5
++ adb logcat -d -s VortexSelfTest:I VortexSelfTest:E
++ tail -n 40
+--------- beginning of system
+--------- beginning of main
+--------- beginning of kernel
++ echo '--- visiting every screen ---'
+--- visiting every screen ---
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.ServersActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ServersActivity } from null (pid=2413, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
 + true
-+ /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --install platform-tools emulator 'system-images;android-30;default;x86_64'
-+ tail -n 3 ci-out/sdkmanager.log
-Loading package information...                                                  
-Loading local repository...                                                     
-[                                       ] 3% Loading local repository...        
-[                                       ] 3% Fetch remote repository...         
-[=                                      ] 3% Fetch remote repository...         
-[=                                      ] 4% Fetch remote repository...         
-[=                                      ] 5% Fetch remote repository...         
-[==                                     ] 5% Fetch remote repository...         
-[==                                     ] 6% Fetch remote repository...         
-[==                                     ] 7% Fetch remote repository...         
-[==                                     ] 7% Computing updates...               
-[===                                    ] 8% Computing updates...               
-[===                                    ] 10% Computing updates...              
-[===                                    ] 10% Installing Android Emulator       
-[===                                    ] 10% Downloading emulator-linux_x64-159
-[====                                   ] 10% Downloading emulator-linux_x64-159
-[====                                   ] 11% Downloading emulator-linux_x64-159
-[====                                   ] 12% Downloading emulator-linux_x64-159
-[=====                                  ] 13% Downloading emulator-linux_x64-159
-[=====                                  ] 14% Downloading emulator-linux_x64-159
-[=====                                  ] 15% Downloading emulator-linux_x64-159
-[======                                 ] 15% Downloading emulator-linux_x64-159
-[======                                 ] 16% Downloading emulator-linux_x64-159
-[======                                 ] 17% Downloading emulator-linux_x64-159
-[=======                                ] 18% Downloading emulator-linux_x64-159
-[=======                                ] 19% Downloading emulator-linux_x64-159
-[=======                                ] 20% Downloading emulator-linux_x64-159
-[========                               ] 20% Downloading emulator-linux_x64-159
-[========                               ] 21% Downloading emulator-linux_x64-159
-[========                               ] 21% Unzipping...                      
-[========                               ] 21% Unzipping... emulator/            
-[========                               ] 21% Unzipping... emulator/resources/  
-[========                               ] 21% Unzipping... emulator/qsn         
-[========                               ] 21% Unzipping... emulator/emulator    
-[========                               ] 21% Unzipping... emulator/netsimd     
-[========                               ] 22% Unzipping... emulator/netsimd     
-[========                               ] 22% Unzipping... emulator/bin64/      
-[========                               ] 22% Unzipping... emulator/qemu/       
-[========                               ] 22% Unzipping... emulator/NOTICE.txt  
-[========                               ] 22% Unzipping... emulator/crashpad_han
-[========                               ] 22% Unzipping... emulator/source.prope
-[========                               ] 22% Unzipping... emulator/nimble_bridg
-[========                               ] 22% Unzipping... emulator/LICENSE     
-[========                               ] 22% Unzipping... emulator/lib/        
-[========                               ] 22% Unzipping... emulator/qemu-img    
-[========                               ] 22% Unzipping... emulator/include/    
-[========                               ] 22% Unzipping... emulator/NOTICE.csv  
-[========                               ] 22% Unzipping... emulator/lib64/      
-[========                               ] 22% Unzipping... emulator/emulator-che
-[========                               ] 22% Unzipping... emulator/crashreport 
-[========                               ] 22% Unzipping... emulator/mksdcard    
-[========                               ] 22% Unzipping... emulator/resources/To
-[========                               ] 22% Unzipping... emulator/resources/de
-[========                               ] 22% Unzipping... emulator/resources/To
-[========                               ] 22% Unzipping... emulator/resources/ma
-[========                               ] 22% Unzipping... emulator/resources/de
-[========                               ] 22% Unzipping... emulator/resources/sk
-[========                               ] 22% Unzipping... emulator/resources/de
-[========                               ] 22% Unzipping... emulator/resources/ma
-[========                               ] 22% Unzipping... emulator/resources/po
-[========                               ] 22% Unzipping... emulator/resources/ma
-[========                               ] 22% Unzipping... emulator/resources/sk
-[========                               ] 22% Unzipping... emulator/resources/ma
-[========                               ] 22% Unzipping... emulator/bin64/e2fsck
-[========                               ] 22% Unzipping... emulator/bin64/fsck.e
-[========                               ] 22% Unzipping... emulator/bin64/tune2f
-[========                               ] 22% Unzipping... emulator/bin64/resize
-[========                               ] 22% Unzipping... emulator/bin64/mkfs.e
-[========                               ] 22% Unzipping... emulator/qemu/linux-x
-[=========                              ] 23% Unzipping... emulator/qemu/linux-x
-[=========                              ] 24% Unzipping... emulator/qemu/linux-x
-[=========                              ] 25% Unzipping... emulator/qemu/linux-x
-[==========                             ] 25% Unzipping... emulator/qemu/linux-x
-[==========                             ] 25% Unzipping... emulator/lib/emulator
-[==========                             ] 25% Unzipping... emulator/lib/rtc_serv
-[==========                             ] 25% Unzipping... emulator/lib/advanced
-[==========                             ] 25% Unzipping... emulator/lib/cmake/  
-[==========                             ] 25% Unzipping... emulator/lib/emulator
-[==========                             ] 25% Unzipping... emulator/lib/control_
-[==========                             ] 25% Unzipping... emulator/lib/emulated
-[==========                             ] 25% Unzipping... emulator/lib/rtc_serv
-[==========                             ] 25% Unzipping... emulator/lib/emu-orig
-[==========                             ] 25% Unzipping... emulator/lib/hardware
-[==========                             ] 25% Unzipping... emulator/lib/pkgconfi
-[==========                             ] 25% Unzipping... emulator/lib/pc-bios/
-[==========                             ] 25% Unzipping... emulator/lib/snapshot
-[==========                             ] 25% Unzipping... emulator/lib/adb_serv
-[==========                             ] 25% Unzipping... emulator/lib/hostapd.
-[==========                             ] 25% Unzipping... emulator/lib/grpc_end
-[==========                             ] 25% Unzipping... emulator/lib/ca-bundl
-[==========                             ] 25% Unzipping... emulator/lib/ui_contr
-[==========                             ] 25% Unzipping... emulator/lib/snapshot
-[==========                             ] 25% Unzipping... emulator/lib/ice_conf
-[==========                             ] 25% Unzipping... emulator/lib/libflatb
-[==========                             ] 26% Unzipping... emulator/lib/libflatb
-[==========                             ] 26% Unzipping... emulator/lib/emulator
-[==========                             ] 26% Unzipping... emulator/lib/waterfal
-[==========                             ] 26% Unzipping... emulator/lib/emulated
-[==========                             ] 26% Unzipping... emulator/lib/cmake/fl
-[==========                             ] 26% Unzipping... emulator/lib/pkgconfi
-[==========                             ] 26% Unzipping... emulator/lib/pc-bios/
-[==========                             ] 26% Unzipping... emulator/include/flat
-[==========                             ] 26% Unzipping... emulator/lib64/libgli
-[==========                             ] 26% Unzipping... emulator/lib64/libpro
-[==========                             ] 26% Unzipping... emulator/lib64/qt/   
-[==========                             ] 26% Unzipping... emulator/lib64/liband
-[==========                             ] 26% Unzipping... emulator/lib64/libgfx
-[==========                             ] 26% Unzipping... emulator/lib64/gles_l
-[==========                             ] 26% Unzipping... emulator/lib64/liband
-[==========                             ] 26% Unzipping... emulator/lib64/vulkan
-[==========                             ] 26% Unzipping... emulator/lib64/gles_s
-[==========                             ] 26% Unzipping... emulator/lib64/libemu
-[==========                             ] 26% Unzipping... emulator/lib64/libpro
-[==========                             ] 26% Unzipping... emulator/lib64/liband
-[==========                             ] 26% Unzipping... emulator/lib64/libtcm
-[==========                             ] 26% Unzipping... emulator/lib64/libima
-[==========                             ] 26% Unzipping... emulator/lib64/libc++
-[==========                             ] 26% Unzipping... emulator/lib64/liband
-[==========                             ] 26% Unzipping... emulator/lib64/libabs
-[==========                             ] 26% Unzipping... emulator/lib64/gles_a
-[==========                             ] 26% Unzipping... emulator/lib64/libsha
-[==========                             ] 26% Unzipping... emulator/lib64/libc++
-[==========                             ] 26% Unzipping... emulator/lib64/qt/res
-[==========                             ] 26% Unzipping... emulator/lib64/qt/lib
-[==========                             ] 26% Unzipping... emulator/lib64/qt/tra
-[==========                             ] 26% Unzipping... emulator/lib64/qt/plu
-[==========                             ] 26% Unzipping... emulator/lib64/qt/res
-[==========                             ] 27% Unzipping... emulator/lib64/qt/res
-[==========                             ] 27% Unzipping... emulator/lib64/qt/lib
-[===========                            ] 28% Unzipping... emulator/lib64/qt/lib
-[===========                            ] 29% Unzipping... emulator/lib64/qt/lib
-[===========                            ] 30% Unzipping... emulator/lib64/qt/lib
-[============                           ] 30% Unzipping... emulator/lib64/qt/lib
-[============                           ] 30% Unzipping... emulator/lib64/qt/tra
-[============                           ] 31% Unzipping... emulator/lib64/qt/tra
-[============                           ] 31% Unzipping... emulator/lib64/qt/plu
-[============                           ] 31% Unzipping... emulator/lib64/gles_l
-[============                           ] 31% Unzipping... emulator/lib64/vulkan
-[============                           ] 32% Unzipping... emulator/lib64/vulkan
-[============                           ] 32% Unzipping... emulator/lib64/gles_s
-[============                           ] 32% Unzipping... emulator/lib64/gles_a
-[=============                          ] 33% Unzipping... emulator/lib64/gles_a
-[=====================                  ] 55% Unzipping... emulator/lib64/gles_a
-[=====================                  ] 55% Installing Intel x86_64 Atom Syste
-[=====================                  ] 55% Downloading x86_64-30_r11.zip... e
-[======================                 ] 55% Downloading x86_64-30_r11.zip... e
-[======================                 ] 56% Downloading x86_64-30_r11.zip... e
-[======================                 ] 57% Downloading x86_64-30_r11.zip... e
-[=======================                ] 58% Downloading x86_64-30_r11.zip... e
-[=======================                ] 59% Downloading x86_64-30_r11.zip... e
-[=======================                ] 60% Downloading x86_64-30_r11.zip... e
-[========================               ] 60% Downloading x86_64-30_r11.zip... e
-[========================               ] 61% Downloading x86_64-30_r11.zip... e
-[========================               ] 62% Downloading x86_64-30_r11.zip... e
-[=========================              ] 63% Downloading x86_64-30_r11.zip... e
-[=========================              ] 64% Downloading x86_64-30_r11.zip... e
-[=========================              ] 65% Downloading x86_64-30_r11.zip... e
-[==========================             ] 65% Downloading x86_64-30_r11.zip... e
-[==========================             ] 66% Downloading x86_64-30_r11.zip... e
-[==========================             ] 66% Unzipping... emulator/lib64/gles_a
-[==========================             ] 66% Unzipping... x86_64/VerifiedBootPa
-[==========================             ] 66% Unzipping... x86_64/advancedFeatur
-[==========================             ] 66% Unzipping... x86_64/build.prop    
-[==========================             ] 66% Unzipping... x86_64/encryptionkey.
-[==========================             ] 66% Unzipping... x86_64/kernel-ranchu 
-[==========================             ] 67% Unzipping... x86_64/kernel-ranchu 
-[==========================             ] 67% Unzipping... x86_64/ramdisk.img   
-[==========================             ] 67% Unzipping... x86_64/source.propert
-[==========================             ] 67% Unzipping... x86_64/system.img    
-[===========================            ] 68% Unzipping... x86_64/system.img    
-[===========================            ] 69% Unzipping... x86_64/system.img    
-[===========================            ] 70% Unzipping... x86_64/system.img    
-[============================           ] 70% Unzipping... x86_64/system.img    
-[============================           ] 71% Unzipping... x86_64/system.img    
-[============================           ] 72% Unzipping... x86_64/system.img    
-[=============================          ] 73% Unzipping... x86_64/system.img    
-[=============================          ] 74% Unzipping... x86_64/system.img    
-[=============================          ] 75% Unzipping... x86_64/system.img    
-[==============================         ] 75% Unzipping... x86_64/system.img    
-[==============================         ] 76% Unzipping... x86_64/system.img    
-[==============================         ] 77% Unzipping... x86_64/system.img    
-[==============================         ] 77% Unzipping... x86_64/userdata.img  
-[==============================         ] 77% Unzipping... x86_64/vendor.img    
-[==============================         ] 77% Unzipping... x86_64/data/local.pro
-[==============================         ] 77% Unzipping... x86_64/data/misc/apns
-[==============================         ] 77% Unzipping... x86_64/data/misc/emul
-[==============================         ] 77% Unzipping... x86_64/data/misc/gcec
-[==============================         ] 77% Unzipping... x86_64/data/misc/wifi
-[==============================         ] 77% Unzipping... x86_64/data/system/di
-[==============================         ] 78% Unzipping... x86_64/data/system/di
-[=======================================] 100% Unzipping... x86_64/data/system/d
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.ProfilesActivity
 
-
-+ ls /usr/local/lib/android/sdk/emulator/emulator /usr/local/lib/android/sdk/platform-tools/adb
-/usr/local/lib/android/sdk/emulator/emulator
-/usr/local/lib/android/sdk/platform-tools/adb
-+ echo no
-+ /usr/local/lib/android/sdk/cmdline-tools/latest/bin/avdmanager create avd -n smoke -k 'system-images;android-30;default;x86_64' --force
-Loading local repository...                                                     
-[=========                              ] 25% Loading local repository...       
-[=========                              ] 25% Fetch remote repository...        
-[=======================================] 100% Fetch remote repository...       
-
-Auto-selecting single ABI x86_64
-Do you wish to create a custom hardware profile? [no] + echo 'emulator pid 3527'
-emulator pid 3527
-+ adb start-server
-+ nohup /usr/local/lib/android/sdk/emulator/emulator -avd smoke -no-window -no-audio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect -accel auto -camera-back none -camera-front none -verbose
-* daemon not running; starting now at tcp:5037
-* daemon started successfully
-+ timeout 300 adb wait-for-device
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ProfilesActivity } from null (pid=2425, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
 + true
-+ BOOT=
-++ seq 1 90
-+ for i in $(seq 1 90)
-++ adb shell getprop sys.boot_completed
-++ tr -d '\r'
-+ BOOT=
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.SettingsActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.SettingsActivity } from null (pid=2432, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.LogsActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.LogsActivity } from null (pid=2444, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.ConnectionsActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConnectionsActivity } from null (pid=2451, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.AboutActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AboutActivity } from null (pid=2463, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.ConfigEditorActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.ConfigEditorActivity } from null (pid=2470, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity
++ adb shell am start -n com.vortex.vpn/.ui.AppListActivity
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.vortex.vpn/.ui.AppListActivity } from null (pid=2482, uid=2000) not exported from uid 10130
+	at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1032)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:999)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:669)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1100)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1072)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3678)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:544)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:186)
+	at android.os.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:98)
+	at android.os.ShellCommand.exec(ShellCommand.java:44)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10521)
+	at android.os.Binder.shellCommand(Binder.java:929)
+	at android.os.Binder.onTransact(Binder.java:813)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5027)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2883)
+	at android.os.Binder.execTransactInternal(Binder.java:1159)
+	at android.os.Binder.execTransact(Binder.java:1123)
++ true
++ sleep 5
++ adb shell pidof com.vortex.vpn
++ echo '--- ui monkey (no --ignore-crashes on purpose) ---'
+--- ui monkey (no --ignore-crashes on purpose) ---
++ adb shell monkey -p com.vortex.vpn --throttle 300 -v 150
+  bash arg: -p
+  bash arg: com.vortex.vpn
+  bash arg: --throttle
+  bash arg: 300
+  bash arg: -v
+  bash arg: 150
+args: [-p, com.vortex.vpn, --throttle, 300, -v, 150]
+ arg: "-p"
+ arg: "com.vortex.vpn"
+ arg: "--throttle"
+ arg: "300"
+ arg: "-v"
+ arg: "150"
+data="com.vortex.vpn"
+arg="--throttle" mCurArgData="null" mNextArg=3 argwas="--throttle" nextarg="300"
+data="300"
+:Monkey: seed=1790527512722 count=150
+:AllowPackage: com.vortex.vpn
+:IncludeCategory: android.intent.category.LAUNCHER
+:IncludeCategory: android.intent.category.MONKEY
+// Event percentages:
+//   0: 15.0%
+//   1: 10.0%
+//   2: 2.0%
+//   3: 15.0%
+//   4: -0.0%
+//   5: -0.0%
+//   6: 25.0%
+//   7: 15.0%
+//   8: 2.0%
+//   9: 2.0%
+//   10: 1.0%
+//   11: 13.0%
+:Switch: #Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;component=com.vortex.vpn/.ui.MainActivity;end
+    // Allowing start of Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.vortex.vpn/.ui.MainActivity } in package com.vortex.vpn
+:Sending Touch (ACTION_DOWN): 0:(81.0,633.0)
+:Sending Touch (ACTION_UP): 0:(75.91448,613.4655)
+:Sending Touch (ACTION_DOWN): 0:(2.0,147.0)
+:Sending Touch (ACTION_UP): 0:(0.0,184.41602)
+:Sending Touch (ACTION_DOWN): 0:(264.0,238.0)
+:Sending Touch (ACTION_UP): 0:(257.11194,226.36981)
+    // Allowing start of Intent { cmp=com.vortex.vpn/.ui.ProfilesActivity } in package com.vortex.vpn
+:Sending Touch (ACTION_DOWN): 0:(23.0,322.0)
+:Sending Touch (ACTION_UP): 0:(11.763359,301.6884)
+:Sending Trackball (ACTION_MOVE): 0:(2.0,2.0)
+:Sending Touch (ACTION_DOWN): 0:(263.0,54.0)
+:Sending Touch (ACTION_UP): 0:(284.4269,51.883904)
+:Sending Trackball (ACTION_MOVE): 0:(1.0,0.0)
+:Sending Touch (ACTION_DOWN): 0:(125.0,103.0)
+:Sending Touch (ACTION_UP): 0:(203.29799,51.40648)
+:Sending Touch (ACTION_DOWN): 0:(38.0,616.0)
+:Sending Touch (ACTION_UP): 0:(20.335064,605.9347)
+:Sending Touch (ACTION_DOWN): 0:(13.0,156.0)
+:Sending Touch (ACTION_UP): 0:(0.0,84.1187)
+:Sending Touch (ACTION_DOWN): 0:(297.0,512.0)
+:Sending Touch (ACTION_UP): 0:(291.00528,511.76324)
+:Sending Trackball (ACTION_MOVE): 0:(-3.0,-5.0)
+    //[calendar_time:2026-09-25 09:59:03.337  system_uptime:210760]
+    // Sending event #100
+:Sending Touch (ACTION_DOWN): 0:(50.0,170.0)
+:Sending Touch (ACTION_UP): 0:(49.115147,156.30316)
+:Sending Trackball (ACTION_MOVE): 0:(-4.0,-4.0)
+:Sending Touch (ACTION_DOWN): 0:(88.0,540.0)
+:Sending Touch (ACTION_UP): 0:(189.26384,584.5688)
+:Sending Touch (ACTION_DOWN): 0:(180.0,465.0)
+:Sending Touch (ACTION_UP): 0:(187.89413,446.96802)
+:Sending Touch (ACTION_DOWN): 0:(55.0,269.0)
+Events injected: 150
+:Sending rotation degree=0, persist=false
+:Dropped: keys=0 pointers=0 trackballs=0 flips=0 rotations=0
+## Network stats: elapsed time=11149ms (0ms mobile, 0ms wifi, 11149ms not connected)
+// Monkey finished
++ sleep 3
++ adb shell pidof com.vortex.vpn
++ adb logcat -d
++ grep -q 'FATAL EXCEPTION'
++ adb logcat -d -s VortexSelfTest:I
++ grep -q 'SELFTEST OK'
++ echo 'engine self test did not report OK'
+engine self test did not report OK
++ exit 1
 === emulator output (tail) ===
-INFO         | Android emulator version 37.1.11.0 (build_id 15917651) (CL:N/A)
-INFO         | Graphics backend: gfxstream
-INFO         | Found AVD name 'smoke'
-INFO         | path_getRootIniPath(smoke) returned NULL
-ERROR        | Unknown AVD name [smoke], use -list-avds to see valid list.
-ERROR        | HOME is defined but there is no file smoke.ini in $HOME/.android/avd
-ERROR        | (Note: Directories are searched in the order $ANDROID_AVD_HOME, $ANDROID_SDK_HOME/avd and $HOME/.android/avd)
+DEBUG   | onGuestSendCommand: [0x56380c837e10] Adb connected, start proxing data
+DEBUG   | Started new RenderThread (total 7) @0x56380c6b09c0
+DEBUG   | Started new RenderThread (total 8) @0x56380c6b04e0
+DEBUG   | ColorBuffer 7, 1x1, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 16, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 8, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | Started new RenderThread (total 9) @0x56380c6b1d40
+DEBUG   | ColorBuffer 10, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 11, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | Started new RenderThread (total 10) @0x56380c6b1ba0
+DEBUG   | Started new RenderThread (total 11) @0x56380c2211e0
+DEBUG   | ColorBuffer 15, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
+DEBUG   | Started new RenderThread (total 12) @0x56380c2216c0
+DEBUG   | Started new RenderThread (total 13) @0x56380c6b1a00
+DEBUG   | ColorBuffer 17, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 20, 1x1, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 16, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 21, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 23, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 24, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 25, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | Started new RenderThread (total 14) @0x56380c220b60
+VERBOSE | glReadPixels seems OK for tex(internal:0x8058 fmt:0x1908 type:0x1401) read(fmt:0x1908 type:0x1401).
+DEBUG   | ColorBuffer 26, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 27, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 28, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 30, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
+DEBUG   | Waiting for exit signal RenderThread @0x56380c6b04e0
+DEBUG   | ColorBuffer 32, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | Exited a RenderThread @0x56380c6b04e0
+DEBUG   | Started new RenderThread (total 14) @0x56380c6b16c0
+DEBUG   | ColorBuffer 35, 1x1, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 16, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 36, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
+DEBUG   | Started new RenderThread (total 15) @0x56381b1ac340
+DEBUG   | ColorBuffer 37, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 39, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 41, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 42, 1243x1024, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 5095424, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 43, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 44, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 46, 14x14, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 784, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 47, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 49, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 50, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+INFO         | Boot completed in 26070 ms
+INFO         | Increasing screen off timeout, logcat buffer size to 2M.
+DEBUG   | ColorBuffer 51, 320x24, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 30720, type: 0, props: 15 / 1]
+DEBUG   | Registering pipe service multidisplay
+DEBUG   | MultiDisplayPipe created 0x56381b421c00
+DEBUG   | MultiDisplayPipe recevied QUERY
+DEBUG   | MultiDisplayPipe send add id 0 width 320 height 640 dpi 0 flag 0
+DEBUG   | ColorBuffer 52, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | Started new RenderThread (total 16) @0x56381b1ac1a0
+DEBUG   | ColorBuffer 55, 1x1, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 16, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 56, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | Started new RenderThread (total 17) @0x56380c6b04e0
+DEBUG   | ColorBuffer 58, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 59, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 60, 312x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 62400, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 62, 312x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 62400, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 63, 312x49, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 62400, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 64, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 66, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 67, 320x640, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 819200, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 68, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 70, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 71, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 72, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 74, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 75, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 76, 328x489, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 642880, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 78, 328x489, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 642880, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 79, 328x489, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 642880, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 80, 88x340, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 119680, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 82, 88x340, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 119680, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 83, 88x340, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 119680, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 84, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 86, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 87, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 88, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 90, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
+DEBUG   | ColorBuffer 91, 208x124, VK_FORMAT_R8G8B8A8_UNORM, Memory [size: 103168, type: 0, props: 15 / 1]
