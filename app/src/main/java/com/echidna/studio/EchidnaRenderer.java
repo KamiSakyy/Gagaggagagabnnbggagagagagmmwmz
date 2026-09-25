@@ -405,10 +405,20 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
                 / Math.max(0.001f, model.getModel().getCanvasHeight());
         final float viewAspect = (float) surfaceWidth / Math.max(1.0f, (float) surfaceHeight);
 
-        if (canvasAspect > viewAspect) {
-            projection.scale(1.0f, viewAspect / canvasAspect);
+        // Fit the canvas the way a mirror app does it: in portrait the width is the limit, in
+        // landscape (a phone on a stand, captured by OBS) the height is, which makes the character
+        // as large as the frame allows instead of leaving wide empty bands.
+        if (viewAspect < 1.0f) {
+            if (canvasAspect > viewAspect) {
+                projection.scale(1.0f, viewAspect / canvasAspect);
+            } else {
+                projection.scale(canvasAspect / viewAspect, 1.0f);
+            }
         } else {
-            projection.scale(canvasAspect / viewAspect, 1.0f);
+            // Landscape: fill the height, crop whatever overflows to the sides.
+            projection.scale(1.0f, 1.0f);
+            final float cover = Math.max(1.0f, viewAspect / Math.max(0.01f, canvasAspect) * 0.62f);
+            projection.scale(cover, cover);
         }
         // The camera mode moves the whole model with the head of the user; every other mode keeps
         // these at zero and one, so the shows are framed exactly as authored.

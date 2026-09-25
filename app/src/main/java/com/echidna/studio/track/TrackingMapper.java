@@ -50,6 +50,11 @@ public final class TrackingMapper {
     private final Pose tracked = new Pose();
     private final Pose demo = new Pose();
 
+    /**
+     * Seconds since the last blink seen in the signals. It starts at zero, so a fresh session gives
+     * the tracker six seconds to prove it can see blinks before the framework takes over.
+     */
+    private float sinceBlink;
     private volatile boolean mirrored = true;
     private float lostFor = 10.0f;
     private float demoBlend = 1.0f;
@@ -127,6 +132,11 @@ public final class TrackingMapper {
         final float rawRight = s.eyeRight;
         updateEyes(eyeL, rawLeft, dt);
         updateEyes(eyeR, rawRight, dt);
+        if (Math.min(rawLeft, rawRight) < 0.6f) {
+            sinceBlink = 0.0f;
+        } else {
+            sinceBlink += dt;
+        }
 
         lostFor = 0.0f;
     }
@@ -153,6 +163,17 @@ public final class TrackingMapper {
             follower.reset(follower.value() + (raw - follower.value()) * 0.6f);
         }
         follower.update(raw, dt);
+    }
+
+    /**
+     * True when the tracker has not produced a blink for a long time.
+     *
+     * <p>Some trackers (and ML Kit on many devices) report the eyelids as fully open almost always.
+     * A character that never blinks reads as a broken avatar, so in that case the eyelids are handed
+     * over to the framework's own blink, which keeps the face alive.</p>
+     */
+    public boolean blinkStarved() {
+        return sinceBlink > 6.0f;
     }
 
     /** True when the tracker is confident that a face is in front of the camera. */
@@ -240,7 +261,9 @@ public final class TrackingMapper {
         final float openRight = mirrored ? eyeL.value() : eyeR.value();
         tracked.eyeLOpen = ParamLimits.eyeOpen(smoothStep(0.18f, 0.62f, openLeft));
         tracked.eyeROpen = ParamLimits.eyeOpen(smoothStep(0.18f, 0.62f, openRight));
-        tracked.eyeWeight = 1.0f;
+        // While the tracker really reports blinks the eyelids are driven one to one; if it does not,
+        // the weight goes to zero and the framework's automatic blink takes over.
+        tracked.eyeWeight = blinkStarved() ? 0.0f : 1.0f;
         tracked.weight = 1.0f;
     }
 

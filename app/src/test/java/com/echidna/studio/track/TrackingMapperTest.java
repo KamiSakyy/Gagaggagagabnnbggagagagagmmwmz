@@ -2,6 +2,7 @@ package com.echidna.studio.track;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.echidna.studio.anim.ParamLimits;
@@ -255,5 +256,27 @@ public class TrackingMapperTest {
 
         copy.reset();
         assertFalse("сброс возвращает модель в центр", copy.shiftsModel());
+    }
+
+    @Test
+    public void aTrackerWithoutBlinksHandsTheEyelidsToTheFramework() {
+        final TrackingMapper mapper = new TrackingMapper(true);
+        final FaceSignals alwaysOpen = signals();
+        alwaysOpen.eyeLeft = 1.0f;
+        alwaysOpen.eyeRight = 1.0f;
+        final Pose pose = settle(mapper, alwaysOpen, 8.0f);
+
+        assertTrue("трекер без морганий должен быть распознан", mapper.blinkStarved());
+        assertEquals("веки должны перейти движку", 0.0f, pose.eyeWeight, 0.001f);
+
+        // As soon as a real blink arrives, control goes back to the tracker.
+        final FaceSignals blink = signals();
+        blink.eyeLeft = 0.1f;
+        blink.eyeRight = 0.1f;
+        mapper.onSignals(blink, STEP);
+        mapper.pose(STEP, pose);
+        assertFalse("после моргания управление возвращается трекеру", mapper.blinkStarved());
+        assertEquals(1.0f, pose.eyeWeight, 0.001f);
+        assertTrue("глаза должны закрыться по трекеру", pose.eyeLOpen < 0.6f);
     }
 }

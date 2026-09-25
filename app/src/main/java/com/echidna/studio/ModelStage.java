@@ -68,6 +68,9 @@ public final class ModelStage implements Motions {
     private volatile float micGain = 1.0f;
     private volatile boolean micEnabled;
 
+    // The automatic blink of the framework runs in every mode; in the camera mode the eyelids are
+    // driven by the tracker with full weight, which overrides it, unless the tracker has no blink
+    // data at all - then ModelStage leaves them to the framework again.
     private boolean autoBlink = true;
     private String manualMotion;
     private float manualTime;
