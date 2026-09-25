@@ -16,8 +16,9 @@ public final class TrafficRate {
     /** Below this interval the sample is ignored (the rate would be noise). */
     private static final long MIN_INTERVAL_MS = 200L;
 
-    private long lastUplinkTotal = -1L;
-    private long lastDownlinkTotal = -1L;
+    private boolean hasBaseline;
+    private long lastUplinkTotal;
+    private long lastDownlinkTotal;
     private long lastStamp;
     private long uplink;
     private long downlink;
@@ -34,8 +35,9 @@ public final class TrafficRate {
 
     /** Forgets the counters: used when the tunnel stops or the engine restarts. */
     public void reset() {
-        lastUplinkTotal = -1L;
-        lastDownlinkTotal = -1L;
+        hasBaseline = false;
+        lastUplinkTotal = 0L;
+        lastDownlinkTotal = 0L;
         lastStamp = 0L;
         uplink = 0L;
         downlink = 0L;
@@ -49,9 +51,9 @@ public final class TrafficRate {
      * @param stamp         monotonic-ish timestamp of the sample in milliseconds
      */
     public void sample(long uplinkTotal, long downlinkTotal, long stamp) {
-        if (lastUplinkTotal < 0 || lastStamp == 0L
-                || uplinkTotal < lastUplinkTotal || downlinkTotal < lastDownlinkTotal) {
+        if (!hasBaseline || uplinkTotal < lastUplinkTotal || downlinkTotal < lastDownlinkTotal) {
             // first sample, or the engine restarted and the counters went back to zero
+            hasBaseline = true;
             lastUplinkTotal = uplinkTotal;
             lastDownlinkTotal = downlinkTotal;
             lastStamp = stamp;
