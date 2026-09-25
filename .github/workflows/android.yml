@@ -436,7 +436,7 @@ jobs:
           mkdir -p ci-out/screens
           adb exec-out screencap -p > ci-out/screens/01-dashboard.png || true
           # the traffic card sits below the fold: scroll down and capture it as well
-          adb shell input swipe 360 900 360 300 400 || true
+          adb shell input swipe 160 420 160 120 400 || true
           sleep 3
           adb exec-out screencap -p > ci-out/screens/01b-traffic.png || true
           # release builds do not export their screens, so the app opens them itself
