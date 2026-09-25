@@ -23,7 +23,7 @@ public final class Damp {
 
     public void reset(float v) {
         primed = true;
-        value = v;
+        value = Pose.safe(v);
     }
 
     public boolean isPrimed() {
@@ -34,8 +34,16 @@ public final class Damp {
         return value;
     }
 
-    /** Follows {@code target}; the first call jumps straight to it. */
+    /**
+     * Follows {@code target}; the first call jumps straight to it.
+     *
+     * <p>A target the tracker cannot represent ({@code NaN}, an infinity) is ignored: the follower
+     * keeps its last good value instead of poisoning the whole chain.</p>
+     */
     public float update(float target, float dt) {
+        if (Float.isNaN(target) || Float.isInfinite(target)) {
+            return value;
+        }
         if (!primed) {
             value = target;
             primed = true;

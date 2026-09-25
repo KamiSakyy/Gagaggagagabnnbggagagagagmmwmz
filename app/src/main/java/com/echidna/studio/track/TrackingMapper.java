@@ -97,6 +97,15 @@ public final class TrackingMapper {
             lostFor += dt;
             return;
         }
+        if (Float.isNaN(dt) || Float.isInfinite(dt) || dt < 0.0f) {
+            dt = 1.0f / 60.0f;
+        }
+        if (!usable(s)) {
+            // A frame the tracker could not compute (degenerate matrix, zero sized box) is treated
+            // as a lost face: better a short demo pose than a broken model.
+            lostFor += dt;
+            return;
+        }
         lastSignalMs = s.timeMs;
 
         final float yawTarget = (mirrored ? -1.0f : 1.0f) * s.yaw;
@@ -120,6 +129,18 @@ public final class TrackingMapper {
         updateEyes(eyeR, rawRight, dt);
 
         lostFor = 0.0f;
+    }
+
+    /** True when every value of the frame is a number the model can actually use. */
+    private static boolean usable(FaceSignals s) {
+        return isFinite(s.yaw) && isFinite(s.pitch) && isFinite(s.roll)
+                && isFinite(s.eyeLeft) && isFinite(s.eyeRight)
+                && isFinite(s.mouthOpen) && isFinite(s.smile)
+                && isFinite(s.centerX) && isFinite(s.centerY);
+    }
+
+    private static boolean isFinite(float value) {
+        return !Float.isNaN(value) && !Float.isInfinite(value);
     }
 
     private static void updateEyes(Damp follower, float raw, float dt) {

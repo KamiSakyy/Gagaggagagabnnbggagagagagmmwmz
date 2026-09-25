@@ -45,58 +45,58 @@ public final class ParamLimits {
     }
 
     public static float offset(float v) {
-        return Pose.clamp(v, OFFSET_MIN, OFFSET_MAX);
+        return Pose.clamp(Pose.safe(v), OFFSET_MIN, OFFSET_MAX);
     }
 
     public static float zoom(float v) {
-        return Pose.clamp(v, ZOOM_MIN, ZOOM_MAX);
+        return Pose.clamp(Pose.safe(v), ZOOM_MIN, ZOOM_MAX);
     }
 
     public static float angleX(float v) {
-        return Pose.clamp(v, ANGLE_X_MIN, ANGLE_X_MAX);
+        return Pose.clamp(Pose.safe(v), ANGLE_X_MIN, ANGLE_X_MAX);
     }
 
     public static float angleY(float v) {
-        return Pose.clamp(v, ANGLE_Y_MIN, ANGLE_Y_MAX);
+        return Pose.clamp(Pose.safe(v), ANGLE_Y_MIN, ANGLE_Y_MAX);
     }
 
     public static float angleZ(float v) {
-        return Pose.clamp(v, ANGLE_Z_MIN, ANGLE_Z_MAX);
+        return Pose.clamp(Pose.safe(v), ANGLE_Z_MIN, ANGLE_Z_MAX);
     }
 
     public static float bodyX(float v) {
-        return Pose.clamp(v, BODY_X_MIN, BODY_X_MAX);
+        return Pose.clamp(Pose.safe(v), BODY_X_MIN, BODY_X_MAX);
     }
 
     public static float bodyY(float v) {
-        return Pose.clamp(v, BODY_Y_MIN, BODY_Y_MAX);
+        return Pose.clamp(Pose.safe(v), BODY_Y_MIN, BODY_Y_MAX);
     }
 
     public static float bodyZ(float v) {
-        return Pose.clamp(v, BODY_Z_MIN, BODY_Z_MAX);
+        return Pose.clamp(Pose.safe(v), BODY_Z_MIN, BODY_Z_MAX);
     }
 
     public static float eyeBallX(float v) {
-        return Pose.clamp(v, EYE_BALL_X_MIN, EYE_BALL_X_MAX);
+        return Pose.clamp(Pose.safe(v), EYE_BALL_X_MIN, EYE_BALL_X_MAX);
     }
 
     public static float eyeBallY(float v) {
-        return Pose.clamp(v, EYE_BALL_Y_MIN, EYE_BALL_Y_MAX);
+        return Pose.clamp(Pose.safe(v), EYE_BALL_Y_MIN, EYE_BALL_Y_MAX);
     }
 
     public static float eyeOpen(float v) {
-        return Pose.clamp(v, EYE_OPEN_MIN, EYE_OPEN_MAX);
+        return Pose.clamp(Pose.safe(v), EYE_OPEN_MIN, EYE_OPEN_MAX);
     }
 
     public static float mouthOpen(float v) {
-        return Pose.clamp(v, MOUTH_OPEN_MIN, MOUTH_OPEN_MAX);
+        return Pose.clamp(Pose.safe(v), MOUTH_OPEN_MIN, MOUTH_OPEN_MAX);
     }
 
     public static float mouthForm(float v) {
-        return Pose.clamp(v, MOUTH_FORM_MIN, MOUTH_FORM_MAX);
+        return Pose.clamp(Pose.safe(v), MOUTH_FORM_MIN, MOUTH_FORM_MAX);
     }
 
     public static float unit(float v) {
-        return Pose.clamp(v, 0.0f, 1.0f);
+        return Pose.clamp(Pose.safe(v), 0.0f, 1.0f);
     }
 }

@@ -162,6 +162,55 @@ public final class Pose {
         return value < min ? min : (value > max ? max : value);
     }
 
+    /**
+     * Replaces a value the model cannot use with a safe one.
+     *
+     * <p>Trackers do produce {@code NaN} and infinities - a degenerate transformation matrix, a
+     * division by a zero sized face box - and a single such number would spread through the pose and
+     * reach the native renderer, which either freezes the character or disappears it entirely. Every
+     * value that crosses the border into the model goes through here.</p>
+     */
+    public static float safe(float value) {
+        if (Float.isNaN(value) || Float.isInfinite(value)) {
+            return 0.0f;
+        }
+        return value;
+    }
+
+    /** Like {@link #safe(float)} but for the values that are 1.0 by default. */
+    public static float safeUnit(float value) {
+        if (Float.isNaN(value) || Float.isInfinite(value)) {
+            return 1.0f;
+        }
+        return value;
+    }
+
+    /** Repairs every field of the pose, in place. The last line of defence before the model. */
+    public void sanitize() {
+        angleX = clamp(safe(angleX), ParamLimits.ANGLE_X_MIN, ParamLimits.ANGLE_X_MAX);
+        angleY = clamp(safe(angleY), ParamLimits.ANGLE_Y_MIN, ParamLimits.ANGLE_Y_MAX);
+        angleZ = clamp(safe(angleZ), ParamLimits.ANGLE_Z_MIN, ParamLimits.ANGLE_Z_MAX);
+        bodyX = clamp(safe(bodyX), ParamLimits.BODY_X_MIN, ParamLimits.BODY_X_MAX);
+        bodyY = clamp(safe(bodyY), ParamLimits.BODY_Y_MIN, ParamLimits.BODY_Y_MAX);
+        bodyZ = clamp(safe(bodyZ), ParamLimits.BODY_Z_MIN, ParamLimits.BODY_Z_MAX);
+        eyeLOpen = clamp(safe(eyeLOpen), 0.0f, 1.0f);
+        eyeROpen = clamp(safe(eyeROpen), 0.0f, 1.0f);
+        eyeLSmile = clamp(safe(eyeLSmile), 0.0f, 1.0f);
+        eyeRSmile = clamp(safe(eyeRSmile), 0.0f, 1.0f);
+        eyeBallX = clamp(safe(eyeBallX), ParamLimits.EYE_BALL_X_MIN, ParamLimits.EYE_BALL_X_MAX);
+        eyeBallY = clamp(safe(eyeBallY), ParamLimits.EYE_BALL_Y_MIN, ParamLimits.EYE_BALL_Y_MAX);
+        mouthOpenY = clamp(safe(mouthOpenY), 0.0f, 1.0f);
+        mouthForm = clamp(safe(mouthForm), -1.0f, 1.0f);
+        browLY = clamp(safe(browLY), -1.0f, 1.0f);
+        browRY = clamp(safe(browRY), -1.0f, 1.0f);
+        cheek = clamp(safe(cheek), 0.0f, 1.0f);
+        offsetX = clamp(safe(offsetX), ParamLimits.OFFSET_MIN, ParamLimits.OFFSET_MAX);
+        offsetY = clamp(safe(offsetY), ParamLimits.OFFSET_MIN, ParamLimits.OFFSET_MAX);
+        zoom = clamp(safeUnit(zoom), ParamLimits.ZOOM_MIN, ParamLimits.ZOOM_MAX);
+        weight = clamp(safe(weight), 0.0f, 1.0f);
+        eyeWeight = clamp(safe(eyeWeight), 0.0f, 1.0f);
+    }
+
     @Override
     public String toString() {
         return "Pose{angle=(" + angleX + "," + angleY + "," + angleZ + ")"

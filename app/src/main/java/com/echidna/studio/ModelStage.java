@@ -268,6 +268,10 @@ public final class ModelStage implements Motions {
             result.set(incoming);
         }
 
+        // The very last gate before the pose reaches the native model: whatever happened above, the
+        // renderer only ever receives values the model can use.
+        result.sanitize();
+
         notifyListener();
         return result;
     }
