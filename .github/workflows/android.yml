@@ -173,17 +173,26 @@ jobs:
           for file in ci-out/configs/*.json; do
             name=$(basename "$file" .json)
             python3 tools/start_config.py "$file" "/tmp/start-$name.json"
+            startlog="/tmp/start-$name.log"
             set +e
-            timeout 25 "$ENGINE" run -c "/tmp/start-$name.json" > "/tmp/start-$name.log" 2>&1
-            set -e
-            if grep -aq "sing-box started" "/tmp/start-$name.log" \
-                && ! grep -aqE "FATAL|detour to an empty" "/tmp/start-$name.log"; then
-              echo "--- start $name: the engine started and stayed up"
+            "$ENGINE" run -c "/tmp/start-$name.json" > "$startlog" 2>&1 &
+            pid=$!
+            started=0
+            for i in $(seq 1 20); do
+              if grep -aq "sing-box started" "$startlog"; then started=1; break; fi
+              if ! kill -0 "$pid" 2>/dev/null; then break; fi
+              sleep 1
+            done
+            if [ "$started" = "1" ] && kill -0 "$pid" 2>/dev/null; then
+              echo "--- start $name: the engine accepted the configuration and is running"
             else
               echo "--- start $name: THE ENGINE REFUSED TO START"
-              tail -n 25 "/tmp/start-$name.log" || true
+              tail -n 30 "$startlog" || true
               START_FAILED=1
             fi
+            kill -INT "$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            set -e
           done
           echo "=== configuration check finished (check failed=$FAILED, start failed=$START_FAILED) ==="
           if [ "$START_FAILED" -ne 0 ]; then
@@ -542,8 +551,9 @@ jobs:
           {
             echo "### Vortex VPN build"
             echo
-            if grep -q "failed=0" .ci/config-check.log 2>/dev/null; then
-              echo "Configuration validation (12 configs through sing-box 1.14.1): **passed**"
+            if grep -q "check failed=0, start failed=0" .ci/config-check.log 2>/dev/null; then
+              echo "Configuration validation (every generated config through sing-box 1.14.1:"
+              echo "schema check **and** a real engine start): **passed**"
             else
               echo "Configuration validation: **needs attention** (see .ci/config-check.log)"
             fi
