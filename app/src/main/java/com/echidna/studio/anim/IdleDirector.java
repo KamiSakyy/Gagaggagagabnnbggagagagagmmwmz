@@ -105,6 +105,11 @@ public final class IdleDirector {
         out.cheek = ParamLimits.unit(0.12f + 0.1f * brow);
         out.eyeLSmile = ParamLimits.unit(0.14f + 0.3f * brow);
         out.eyeRSmile = out.eyeLSmile;
+        // The camera mode moves the model with the head of the user; leaving that mode must bring
+        // the model back to the centre, otherwise a shifted frame would survive into the idle.
+        out.offsetX = 0.0f;
+        out.offsetY = 0.0f;
+        out.zoom = 1.0f;
         out.mouthOpenY = ParamLimits.mouthOpen(0.02f + 0.02f * (float) Math.sin(t * 0.8f));
         out.mouthForm = ParamLimits.mouthForm(0.3f);
         out.weight = 0.6f;

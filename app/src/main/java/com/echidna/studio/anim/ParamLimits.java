@@ -33,7 +33,23 @@ public final class ParamLimits {
     public static final float EYE_OPEN_MIN = 0.0f;
     public static final float EYE_OPEN_MAX = 1.0f;
 
+    /** How far the model may travel inside the frame; a tenth of the half width is plenty. */
+    public static final float OFFSET_MIN = -0.12f;
+    public static final float OFFSET_MAX = 0.12f;
+
+    /** Size multiplier limits: leaning in enlarges the model, leaning back shrinks it. */
+    public static final float ZOOM_MIN = 0.9f;
+    public static final float ZOOM_MAX = 1.14f;
+
     private ParamLimits() {
+    }
+
+    public static float offset(float v) {
+        return Pose.clamp(v, OFFSET_MIN, OFFSET_MAX);
+    }
+
+    public static float zoom(float v) {
+        return Pose.clamp(v, ZOOM_MIN, ZOOM_MAX);
     }
 
     public static float angleX(float v) {

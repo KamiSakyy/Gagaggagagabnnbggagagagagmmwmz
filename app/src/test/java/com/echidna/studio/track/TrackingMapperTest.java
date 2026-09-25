@@ -194,4 +194,66 @@ public class TrackingMapperTest {
         final Pose later = settle(mapper, signals, 1.0f);
         assertEquals("модель должна стоять спокойно", yaw, later.angleY, 0.2f);
     }
+
+    @Test
+    public void theModelFollowsTheUserSideways() {
+        final TrackingMapper mapper = new TrackingMapper(true);
+
+        // The user's head is at their right, which is the left half of the raw camera frame.
+        final FaceSignals right = signals();
+        right.centerX = -0.6f;
+        final Pose shifted = settle(mapper, right, 1.5f);
+        assertTrue("модель должна поехать вправо вместе с человеком: " + shifted.offsetX,
+                shifted.offsetX > 0.01f);
+
+        // And to the other side.
+        final FaceSignals left = signals();
+        left.centerX = 0.6f;
+        final Pose other = settle(mapper, left, 2.0f);
+        assertTrue("модель должна поехать влево: " + other.offsetX, other.offsetX < -0.01f);
+        assertTrue("сдвиг должен оставаться в разумных границах",
+                Math.abs(other.offsetX) <= ParamLimits.OFFSET_MAX + 0.0001f);
+    }
+
+    @Test
+    public void leaningInMakesTheModelBigger() {
+        final TrackingMapper mapper = new TrackingMapper(true);
+
+        final FaceSignals normal = signals();
+        normal.scale = 0.34f;
+        final Pose neutral = settle(mapper, normal, 2.0f);
+        assertEquals("на обычном расстоянии размер не меняется", 1.0f, neutral.zoom, 0.02f);
+
+        final FaceSignals close = signals();
+        close.scale = 0.55f;
+        final Pose zoomed = settle(mapper, close, 2.0f);
+        assertTrue("приближение должно увеличивать модель: " + zoomed.zoom, zoomed.zoom > 1.02f);
+        assertTrue("увеличение должно быть ограничено", zoomed.zoom <= ParamLimits.ZOOM_MAX + 0.0001f);
+
+        final FaceSignals far = signals();
+        far.scale = 0.18f;
+        final Pose small = settle(mapper, far, 2.0f);
+        assertTrue("отъезд должен уменьшать модель: " + small.zoom, small.zoom < 0.99f);
+        assertTrue("уменьшение должно быть ограничено", small.zoom >= ParamLimits.ZOOM_MIN - 0.0001f);
+    }
+
+    @Test
+    public void posesWithoutTrackingKeepTheModelCentred() {
+        // Shows and the idle director build poses from scratch: they must not move the model, or
+        // the authored framing would change whenever the camera mode was used before.
+        final Pose authored = new Pose();
+        assertFalse("авторская поза не должна двигать модель", authored.shiftsModel());
+        assertEquals(1.0f, authored.zoom, 0.0001f);
+
+        final Pose copy = new Pose();
+        final Pose tracked = new Pose();
+        tracked.offsetX = 0.08f;
+        tracked.zoom = 1.1f;
+        Pose.lerp(authored, tracked, 0.5f, copy);
+        assertEquals("половинный переход даёт половинный сдвиг", 0.04f, copy.offsetX, 0.0001f);
+        assertEquals(1.05f, copy.zoom, 0.0001f);
+
+        copy.reset();
+        assertFalse("сброс возвращает модель в центр", copy.shiftsModel());
+    }
 }

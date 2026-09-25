@@ -1,5 +1,6 @@
 package com.echidna.studio.anim;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -90,5 +91,21 @@ public class IdleDirectorTest {
             director.update(STEP, pose, null, true);
         }
         assertNotNull(pose);
+    }
+
+    @Test
+    public void idleBringsTheModelBackToTheCentre() {
+        final IdleDirector director = new IdleDirector(ShowLibrary.idleMotions(), 5L);
+        final Pose pose = new Pose();
+        // Pretend the camera mode just moved the model.
+        pose.offsetX = 0.11f;
+        pose.offsetY = -0.07f;
+        pose.zoom = 1.12f;
+
+        director.update(1.0f / 60.0f, pose, null, true);
+
+        assertEquals("режим ожидания не должен оставлять модель сдвинутой", 0.0f, pose.offsetX, 0.0001f);
+        assertEquals(0.0f, pose.offsetY, 0.0001f);
+        assertEquals("и не должен оставлять приближение", 1.0f, pose.zoom, 0.0001f);
     }
 }

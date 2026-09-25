@@ -37,6 +37,17 @@ public final class Pose {
     public float cheek;
 
     /** Strength of the whole pose, 0..1. */
+    /**
+     * Shift of the whole model inside the frame, in projection units: 1.0 is the half width of the
+     * screen, so ±0.1 moves the model by five percent of the screen. Driven by the position of the
+     * face in the camera frame, which is what makes the avatar follow the user sideways.
+     */
+    public float offsetX;
+    public float offsetY;
+
+    /** Size multiplier of the model; 1 is the calibrated size, larger means the user leaned in. */
+    public float zoom = 1.0f;
+
     public float weight = 1.0f;
 
     /** Strength of the eye part of the pose, 0..1. */
@@ -67,6 +78,9 @@ public final class Pose {
         browLY = other.browLY;
         browRY = other.browRY;
         cheek = other.cheek;
+        offsetX = other.offsetX;
+        offsetY = other.offsetY;
+        zoom = other.zoom;
         weight = other.weight;
         eyeWeight = other.eyeWeight;
     }
@@ -90,6 +104,9 @@ public final class Pose {
         browLY = 0;
         browRY = 0;
         cheek = 0;
+        offsetX = 0;
+        offsetY = 0;
+        zoom = 1.0f;
         weight = 1.0f;
         eyeWeight = 1.0f;
     }
@@ -124,12 +141,21 @@ public final class Pose {
         out.browLY = mix(a.browLY, b.browLY, t);
         out.browRY = mix(a.browRY, b.browRY, t);
         out.cheek = mix(a.cheek, b.cheek, t);
+        out.offsetX = mix(a.offsetX, b.offsetX, t);
+        out.offsetY = mix(a.offsetY, b.offsetY, t);
+        out.zoom = mix(a.zoom, b.zoom, t);
         out.weight = mix(a.weight, b.weight, t);
         out.eyeWeight = mix(a.eyeWeight, b.eyeWeight, t);
     }
 
     public static float mix(float a, float b, float t) {
         return a + (b - a) * t;
+    }
+
+    /** True when this pose would move the model on the screen. */
+    public boolean shiftsModel() {
+        return Math.abs(offsetX) > 0.0001f || Math.abs(offsetY) > 0.0001f
+                || Math.abs(zoom - 1.0f) > 0.0001f;
     }
 
     public static float clamp(float value, float min, float max) {
@@ -142,6 +168,7 @@ public final class Pose {
                 + " body=(" + bodyX + "," + bodyY + "," + bodyZ + ")"
                 + " eyes=(" + eyeLOpen + "," + eyeROpen + ")"
                 + " mouth=(" + mouthOpenY + "," + mouthForm + ")"
+                + " offset=(" + offsetX + "," + offsetY + ") zoom=" + zoom
                 + " weight=" + weight + "}";
     }
 }

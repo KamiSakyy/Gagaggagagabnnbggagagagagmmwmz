@@ -359,17 +359,19 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         if (breath != null) {
             breath.updateParameters(model, delta);
         }
+
+        // The procedural layer (camera tracking, shows, the idle director) is applied before the
+        // physics and pose effects, so hair and the body sway react to head movement in the same
+        // frame instead of one frame late. The mic lipsync is driven by the same layer through
+        // ParamMouthOpenY, which is why nothing happens here for it.
+        applyPose(pose);
+
         if (physics != null) {
             physics.evaluate(model, delta);
         }
         if (poseEffect != null) {
             poseEffect.updateParameters(model, delta);
         }
-        if (lipSync) {
-            // The camera layer drives ParamMouthOpenY itself; nothing to add here.
-        }
-
-        applyPose(pose);
         model.update();
     }
 

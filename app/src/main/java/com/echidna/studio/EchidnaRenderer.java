@@ -294,8 +294,11 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         } else {
             projection.scale(canvasAspect / viewAspect, 1.0f);
         }
-        projection.scale(modelScale, modelScale);
-        projection.translate(0.0f, modelOffsetY);
+        // The camera mode moves the whole model with the head of the user; every other mode keeps
+        // these at zero and one, so the shows are framed exactly as authored.
+        final float zoom = ParamLimits.zoom(stage.viewZoom());
+        projection.scale(modelScale * zoom, modelScale * zoom);
+        projection.translate(stage.viewOffsetX(), modelOffsetY + stage.viewOffsetY());
 
         final CubismModelMatrix matrix = model.getModelMatrix();
         projection.multiplyByMatrix(matrix);

@@ -26,6 +26,12 @@ public final class TrackingMapper {
     private static final float PITCH_GAIN = 1.10f;
     private static final float ROLL_GAIN = 1.20f;
 
+    /** Height of the face in the frame when the user sits normally; the zoom reference point. */
+    private static final float NEUTRAL_FACE = 0.34f;
+    private static final float SHIFT_GAIN = 0.16f;
+    private static final float LIFT_GAIN = 0.10f;
+    private static final float ZOOM_GAIN = 0.55f;
+
     private static final float FACE_LOST_GRACE = 0.45f;
     private static final float DEMO_IN_TIME = 0.9f;
     private static final float DEMO_OUT_TIME = 0.5f;
@@ -39,6 +45,7 @@ public final class TrackingMapper {
     private final Damp mouth = new Damp(0.06f);
     private final Damp centerX = new Damp(0.16f);
     private final Damp centerY = new Damp(0.16f);
+    private final Damp faceSize = new Damp(0.30f);
 
     private final Pose tracked = new Pose();
     private final Pose demo = new Pose();
@@ -78,6 +85,7 @@ public final class TrackingMapper {
         mouth.reset(0.0f);
         centerX.reset(0.0f);
         centerY.reset(0.0f);
+        faceSize.reset(NEUTRAL_FACE);
         lostFor = 10.0f;
         demoBlend = 1.0f;
         clock = 0.0f;
@@ -100,6 +108,10 @@ public final class TrackingMapper {
         mouth.update(s.mouthOpen, dt);
         centerX.update(s.centerX, dt);
         centerY.update(s.centerY, dt);
+        // Only a sensible face size feeds the zoom; a half closed frame would jump otherwise.
+        if (s.scale > 0.05f) {
+            faceSize.update(s.scale, dt);
+        }
 
         // A blink is fast: closing snaps, opening follows the tracked value smoothly.
         final float rawLeft = s.eyeLeft;
@@ -178,6 +190,14 @@ public final class TrackingMapper {
         tracked.bodyZ = ParamLimits.bodyZ(rollValue * 0.22f);
         tracked.bodyY = ParamLimits.bodyY(-pitchValue * 0.12f);
 
+        // The whole model follows the user sideways as well, exactly like a mirror image of the
+        // head position: this is the part that makes the avatar feel like it stands next to you
+        // rather than being pinned to the middle of the frame.
+        final float shiftX = (mirrored ? -1.0f : 1.0f) * centerX.value();
+        tracked.offsetX = ParamLimits.offset(shiftX * SHIFT_GAIN);
+        tracked.offsetY = ParamLimits.offset(centerY.value() * -LIFT_GAIN);
+        tracked.zoom = ParamLimits.zoom(1.0f + (faceSize.value() - NEUTRAL_FACE) * ZOOM_GAIN);
+
         // The gaze leads the head a little, which is what makes eye contact feel alive.
         tracked.eyeBallX = ParamLimits.eyeBallX(yawValue / 26.0f * 0.55f + centerX.value() * 0.35f);
         tracked.eyeBallY = ParamLimits.eyeBallY(pitchValue / 26.0f * 0.45f - centerY.value() * 0.25f);
@@ -222,6 +242,9 @@ public final class TrackingMapper {
         demo.eyeRSmile = ParamLimits.unit(0.15f);
         demo.eyeLOpen = 1.0f;
         demo.eyeROpen = 1.0f;
+        demo.offsetX = 0.0f;
+        demo.offsetY = 0.0f;
+        demo.zoom = 1.0f;
         // The automatic blinking of the framework stays in charge while the demo plays.
         demo.eyeWeight = 0.0f;
         demo.weight = 0.6f;

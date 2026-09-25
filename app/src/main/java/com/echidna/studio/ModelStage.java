@@ -272,6 +272,23 @@ public final class ModelStage implements Motions {
     }
 
     /**
+     * Shift of the model inside the frame as of the last {@link #tick}, in projection units.
+     * Only the camera mode moves the model; shows and the idle director keep it centred.
+     */
+    public float viewOffsetX() {
+        return result.offsetX;
+    }
+
+    public float viewOffsetY() {
+        return result.offsetY;
+    }
+
+    /** Size multiplier of the model as of the last {@link #tick}. */
+    public float viewZoom() {
+        return result.zoom;
+    }
+
+    /**
      * The microphone adds to the tracked mouth instead of replacing it, and the tracked mouth keeps
      * a small floor so that the lips do not slam shut between words.
      */
