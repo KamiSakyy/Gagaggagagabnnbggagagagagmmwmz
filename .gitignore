@@ -1,12 +1,18 @@
+# Gradle and IDE
 .gradle/
 build/
 app/build/
 local.properties
-keystore.properties
 *.iml
 .idea/
 .DS_Store
-app/libs/libbox.aar
-app/release/
+
+# Signing material (the CI job creates and force-adds it)
+keystore.properties
+
+# Downloaded at build time by tools/fetch_face_model.sh
+app/src/main/assets/models/
+
+# Build outputs
 out/
 ci-out/
