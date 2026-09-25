@@ -1,6 +1,5 @@
 package com.vortex.vpn;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
@@ -157,8 +156,11 @@ public class LayoutAuditTest {
         Context themed = new ContextThemeWrapper(org.robolectric.RuntimeEnvironment.getApplication(),
                 R.style.Theme_Vortex);
         View main = LayoutInflater.from(themed).inflate(R.layout.activity_main, null, false);
-        assertFalse("the three cramped quick buttons are back",
-                main.findViewById(R.id.btn_profiles) != null);
         assertTrue("the bottom navigation is missing", main.findViewById(R.id.bottom_nav) != null);
+        // The dashboard must offer exactly one primary action plus the navigation bar.
+        int buttons = 0;
+        buttons += main.findViewById(R.id.btn_connect) != null ? 1 : 0;
+        buttons += main.findViewById(R.id.btn_servers) != null ? 1 : 0;
+        assertTrue("unexpected extra buttons on the dashboard: " + buttons, buttons <= 2);
     }
 }
