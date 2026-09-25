@@ -1,9 +1,48 @@
 === маркеры проблем ===
-178:grep: write error: Broken pipe
+217:grep: write error: Broken pipe
 
 === хвост ===
 == Echidna Studio build ==
-ветка=arena/01a0d529-gagaggagagabnnbggagagagagmmwmz коммит=8bcf8ccc09d120c8aa6983964b79f34291524c0f
+ветка=arena/01a0d529-gagaggagagabnnbggagagagagmmwmz коммит=737c0e1328d9a6ad4d1a700fdc7be87e35580120
+openjdk version "17.0.20.1" 2026-08-18
+OpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)
+OpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)
+ANDROID_HOME=/usr/local/lib/android/sdk ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+SDK=/usr/local/lib/android/sdk
+build-tools
+cmake
+cmdline-tools
+extras
+licenses
+ndk
+packages-list.txt
+platform-tools
+platforms
+android-34
+android-34-ext10
+android-34-ext11
+android-34-ext12
+android-34-ext8
+android-35
+android-35-ext14
+android-35-ext15
+android-36
+android-36-ext18
+android-36-ext19
+android-36.1
+android-37.0
+android-37.1
+android-37.2
+android-37.2-beta1
+android-37.2-beta2
+android-37.2-beta3
+34.0.0
+35.0.0
+35.0.1
+36.0.0
+36.1.0
+37.0.0
+yes: standard output: Broken pipe
 Loading package information...                                                  Loading local repository...                                                     [                                       ] 3% Loading local repository...        [                                       ] 3% Fetch remote repository...         [=                                      ] 3% Fetch remote repository...         [=                                      ] 4% Fetch remote repository...         [=                                      ] 5% Fetch remote repository...         [==                                     ] 5% Fetch remote repository...         [==                                     ] 6% Fetch remote repository...         [==                                     ] 7% Fetch remote repository...         [==                                     ] 7% Computing updates...               [===                                    ] 8% Computing updates...               [===                                    ] 10% Computing updates...              [=======================================] 100% Computing updates...             
 
 проверено файлов ресурсов: 8
@@ -12,7 +51,7 @@ Loading package information...                                                  
 --- источник: официальный Google Storage (релиз 1)
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  52.5M      0 --:--:-- --:--:-- --:--:-- 52.7M
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  37.5M      0 --:--:-- --:--:-- --:--:-- 37.7M
   получено 3758596 байт, sha256=64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff
   это ровно официальная модель
 модель получена из: официальный Google Storage (релиз 1)
@@ -32,8 +71,8 @@ face_landmarker.task
     94072  1980-02-01 00:00   jni/arm64-v8a/libLive2DCubismCoreJNI.so
     97064  1980-02-01 00:00   jni/x86/libLive2DCubismCoreJNI.so
    110728  1980-02-01 00:00   jni/x86_64/libLive2DCubismCoreJNI.so
--rw-r--r-- 1 runner runner 2730 Sep 25 20:12 keystore.jks
--rw-r--r-- 1 runner runner   94 Sep 25 20:12 keystore.properties
+-rw-r--r-- 1 runner runner 2730 Sep 25 20:17 keystore.jks
+-rw-r--r-- 1 runner runner   94 Sep 25 20:17 keystore.properties
 
 Welcome to Gradle 8.10.2!
 
@@ -77,9 +116,9 @@ Note: Recompile with -Xlint:unchecked for details.
 > Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:compileDebugUnitTestJavaWithJavac
 > Task :app:testDebugUnitTest
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_9-1790367174314.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_9-1790367462853.json
 
-BUILD SUCCESSFUL in 48s
+BUILD SUCCESSFUL in 49s
 20 actionable tasks: 19 executed, 1 from cache
 === итог юнит-тестов ===
 tests="10" skipped="0" failures="0" errors="0"
@@ -88,22 +127,22 @@ tests="10" skipped="0" failures="0" errors="0"
 tests="8" skipped="0" failures="0" errors="0"
 tests="7" skipped="0" failures="0" errors="0"
 tests="12" skipped="0" failures="0" errors="0"
-name="com.echidna.studio.ModelStageTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-25T" hostname="runnervmtr4k5" time="0.07"
-name="com.echidna.studio.anim.IdleDirectorTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-25T" hostname="runnervmtr4k5" time="0.006"
-name="com.echidna.studio.anim.ShowLibraryTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-25T" hostname="runnervmtr4k5" time="0.004"
+name="com.echidna.studio.ModelStageTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-25T" hostname="runnervmtr4k5" time="0.063"
+name="com.echidna.studio.anim.IdleDirectorTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-25T" hostname="runnervmtr4k5" time="0.005"
+name="com.echidna.studio.anim.ShowLibraryTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-25T" hostname="runnervmtr4k5" time="0.003"
 name="com.echidna.studio.anim.ShowPlayerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-25T" hostname="runnervmtr4k5" time="0.009"
-name="com.echidna.studio.track.FacePoseTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-25T" hostname="runnervmtr4k5" time="0.002"
-name="com.echidna.studio.track.TrackingMapperTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-09-25T" hostname="runnervmtr4k5" time="0.017"
+name="com.echidna.studio.track.FacePoseTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-25T" hostname="runnervmtr4k5" time="0.005"
+name="com.echidna.studio.track.TrackingMapperTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-09-25T" hostname="runnervmtr4k5" time="0.015"
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
 > Task :app:preBuild UP-TO-DATE
 > Task :app:preReleaseBuild UP-TO-DATE
 > Task :app:mergeReleaseJniLibFolders
 > Task :app:javaPreCompileRelease FROM-CACHE
-> Task :app:checkReleaseDuplicateClasses
 > Task :app:mergeReleaseNativeLibs
-> Task :app:generateReleaseResValues FROM-CACHE
+> Task :app:checkReleaseDuplicateClasses
 > Task :app:checkReleaseAarMetadata
+> Task :app:generateReleaseResValues FROM-CACHE
 > Task :app:mapReleaseSourceSetPaths
 > Task :app:generateReleaseResources
 
@@ -122,41 +161,41 @@ Unable to strip the following libraries, packaging them as they are: libLive2DCu
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
 > Task :app:processReleaseManifestForPackage
+> Task :app:processReleaseResources
+> Task :app:compileReleaseJavaWithJavac FROM-CACHE
+> Task :app:dexBuilderRelease
+> Task :app:mergeExtDexRelease
 > Task :app:mergeReleaseArtProfile
+> Task :app:mergeReleaseGlobalSynthetics
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
 > Task :app:extractReleaseVersionControlInfo
 > Task :app:processReleaseJavaRes NO-SOURCE
-> Task :app:processReleaseResources
+> Task :app:optimizeReleaseResources
 > Task :app:compressReleaseAssets
-> Task :app:compileReleaseJavaWithJavac FROM-CACHE
-> Task :app:mergeExtDexRelease
-> Task :app:mergeReleaseJavaResource
-> Task :app:dexBuilderRelease
-> Task :app:mergeReleaseGlobalSynthetics
 > Task :app:collectReleaseDependencies
 > Task :app:sdkReleaseDependencyData
 > Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
-> Task :app:optimizeReleaseResources
+> Task :app:mergeReleaseJavaResource
 > Task :app:mergeDexRelease
 > Task :app:compileReleaseArtProfile
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_10-1790367219822.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_10-1790367509316.json
 
 BUILD SUCCESSFUL in 51s
 41 actionable tasks: 36 executed, 5 from cache
-total 73952
-drwxr-xr-x  2 runner runner     4096 Sep 25 20:14 .
-drwxr-xr-x 10 runner runner     4096 Sep 25 20:12 ..
--rw-r--r--  1 runner runner 33260237 Sep 25 20:14 EchidnaStudio-1.0.0-arm64-v8a.apk
--rw-r--r--  1 runner runner 37102500 Sep 25 20:14 EchidnaStudio-1.0.0-x86_64.apk
--rw-r--r--  1 runner runner  5347122 Sep 25 20:12 EchidnaStudio-source.zip
+total 73956
+drwxr-xr-x  2 runner runner     4096 Sep 25 20:19 .
+drwxr-xr-x 10 runner runner     4096 Sep 25 20:17 ..
+-rw-r--r--  1 runner runner 33260237 Sep 25 20:19 EchidnaStudio-1.0.0-arm64-v8a.apk
+-rw-r--r--  1 runner runner 37102500 Sep 25 20:19 EchidnaStudio-1.0.0-x86_64.apk
+-rw-r--r--  1 runner runner  5352718 Sep 25 20:17 EchidnaStudio-source.zip
 === содержимое APK ===
 проверяю handoff/EchidnaStudio-1.0.0-x86_64.apk
    110728  1981-01-01 01:01   lib/x86_64/libLive2DCubismCoreJNI.so
@@ -185,12 +224,12 @@ grep: write error: Broken pipe
 весит: 36M
 KVM есть, проверка на эмуляторе пойдёт
 total 73956
-drwxr-xr-x  2 runner runner     4096 Sep 25 20:14 .
-drwxr-xr-x 10 runner runner     4096 Sep 25 20:12 ..
--rw-r--r--  1 runner runner 33260237 Sep 25 20:14 EchidnaStudio-1.0.0-arm64-v8a.apk
--rw-r--r--  1 runner runner 37102500 Sep 25 20:14 EchidnaStudio-1.0.0-x86_64.apk
--rw-r--r--  1 runner runner  5352718 Sep 25 20:14 EchidnaStudio-source.zip
-[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 16941a6] handoff: сборка APK
+drwxr-xr-x  2 runner runner     4096 Sep 25 20:19 .
+drwxr-xr-x 10 runner runner     4096 Sep 25 20:17 ..
+-rw-r--r--  1 runner runner 33260237 Sep 25 20:19 EchidnaStudio-1.0.0-arm64-v8a.apk
+-rw-r--r--  1 runner runner 37102500 Sep 25 20:19 EchidnaStudio-1.0.0-x86_64.apk
+-rw-r--r--  1 runner runner  5353425 Sep 25 20:19 EchidnaStudio-source.zip
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 851af0a] handoff: сборка APK
  3 files changed, 0 insertions(+), 0 deletions(-)
 To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
-   8bcf8cc..16941a6  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+   737c0e1..851af0a  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
