@@ -1,10 +1,10 @@
 === failure markers ===
-190:/home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/java/com/vortex/vpn/core/SubscriptionUpdater.java:299: error: incompatible types: int cannot be converted to Result
-199:> Task :app:compileDebugJavaWithJavac FAILED
-202:FAILURE: Build failed with an exception.
-204:* What went wrong:
-205:Execution failed for task ':app:compileDebugJavaWithJavac'.
-214:find: ‘app/build/outputs/apk/release’: No such file or directory
+200:> Task :app:compileDebugUnitTestJavaWithJavac FAILED
+201:/home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/test/java/com/vortex/vpn/LayoutAuditTest.java:161: error: cannot find symbol
+211:FAILURE: Build failed with an exception.
+213:* What went wrong:
+214:Execution failed for task ':app:compileDebugUnitTestJavaWithJavac'.
+223:find: ‘app/build/outputs/apk/release’: No such file or directory
 
 === tail ===
 == build  ==
@@ -43,14 +43,14 @@ Loading package information...                                                  
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  112M  100  112M    0     0   241M      0 --:--:-- --:--:-- --:--:--  378M
--rw-r--r-- 1 runner runner 113M Sep 25 10:57 app/libs/libbox.aar
+ 11  112M   11 12.9M    0     0  37.4M      0  0:00:03 --:--:--  0:00:03 37.4M100  112M  100  112M    0     0   156M      0 --:--:-- --:--:-- --:--:--  267M
+-rw-r--r-- 1 runner runner 113M Sep 25 10:59 app/libs/libbox.aar
  72706412  1980-00-00 00:00   jni/armeabi-v7a/libbox.so
  80751056  1980-00-00 00:00   jni/arm64-v8a/libbox.so
  78457644  1980-00-00 00:00   jni/x86/libbox.so
  85478392  1980-00-00 00:00   jni/x86_64/libbox.so
--rw-r--r-- 1 runner runner 2696 Sep 25 10:57 keystore.jks
--rw-r--r-- 1 runner runner   85 Sep 25 10:57 keystore.properties
+-rw-r--r-- 1 runner runner 2696 Sep 25 10:59 keystore.jks
+-rw-r--r-- 1 runner runner   85 Sep 25 10:59 keystore.properties
 + mkdir -p ci-out/cfgcheck
 + curl -fsSL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/snakeyaml.jar https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar
 ++ find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model app/src/main/java/com/vortex/vpn/sub -name '*.java'
@@ -178,9 +178,9 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
-> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
+> Task :app:mergeDebugResources
 > Task :app:parseDebugLocalResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
@@ -189,50 +189,57 @@ Daemon will be stopped at the end of the build
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
-> Task :app:processDebugManifestForPackage
 > Task :app:mergeDebugAssets
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
-/home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/java/com/vortex/vpn/core/SubscriptionUpdater.java:299: error: incompatible types: int cannot be converted to Result
-            return -1;
-                   ^
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/java/com/vortex/vpn/cfg/JsonReader.java uses unchecked or unsafe operations.
 Note: Recompile with -Xlint:unchecked for details.
-1 error
 
-> Task :app:compileDebugJavaWithJavac FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790333851154.json
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:generateDebugUnitTestConfig
+
+> Task :app:compileDebugUnitTestJavaWithJavac FAILED
+/home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/test/java/com/vortex/vpn/LayoutAuditTest.java:161: error: cannot find symbol
+                main.findViewById(R.id.btn_profiles) != null);
+                                      ^
+  symbol:   variable btn_profiles
+  location: class id
+Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/test/java/com/vortex/vpn/ImportFlowTest.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+1 error
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790333970913.json
 
 FAILURE: Build failed with an exception.
 
 * What went wrong:
-Execution failed for task ':app:compileDebugJavaWithJavac'.
+Execution failed for task ':app:compileDebugUnitTestJavaWithJavac'.
 > Compilation failed; see the compiler error output for details.
 
 * Try:
 > Run with --info option to get more log output.
 > Run with --scan to get full insights.
 
-BUILD FAILED in 49s
-19 actionable tasks: 18 executed, 1 from cache
+BUILD FAILED in 1m 4s
+24 actionable tasks: 23 executed, 1 from cache
 find: ‘app/build/outputs/apk/release’: No such file or directory
 --- kvm ---
-crw-rw---- 1 root kvm 10, 232 Sep 25 10:55 /dev/kvm
+crw-rw---- 1 root kvm 10, 232 Sep 25 10:57 /dev/kvm
 hardware acceleration is available
 4
                total        used        free      shared  buff/cache   available
-Mem:           15989        1075       11059          48        4248       14913
+Mem:           15989        1025       11067          48        4292       14964
 total 228K
--rw-r--r-- 1 runner runner 3.5K Sep 25 10:57 README.md
--rw-r--r-- 1 runner runner 224K Sep 25 10:58 VortexVPN-source.zip
-[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 9babed7] handoff: signed APK build ()
- 3 files changed, 0 insertions(+), 0 deletions(-)
- delete mode 100644 handoff/VortexVPN-1.0.0-arm64-v8a.apk
- delete mode 100644 handoff/VortexVPN-1.0.0-armeabi-v7a.apk
+-rw-r--r-- 1 runner runner 3.5K Sep 25 10:59 README.md
+-rw-r--r-- 1 runner runner 224K Sep 25 11:00 VortexVPN-source.zip
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 05cdd23] handoff: signed APK build ()
+ 1 file changed, 0 insertions(+), 0 deletions(-)
 To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
-   1471589..9babed7  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+   e1c74c2..05cdd23  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
