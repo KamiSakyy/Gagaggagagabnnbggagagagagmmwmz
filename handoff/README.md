@@ -76,6 +76,8 @@ shadowtls, anytls, hysteria2, tuic, snell, ssh, socks, http, naive, wireguard.
     статистику. Пока туннель выключен — на месте скорости прочерк, а не ложный ноль.
   * Число вида «200 МБ» в углу карточки — это **оперативная память** движка (RSS процесса,
     `/proc/self/statm`), а не интернет-трафик. Теперь оно так и подписано: «ОЗУ движка».
+  * Если движок почему-то не отдаёт свои счётчики, приложение берёт байты прямо у интерфейса
+    туннеля (`/proc/net/dev`, устройство `tun*`) — цифры не пропадают.
   * Под счётчиками трафика прямо написано: это ваш собственный трафик через VPN.
   * Движок больше **не опрашивает локации в фоне**: группа URL-теста (которая каждые 3 минуты
     проверяла через вашу подписку каждую локацию) теперь создаётся только если вы сами включили
@@ -96,8 +98,10 @@ shadowtls, anytls, hysteria2, tuic, snell, ssh, socks, http, naive, wireguard.
 * **Запуск на эмуляторе Android 11 (x86_64)**: приложение ставится, открывается, живёт, проходит
   150 событий monkey без падений, `FATAL EXCEPTION` в логе нет.
 * **Скриншоты настоящих экранов** лежат в `.ci/screens/` (`01-dashboard.png`,
-  `02-locations.png`, `03-profiles.png`, `04-settings.png`, `05-connections.png`) — их делает CI на
-  эмуляторе, а не дизайнер.
+  `01b-traffic.png`, `02-locations.png`, `03-profiles.png`, `04-settings.png`,
+  `05-connections.png`) — их делает CI на эмуляторе, а не дизайнер. На `01b-traffic.png` видно,
+  как выглядит карточка трафика: прочерк вместо ложного нуля, пояснение про свой трафик и
+  «ОЗУ движка» вместо пугающего числа.
 * **Проверка движка на устройстве**: `SELFTEST OK configs=4 engine=1.14.1 go=go1.26.8,
   android/amd64 smart-mixed=ok global-gvisor=ok hardened=ok direct-only=ok outbounds=31
   protocols=15/[vless, vmess, trojan, shadowsocks, hysteria2, tuic, anytls, socks, wireguard,
