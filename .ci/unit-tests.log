@@ -31,9 +31,9 @@ Daemon will be stopped at the end of the build
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
-> Task :app:processDebugManifestForPackage
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
@@ -51,33 +51,10 @@ Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagag
 Note: Recompile with -Xlint:deprecation for details.
 
 > Task :app:generateDebugUnitTestConfig
-
 > Task :app:testDebugUnitTest
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790347943419.json
 
-TrafficRateTest > oneMegabyteInOneSecondIsOneMegabytePerSecond FAILED
-    java.lang.AssertionError at TrafficRateTest.java:28
-
-TrafficRateTest > aSlowerCadenceIsNormalisedToASecond FAILED
-    java.lang.AssertionError at TrafficRateTest.java:37
-
-TrafficRateTest > samplesCloserThanTheMinimumIntervalAreIgnored FAILED
-    java.lang.AssertionError at TrafficRateTest.java:70
-
-23 tests completed, 3 failed
-
-> Task :app:testDebugUnitTest FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790347793942.json
-
-FAILURE: Build failed with an exception.
-
-* What went wrong:
-Execution failed for task ':app:testDebugUnitTest'.
-> There were failing tests. See the report at: file:///home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/build/reports/tests/testDebugUnitTest/index.html
-
-* Try:
-> Run with --scan to get full insights.
-
-BUILD FAILED in 1m 21s
+BUILD SUCCESSFUL in 1m 21s
 25 actionable tasks: 24 executed, 1 from cache
 === unit test result files ===
 tests="3" skipped="0" failures="0" errors="0"
@@ -85,5 +62,5 @@ tests="3" skipped="0" failures="0" errors="0"
 tests="6" skipped="0" failures="0" errors="0"
 tests="2" skipped="0" failures="0" errors="0"
 tests="2" skipped="0" failures="0" errors="0"
-tests="7" skipped="0" failures="3" errors="0"
-=== gradle exit code: 1 ===
+tests="7" skipped="0" failures="0" errors="0"
+=== gradle exit code: 0 ===

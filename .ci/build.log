@@ -1,65 +1,6 @@
 === failure markers ===
-520:> Task :app:testDebugUnitTest FAILED
-523:FAILURE: Build failed with an exception.
-525:* What went wrong:
-526:Execution failed for task ':app:testDebugUnitTest'.
-534:find: ‘app/build/outputs/apk/release’: No such file or directory
 
 === tail ===
-Note: Recompile with -Xlint:unchecked for details.
-+ javac -version
-javac 17.0.20.1
-+ java -cp ci-out/cfgcheck:/tmp/snakeyaml.jar ConfigCheck ci-out/configs
-share links: 10 outbounds, base64 subscription: 10 outbounds
-clash yaml: 3 outbounds
-after dedupe: 13 locations (including one shadowsocksr location that is intentionally filtered out of the config)
-total outbounds in configurations: 31
-protocol types covered: [vless, vmess, trojan, shadowsocks, shadowsocksr, hysteria2, tuic, anytls, socks, wireguard, snell, shadowtls, ssh, http, naive, hysteria]
-ConfigCheck: 12 configurations written to ci-out/configs
-ConfigCheck: OK
-=== sample configuration (8717 bytes) ===
-{"log":{"level":"info","timestamp":true},"dns":{"servers":[{"type":"udp","tag":"dns-direct","server":"1.1.1.1","detour":"direct"},{"type":"https","tag":"dns-remote","server":"1.1.1.1","path":"/dns-query","tls":{"enabled":true,"server_name":"cloudflare-dns.com"},"detour":"proxy"}],"final":"dns-remote","strategy":"prefer_ipv4","timeout":"5s","disable_cache":false},"inbounds":[{"type":"tun","tag":"tun-in","mtu":9000,"address":["172.19.0.1/30","fdfe:dcba:9876::1/126"],"auto_route":true,"strict_route":false,"dns_mode":"hijack","udp_timeout":"5m","stack":"mixed"}],"outbounds":[{"type":"selector","tag":"proxy","outbounds":["🇩🇪 Germany Reality","United States VMess","🇳🇱 Netherlands Trojan","🇫🇮 Finland SS","🇸🇪 Sweden Hysteria2","Canada TUIC","France AnyTLS","Turkey SOCKS","WireGuard","🇩🇪 Germany Clash","Clash WebSocket","Clash Hysteria2","Reality vision","Reality ws","VMess ws","VMess grpc","Trojan","Shadowsocks","Hysteria2","TUIC","AnyTLS","Snell","ShadowTLS","SSH","WireGuard #2","SOCKS","HTTP","Naive","Hysteria"],"default":"🇩🇪 Germany Reality","interrupt_exist_connections":false},{"type":"vless","tag":"🇩🇪 Germany Reality","server":"example.com","server_port":443,"uuid":"0f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e11","flow":"xtls-rprx-vision","tls":{"enabled":true,"server_name":"example.com","utls":{"enabled":true,"fingerprint":"chrome"},"reality":{"enabled":true,"public_key":"8hRk3Q0m5m3XhI1K6m3n0dHIZt6WZ1nYk5K0aVpG1S0","short_id":"6ba85179e30d4fc2"}}},{"type":"vmess","tag":"United States VMess","server":"vmess.example.com","server_port":443,"uuid":"5c1a9c9e-9f4b-4d3a-9c8e-1b2d3e4f5a6b","security":"auto","tls":{"enabled":true,"server_name":"vmess.example.com"},"transport":{"type":"ws","path":"/ws","headers":{"Host":"vmess.example.com"}}},{"type":"trojan","tag":"🇳🇱 Netherlands Trojan","server":"trojan.example.com","server_port":443,"password":"trojan-password","tls":{"enabled":true,"server_name":"trojan.example.com"},"transport":{"type":"ws","path":"/trojan","headers":{"Host":"trojan.example.com"}}},{"type":"shadowsocks","tag":"🇫🇮 Finland SS","server":"ss.example.com","server_port":8388,"method":"2022-blake3-aes-128-gcm","password":"MDEyMzQ1Njc4OWFiY2RlZg=="},{"type":"hysteria2","tag":"🇸🇪 Sweden Hysteria2","server":"hy.example.com","server_port":443,"password":"hy2-password","up_mbps":200,"down_mbps":500,"obfs":{"type":"salamander","password":"obfs-password"},"tls":{"enabled":true,"server_name":"hy.example.com","insecure":true}},{"type":"tuic","tag":"Canada TUIC","server":"tuic.example.com","server_port":443,"uuid":"3f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e22","password":"tuic-password","congestion_control":"bbr","udp_relay_mode":"native","tls":{"enabled":true,"server_name":"tuic.example.com"}},{"type":"anytls","tag":"France AnyTLS","server":"anytls.example.com","server_port":443,"password":"anytls-password","tls":{"enabled":true,"server_name":"anytls.example.com","utls":{"enabled":true,"fingerprint":"chrome"}}},{"type":"socks","tag":"Turkey SOCKS","server":"socks.example.com","server_port":1080,"username":"user","password":"password"},{"type":"vless","tag":"🇩🇪 Germany Clash","server":"clash.example.com","server_port":443,"uuid":"0f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e11","flow":"xtls-rprx-vision","tls":{"enabled":true,"server_name":"clash.example.com","utls":{"enabled":true,"fingerprint":"chrome"},"reality":{"enabled":true,"public_key":"8hRk3Q0m5m3XhI1K6m3n0dHIZt6WZ1nYk5K0aVpG1S0","short_id":"6ba85179e30d4fc2"}}},{"type":"vmess","tag":"Clash WebSocket","server":"ws.example.com","server_port":443,"uuid":"5c1a9c9e-9f4b-4d3a-9c8e-1b2d3e4f5a6b","security":"auto","tls":{"enabled":true,"server_name":"ws.example.com"},"transport":{"type":"ws","path":"/clash","headers":{"Host":"ws.example.com"}}},{"type":"hysteria2","tag":"Clash Hysteria2","server":"hy2.example.com","server_port":443,"password":"hy2-password","tls":{"enabled":true,"server_name":"hy2.example.com","insecure":true}},{"type":"vless","tag":"Reality vision","server":"example.com","server_port":443,"uuid":"0f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e11","flow":"xtls-rprx-vision","tls":{"enabled":true,"server_name":"example.com","utls":{"enabled":true,"fingerprint":"chrome"},"reality":{"enabled":true,"public_key":"8hRk3Q0m5m3XhI1K6m3n0dHIZt6WZ1nYk5K0aVpG1S0","short_id":"6ba85179e30d4fc2"}}},{"type":"vless","tag":"Reality ws","server":"example.com","server_port":8443,"uuid":"0f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e11","tls":{"enabled":true,"server_name":"example.com","utls":{"enabled":true,"fingerprint":"chrome"},"reality":{"enabled":true,"public_key":"8hRk3Q0m5m3XhI1K6m3n0dHIZt6WZ1nYk5K0aVpG1S0","short_id":"6ba85179e30d4fc2"}}},{"type":"vmess","tag":"VMess ws","server":"vmess.example.com","server_port":443,"uuid":"5c1a9c9e-9f4b-4d3a-9c8e-1b2d3e4f5a6b","security":"auto","tls":{"enabled":true,"server_name":"vmess.example.com"},"transport":{"type":"ws","path":"/vmess","headers":{"Host":"vmess.example.com"}}},{"type":"vmess","tag":"VMess grpc","server":"grpc.example.com","server_port":443,"uuid":"5c1a9c9e-9f4b-4d3a-9c8e-1b2d3e4f5a6c","security":"auto","tls":{"enabled":true,"server_name":"grpc.example.com"},"transport":{"type":"grpc","service_name":"GunService"}},{"type":"trojan","tag":"Trojan","server":"trojan.example.com","server_port":443,"password":"trojan-password","tls":{"enabled":true,"server_name":"trojan.example.com","utls":{"enabled":true,"fingerprint":"chrome"}},"transport":{"type":"ws","path":"/trojan"}},{"type":"shadowsocks","tag":"Shadowsocks","server":"ss.example.com","server_port":8388,"method":"2022-blake3-aes-128-gcm","password":"MDEyMzQ1Njc4OWFiY2RlZg=="},{"type":"hysteria2","tag":"Hysteria2","server":"hy2.example.com","server_port":443,"password":"hy2-password","up_mbps":200,"down_mbps":500,"obfs":{"type":"salamander","password":"obfs-password"},"tls":{"enabled":true,"server_name":"hy2.example.com","insecure":true}},{"type":"tuic","tag":"TUIC","server":"tuic.example.com","server_port":443,"uuid":"3f1c5f36-4f6b-4f0b-8f1f-4d1a6b4f2e22","password":"tuic-password","congestion_control":"bbr","udp_relay_mode":"native","tls":{"enabled":true,"server_name":"tuic.example.com"}},{"type":"anytls","tag":"AnyTLS","server":"anytls.example.com","server_port":443,"password":"anytls-password","tls":{"enabled":true,"server_name":"anytls.example.com","utls":{"enabled":true,"fingerprint":"chrome"}}},{"type":"snell","tag":"Snell","server":"snell.example.com","server_port":443,"version":4,"psk":"snell-psk","obfs_mode":"tls","obfs_host":"example.org"},{"type":"shadowtls","tag":"ShadowTLS","server":"stls.example.com","server_port":443,"version":3,"password":"shadowtls-password","tls":{"enabled":true,"server_name":"example.org","insecure":true}},{"type":"ssh","tag":"SSH","server":"ssh.example.com","server_port":22,"user":"root","password":"ssh-password"},{"type":"socks","tag":"SOCKS","server":"socks.example.com","server_port":1080,"username":"user","password":"password"},{"type":"http","tag":"HTTP","server":"http.example.com","server_port":8080,"username":"user","password":"password","tls":{"enabled":true}},{"type":"naive","tag":"Naive","server":"naive.example.com","server_port":443,"username":"user","password":"naive-password","tls":{"enabled":true,"server_name":"naive.example.com"}},{"type":"hysteria","tag":"Hysteria","server":"hysteria.example.com","server_port":443,"auth_str":"hysteria-auth","up_mbps":100,"down_mbps":200,"obfs":"xplus","tls":{"enabled":true,"server_name":"hysteria.example.com"}},{"type":"direct","tag":"direct","domain_resolver":{"server":"dns-direct"}}],"endpoints":[{"type":"wireguard","tag":"WireGuard","private_key":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=","address":"10.10.0.2/32","mtu":1408,"peers":[{"address":"wg.example.com","port":2408,"public_key":"ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0A=","pre_shared_key":"QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A=","allowed_ips":["0.0.0.0/0","::/0"],"persistent_keepalive_interval":25}]},{"type":"wireguard","tag":"WireGuard #2","private_key":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=","address":"10.10.0.2/32","mtu":1408,"peers":[{"address":"wg.example.com","port":2408,"public_key":"ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0A=","allowed_ips":["0.0.0.0/0","::/0"]}]}],"route":{"rules":[{"action":"sniff","timeout":"300ms"},{"ip_is_private":true,"outbound":"direct"},{"domain_suffix":[".lan",".local",".localdomain",".home",".internal",".localhost",".home.arpa","localhost"],"outbound":"direct"},{"ip_cidr":["0.0.0.0/8","10.0.0.0/8","172.16.0.0/12","192.168.0.0/16","169.254.0.0/16"],"outbound":"direct"}],"final":"proxy","auto_detect_interface":true,"default_domain_resolver":{"server":"dns-direct"}},"experimental":{"cache_file":{"enabled":true,"store_fakeip":false}}}
-=== end of sample ===
-+ echo 'harness done'
-harness done
-+ curl -fsSL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.14.1/sing-box-1.14.1-linux-amd64.tar.gz
-++ du -h /tmp/sing-box.tar.gz
-++ cut -f1
-+ echo 'engine downloaded: 31M'
-engine downloaded: 31M
-+ tar -xzf /tmp/sing-box.tar.gz -C /tmp
-+ ls /tmp
-+ grep -i sing-box
-sing-box-1.14.1-linux-amd64
-sing-box.tar.gz
-+ ENGINE=/tmp/sing-box-1.14.1-linux-amd64/sing-box
-+ chmod +x /tmp/sing-box-1.14.1-linux-amd64/sing-box
-+ echo 'engine: /tmp/sing-box-1.14.1-linux-amd64/sing-box'
-engine: /tmp/sing-box-1.14.1-linux-amd64/sing-box
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box version
-sing-box version 1.14.1
-
-Environment: go1.26.8 linux/amd64
-Tags: with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,with_ccm,with_ocm,with_cloudflared,with_naive_outbound,with_usbip,with_openvpn,with_openconnect,badlinkname,tfogo_checklinkname0,with_purego
-Revision: 1ac1a339cb1223e9c70eae14c44411c75033c02d
-CGO: disabled
-+ FAILED=0
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/direct-only.json
-+ echo '--- check direct-only.json'
---- check direct-only.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/direct-only.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/hardened.json
-+ echo '--- check hardened.json'
---- check hardened.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/hardened.json
-+ for file in ci-out/configs/*.json
-++ basename ci-out/configs/minimal.json
-+ echo '--- check minimal.json'
---- check minimal.json
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/minimal.json
-+ for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode0-gvisor.json
 + echo '--- check mode0-gvisor.json'
 --- check mode0-gvisor.json
@@ -112,24 +53,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/direct-only.json /tmp/start-direct-only.json
 + startlog=/tmp/start-direct-only.log
 + set +e
-+ pid=2759
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-direct-only.json
++ pid=2782
 + started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-direct-only.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-direct-only.log
-+ kill -0 2759
++ kill -0 2782
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-direct-only.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2759
++ kill -0 2782
 + echo '--- start direct-only: the engine accepted the configuration and is running'
 --- start direct-only: the engine accepted the configuration and is running
-+ kill -INT 2759
-+ wait 2759
++ kill -INT 2782
++ wait 2782
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/hardened.json .json
@@ -137,24 +78,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/hardened.json /tmp/start-hardened.json
 + startlog=/tmp/start-hardened.log
 + set +e
-+ pid=2775
++ pid=2797
 + started=0
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-hardened.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-hardened.log
-+ kill -0 2775
++ kill -0 2797
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-hardened.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2775
++ kill -0 2797
 + echo '--- start hardened: the engine accepted the configuration and is running'
 --- start hardened: the engine accepted the configuration and is running
-+ kill -INT 2775
-+ wait 2775
++ kill -INT 2797
++ wait 2797
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/minimal.json .json
@@ -162,24 +103,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/minimal.json /tmp/start-minimal.json
 + startlog=/tmp/start-minimal.log
 + set +e
-+ pid=2800
-+ started=0
++ pid=2822
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-minimal.json
++ started=0
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-minimal.log
-+ kill -0 2800
++ kill -0 2822
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-minimal.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2800
++ kill -0 2822
 + echo '--- start minimal: the engine accepted the configuration and is running'
 --- start minimal: the engine accepted the configuration and is running
-+ kill -INT 2800
-+ wait 2800
++ kill -INT 2822
++ wait 2822
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode0-gvisor.json .json
@@ -187,24 +128,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/mode0-gvisor.json /tmp/start-mode0-gvisor.json
 + startlog=/tmp/start-mode0-gvisor.log
 + set +e
-+ pid=2823
++ pid=2845
 + started=0
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-gvisor.json
 ++ seq 1 20
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-gvisor.json
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-gvisor.log
-+ kill -0 2823
++ kill -0 2845
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-gvisor.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2823
++ kill -0 2845
 + echo '--- start mode0-gvisor: the engine accepted the configuration and is running'
 --- start mode0-gvisor: the engine accepted the configuration and is running
-+ kill -INT 2823
-+ wait 2823
++ kill -INT 2845
++ wait 2845
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode0-mixed.json .json
@@ -212,24 +153,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/mode0-mixed.json /tmp/start-mode0-mixed.json
 + startlog=/tmp/start-mode0-mixed.log
 + set +e
-+ pid=2846
++ pid=2870
 + started=0
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-mixed.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-mixed.log
-+ kill -0 2846
++ kill -0 2870
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-mixed.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2846
++ kill -0 2870
 + echo '--- start mode0-mixed: the engine accepted the configuration and is running'
 --- start mode0-mixed: the engine accepted the configuration and is running
-+ kill -INT 2846
-+ wait 2846
++ kill -INT 2870
++ wait 2870
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode0-system.json .json
@@ -237,24 +178,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/mode0-system.json /tmp/start-mode0-system.json
 + startlog=/tmp/start-mode0-system.log
 + set +e
-+ pid=2870
++ pid=2893
 + started=0
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-system.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-system.log
-+ kill -0 2870
++ kill -0 2893
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-system.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2870
++ kill -0 2893
 + echo '--- start mode0-system: the engine accepted the configuration and is running'
 --- start mode0-system: the engine accepted the configuration and is running
-+ kill -INT 2870
-+ wait 2870
++ kill -INT 2893
++ wait 2893
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode1-gvisor.json .json
@@ -262,24 +203,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/mode1-gvisor.json /tmp/start-mode1-gvisor.json
 + startlog=/tmp/start-mode1-gvisor.log
 + set +e
-+ pid=2893
++ pid=2916
 + started=0
-++ seq 1 20
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-gvisor.json
+++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-gvisor.log
-+ kill -0 2893
++ kill -0 2916
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-gvisor.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2893
++ kill -0 2916
 + echo '--- start mode1-gvisor: the engine accepted the configuration and is running'
 --- start mode1-gvisor: the engine accepted the configuration and is running
-+ kill -INT 2893
-+ wait 2893
++ kill -INT 2916
++ wait 2916
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode1-mixed.json .json
@@ -287,24 +228,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/mode1-mixed.json /tmp/start-mode1-mixed.json
 + startlog=/tmp/start-mode1-mixed.log
 + set +e
-+ pid=2916
++ pid=2940
 + started=0
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-mixed.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-mixed.log
-+ kill -0 2916
++ kill -0 2940
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-mixed.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2916
++ kill -0 2940
 + echo '--- start mode1-mixed: the engine accepted the configuration and is running'
 --- start mode1-mixed: the engine accepted the configuration and is running
-+ kill -INT 2916
-+ wait 2916
++ kill -INT 2940
++ wait 2940
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode1-system.json .json
@@ -312,24 +253,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/mode1-system.json /tmp/start-mode1-system.json
 + startlog=/tmp/start-mode1-system.log
 + set +e
-+ pid=2939
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-system.json
++ pid=2963
 + started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-system.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-system.log
-+ kill -0 2939
++ kill -0 2963
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-system.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2939
++ kill -0 2963
 + echo '--- start mode1-system: the engine accepted the configuration and is running'
 --- start mode1-system: the engine accepted the configuration and is running
-+ kill -INT 2939
-+ wait 2939
++ kill -INT 2963
++ wait 2963
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode2-gvisor.json .json
@@ -337,24 +278,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/mode2-gvisor.json /tmp/start-mode2-gvisor.json
 + startlog=/tmp/start-mode2-gvisor.log
 + set +e
-+ pid=2962
++ pid=2986
 + started=0
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-gvisor.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-gvisor.log
-+ kill -0 2962
++ kill -0 2986
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-gvisor.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2962
++ kill -0 2986
 + echo '--- start mode2-gvisor: the engine accepted the configuration and is running'
 --- start mode2-gvisor: the engine accepted the configuration and is running
-+ kill -INT 2962
-+ wait 2962
++ kill -INT 2986
++ wait 2986
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode2-mixed.json .json
@@ -362,24 +303,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/mode2-mixed.json /tmp/start-mode2-mixed.json
 + startlog=/tmp/start-mode2-mixed.log
 + set +e
-+ pid=2985
++ pid=3009
 + started=0
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-mixed.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-mixed.log
-+ kill -0 2985
++ kill -0 3009
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-mixed.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2985
++ kill -0 3009
 + echo '--- start mode2-mixed: the engine accepted the configuration and is running'
 --- start mode2-mixed: the engine accepted the configuration and is running
-+ kill -INT 2985
-+ wait 2985
++ kill -INT 3009
++ wait 3009
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode2-system.json .json
@@ -387,24 +328,24 @@ CGO: disabled
 + python3 tools/start_config.py ci-out/configs/mode2-system.json /tmp/start-mode2-system.json
 + startlog=/tmp/start-mode2-system.log
 + set +e
-+ pid=3009
++ pid=3032
 + started=0
-++ seq 1 20
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-system.json
+++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-system.log
-+ kill -0 3009
++ kill -0 3032
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-system.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 3009
++ kill -0 3032
 + echo '--- start mode2-system: the engine accepted the configuration and is running'
 --- start mode2-system: the engine accepted the configuration and is running
-+ kill -INT 3009
-+ wait 3009
++ kill -INT 3032
++ wait 3032
 + set -e
 + echo '=== configuration check finished (check failed=0, start failed=0) ==='
 === configuration check finished (check failed=0, start failed=0) ===
@@ -442,9 +383,9 @@ Daemon will be stopped at the end of the build
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
-> Task :app:processDebugManifestForPackage
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
@@ -462,47 +403,101 @@ Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagag
 Note: Recompile with -Xlint:deprecation for details.
 
 > Task :app:generateDebugUnitTestConfig
-
 > Task :app:testDebugUnitTest
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790347943419.json
 
-TrafficRateTest > oneMegabyteInOneSecondIsOneMegabytePerSecond FAILED
-    java.lang.AssertionError at TrafficRateTest.java:28
-
-TrafficRateTest > aSlowerCadenceIsNormalisedToASecond FAILED
-    java.lang.AssertionError at TrafficRateTest.java:37
-
-TrafficRateTest > samplesCloserThanTheMinimumIntervalAreIgnored FAILED
-    java.lang.AssertionError at TrafficRateTest.java:70
-
-23 tests completed, 3 failed
-
-> Task :app:testDebugUnitTest FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790347793942.json
-
-FAILURE: Build failed with an exception.
-
-* What went wrong:
-Execution failed for task ':app:testDebugUnitTest'.
-> There were failing tests. See the report at: file:///home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/build/reports/tests/testDebugUnitTest/index.html
-
-* Try:
-> Run with --scan to get full insights.
-
-BUILD FAILED in 1m 21s
+BUILD SUCCESSFUL in 1m 21s
 25 actionable tasks: 24 executed, 1 from cache
-find: ‘app/build/outputs/apk/release’: No such file or directory
+libbox.aar ships x86_64: the emulator ABI is built as well
+=== gradle assembleRelease -PabiX86_64=true ===
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders
+> Task :app:mergeReleaseNativeLibs
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:generateReleaseBuildConfig
+> Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:generateReleaseResValues FROM-CACHE
+> Task :app:checkReleaseAarMetadata
+
+> Task :app:stripReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libbox.so.
+
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:generateReleaseResources
+> Task :app:extractReleaseNativeSymbolTables
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:packageReleaseResources
+> Task :app:parseReleaseLocalResources FROM-CACHE
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease FROM-CACHE
+> Task :app:processReleaseMainManifest
+> Task :app:mergeReleaseResources
+> Task :app:processReleaseManifest
+> Task :app:processReleaseManifestForPackage
+> Task :app:mergeReleaseStartupProfile
+> Task :app:mergeReleaseArtProfile
+> Task :app:mergeReleaseShaders
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets
+> Task :app:compressReleaseAssets
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:processReleaseJavaRes NO-SOURCE
+> Task :app:collectReleaseDependencies
+> Task :app:sdkReleaseDependencyData
+> Task :app:validateSigningRelease
+> Task :app:writeReleaseAppMetadata
+> Task :app:writeReleaseSigningConfigVersions
+> Task :app:mergeReleaseJavaResource
+> Task :app:processReleaseResources
+> Task :app:desugarReleaseFileDependencies
+
+> Task :app:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:dexBuilderRelease
+> Task :app:mergeReleaseGlobalSynthetics
+> Task :app:optimizeReleaseResources
+> Task :app:mergeExtDexRelease
+> Task :app:mergeDexRelease
+> Task :app:compileReleaseArtProfile
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect
+> Task :app:assembleRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_10-1790348022564.json
+
+BUILD SUCCESSFUL in 1m 1s
+42 actionable tasks: 38 executed, 4 from cache
+=== gradle finished ===
+app/build/outputs/apk/release/app-x86_64-release.apk
+app/build/outputs/apk/release/app-armeabi-v7a-release.apk
+app/build/outputs/apk/release/app-arm64-v8a-release.apk
+not published to handoff: app-x86_64-release.apk
+total 63M
+-rw-r--r-- 1 runner runner  11K Sep 25 14:51 README.md
+-rw-r--r-- 1 runner runner  32M Sep 25 14:54 VortexVPN-1.0.0-arm64-v8a.apk
+-rw-r--r-- 1 runner runner  32M Sep 25 14:54 VortexVPN-1.0.0-armeabi-v7a.apk
+-rw-r--r-- 1 runner runner 239K Sep 25 14:51 VortexVPN-source.zip
 --- kvm ---
-crw-rw---- 1 root kvm 10, 232 Sep 25 14:48 /dev/kvm
+crw-rw---- 1 root kvm 10, 232 Sep 25 14:51 /dev/kvm
 hardware acceleration is available
 4
                total        used        free      shared  buff/cache   available
-Mem:           15989        1194       10295          48        4894       14794
-total 252K
--rw-r--r-- 1 runner runner  11K Sep 25 14:49 README.md
--rw-r--r-- 1 runner runner 239K Sep 25 14:51 VortexVPN-source.zip
-[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 47968a5] handoff: signed APK build ()
+Mem:           15989        1027        9570          49        5787       14962
+total 63M
+-rw-r--r-- 1 runner runner  11K Sep 25 14:51 README.md
+-rw-r--r-- 1 runner runner  32M Sep 25 14:54 VortexVPN-1.0.0-arm64-v8a.apk
+-rw-r--r-- 1 runner runner  32M Sep 25 14:54 VortexVPN-1.0.0-armeabi-v7a.apk
+-rw-r--r-- 1 runner runner 239K Sep 25 14:57 VortexVPN-source.zip
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 99090f1] handoff: signed APK build ()
  3 files changed, 0 insertions(+), 0 deletions(-)
- delete mode 100644 handoff/VortexVPN-1.0.0-arm64-v8a.apk
- delete mode 100644 handoff/VortexVPN-1.0.0-armeabi-v7a.apk
+ create mode 100644 handoff/VortexVPN-1.0.0-arm64-v8a.apk
+ create mode 100644 handoff/VortexVPN-1.0.0-armeabi-v7a.apk
 To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
-   60f142d..47968a5  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+   470e8d5..99090f1  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
