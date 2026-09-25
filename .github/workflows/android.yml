@@ -441,7 +441,7 @@ jobs:
             adb shell am force-stop $PKG
             sleep 2
             adb shell am start -n $PKG/.ui.MainActivity --ez vortex_demo_servers true \
-              --ez vortex_screen $1 || true
+              --ei vortex_screen $1 || true
             sleep 9
             adb exec-out screencap -p > ci-out/screens/$2.png || true
           done
