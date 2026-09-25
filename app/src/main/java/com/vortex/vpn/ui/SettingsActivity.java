@@ -237,9 +237,12 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void summary(int id, CharSequence value) {
         View row = findViewById(id);
-        TextView summary = row.findViewById(R.id.summary);
-        if (summary != null) {
-            summary.setText(value);
+        if (row == null) {
+            return;
+        }
+        View summary = row.findViewWithTag("summary");
+        if (summary instanceof TextView) {
+            ((TextView) summary).setText(value);
         }
     }
 

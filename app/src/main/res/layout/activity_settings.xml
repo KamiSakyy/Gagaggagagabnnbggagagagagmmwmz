@@ -39,7 +39,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_mode" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
@@ -51,7 +51,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_stack" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
@@ -63,7 +63,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_mtu" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
@@ -173,7 +173,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_dns_direct" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
@@ -185,7 +185,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_dns_remote" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
@@ -197,7 +197,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_dns_sni" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
@@ -287,7 +287,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_direct_domains" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
@@ -299,7 +299,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_block_domains" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
@@ -470,7 +470,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_url_test" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
@@ -482,7 +482,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_row_log_level" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
@@ -523,7 +523,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_sub_interval" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
@@ -535,7 +535,7 @@
                         style="@style/Widget.Vortex.RowTitle"
                         android:text="@string/setting_user_agent" />
                     <TextView
-                        android:id="@+id/summary"
+                        android:tag="summary"
                         style="@style/Widget.Vortex.RowSummary"
                         android:layout_marginTop="2dp"
                         android:text="" />
