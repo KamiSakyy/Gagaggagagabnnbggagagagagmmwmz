@@ -16,4 +16,6 @@
     <color name="success">#FF34D399</color>
     <color name="transparent">#00000000</color>
     <color name="ripple">#22FFFFFF</color>
+    <color name="accent_soft">#2600E0A0</color>
+    <color name="chip_background">#FF14141A</color>
 </resources>

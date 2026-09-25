@@ -15,7 +15,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -195,16 +197,20 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(MainActivity.this, ServersActivity.class));
             }
         });
-        findViewById(R.id.btn_profiles).setOnClickListener(new View.OnClickListener() {
+        BottomNavigationView navigation = findViewById(R.id.bottom_nav);
+        navigation.setSelectedItemId(R.id.nav_home);
+        navigation.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
-            public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, ProfilesActivity.class));
-            }
-        });
-        findViewById(R.id.btn_auto).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectAuto();
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                int id = item.getItemId();
+                if (id == R.id.nav_servers) {
+                    startActivity(new Intent(MainActivity.this, ServersActivity.class));
+                } else if (id == R.id.nav_profiles) {
+                    startActivity(new Intent(MainActivity.this, ProfilesActivity.class));
+                } else if (id == R.id.nav_settings) {
+                    startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+                }
+                return true;
             }
         });
         modeGroup.setOnCheckedStateChangeListener(new ChipGroup.OnCheckedStateChangeListener() {
@@ -246,6 +252,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        BottomNavigationView navigation = findViewById(R.id.bottom_nav);
+        if (navigation != null) {
+            navigation.setSelectedItemId(R.id.nav_home);
+        }
         updateServerCard();
         updateModeHint();
         applyStatus(VpnState.status.getValue() == null ? VpnState.STOPPED : VpnState.status.getValue());
@@ -407,6 +417,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
+        if (id == R.id.action_auto) {
+            selectAuto();
+            return true;
+        }
         if (id == R.id.action_settings) {
             startActivity(new Intent(this, SettingsActivity.class));
             return true;

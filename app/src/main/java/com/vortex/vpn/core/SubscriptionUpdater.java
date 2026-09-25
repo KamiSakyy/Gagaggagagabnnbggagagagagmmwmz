@@ -9,6 +9,7 @@ import com.vortex.vpn.model.Outbound;
 import com.vortex.vpn.model.Server;
 import com.vortex.vpn.model.Subscription;
 import com.vortex.vpn.sub.B64;
+import com.vortex.vpn.sub.PageImporter;
 import com.vortex.vpn.sub.SubFetcher;
 import com.vortex.vpn.sub.SubImporter;
 
@@ -20,11 +21,18 @@ import java.util.Map;
 /** Downloads, parses and stores subscriptions (and one-off share links). */
 public final class SubscriptionUpdater {
 
+    /** Upper bound of network probes used while resolving a provider page. */
+    private static final int MAX_RESOLVE_REQUESTS = 14;
+
     public static final class Result {
         public boolean ok;
         public String message = "";
         public int imported;
         public String kind = SubImporter.KIND_LINKS;
+        /** Address of the profile that produced the servers (may differ from the pasted one). */
+        public String resolvedUrl;
+        /** Row id of the affected profile (0 when nothing was stored). */
+        public long subscriptionId;
     }
 
     private SubscriptionUpdater() {
@@ -42,7 +50,8 @@ public final class SubscriptionUpdater {
             result.message = "у подписки нет ссылки";
             return result;
         }
-        String userAgent = Prefs.userAgent();
+        String userAgent = !TextUtils.isEmpty(subscription.userAgent)
+                ? subscription.userAgent : Prefs.userAgent();
         SubFetcher.Response response = SubFetcher.fetch(subscription.url,
                 TextUtils.isEmpty(userAgent) ? SubFetcher.DEFAULT_USER_AGENT : userAgent,
                 Prefs.hwid(), null);
@@ -58,11 +67,84 @@ public final class SubscriptionUpdater {
         subscription.lastUpdate = System.currentTimeMillis();
         applyHeaders(subscription, response.headers);
         Result parsed = store(context, subscription, response.body);
+        if (!parsed.ok) {
+            // The provider handed out a human page (or a format we cannot read): dig the real
+            // profile address out of it and try again, exactly like a browser "copy link" would.
+            Result resolved = resolveFromPage(context, subscription, response.body, parsed.message);
+            if (resolved != null) {
+                result.ok = resolved.ok;
+                result.message = resolved.message;
+                result.imported = resolved.imported;
+                result.kind = resolved.kind;
+                result.resolvedUrl = resolved.resolvedUrl;
+                return result;
+            }
+        }
         result.ok = parsed.ok;
         result.message = parsed.message;
         result.imported = parsed.imported;
         result.kind = parsed.kind;
+        result.resolvedUrl = subscription.url;
         return result;
+    }
+
+    /**
+     * Tries every address that can be hidden in a provider page (links, deep links, panel paths
+     * built from the token, different user agents) and keeps the first one that yields locations.
+     * On success the subscription is rewritten to point at the working address, so later updates
+     * are direct.
+     */
+    private static Result resolveFromPage(Context context, Subscription subscription,
+                                          String body, String previousMessage) {
+        List<PageImporter.Candidate> candidates = PageImporter.candidates(subscription.url, body);
+        if (candidates.isEmpty()) {
+            return null;
+        }
+        int requests = 0;
+        for (PageImporter.Candidate candidate : candidates) {
+            if (candidate.url.equals(subscription.url)) {
+                continue;
+            }
+            for (String agent : agents()) {
+                if (requests++ >= MAX_RESOLVE_REQUESTS) {
+                    Bridge.appendLog("W", "«" + subscription.name + "»: перебор адресов остановлен, "
+                            + "попробуйте другую ссылку");
+                    return null;
+                }
+                SubFetcher.Response response = SubFetcher.fetch(candidate.url, agent, Prefs.hwid(), null);
+                if (!response.isOk() || response.body.isEmpty()) {
+                    continue;
+                }
+                SubImporter.Result parsed = SubImporter.parse(response.body);
+                if (parsed.isConfig() || !parsed.servers.isEmpty()) {
+                    subscription.url = candidate.url;
+                    subscription.userAgent = agent;
+                    Bridge.appendLog("I", "«" + subscription.name + "»: подписка найдена ("
+                            + candidate.reason + ")");
+                    Result stored = store(context, subscription, response.body);
+                    stored.resolvedUrl = candidate.url;
+                    return stored;
+                }
+            }
+        }
+        subscription.lastError = previousMessage == null ? "" : previousMessage;
+        Bridge.appendLog("W", "«" + subscription.name + "»: на странице нет ссылки подписки "
+                + "(проверено адресов: " + candidates.size() + "). Откройте страницу и нажмите "
+                + "«Скопировать ссылку», затем вставьте её в приложение");
+        return null;
+    }
+
+    /** User agents providers switch formats on; ours first, then the popular clients. */
+    private static List<String> agents() {
+        List<String> agents = new ArrayList<>();
+        String configured = Prefs.userAgent();
+        if (!TextUtils.isEmpty(configured)) {
+            agents.add(configured);
+        }
+        agents.add(SubFetcher.DEFAULT_USER_AGENT);
+        agents.add("v2rayNG/1.9.16");
+        agents.add("Hiddify/2.0.5");
+        return agents;
     }
 
     /** Imports raw content (subscription body or a list of share links) into a profile. */
@@ -86,8 +168,9 @@ public final class SubscriptionUpdater {
         List<Outbound> unique = SubImporter.dedupe(parsed.servers);
         List<Server> servers = new ArrayList<>();
         for (Outbound outbound : unique) {
-            serverFrom(outbound, subscription);
-            servers.add((Server) outbound);
+            Server server = Server.from(outbound);   // never cast: parsers emit plain Outbound
+            serverFrom(server, subscription);
+            servers.add(server);
         }
         Repo.updateSubscription(context, subscription);
         Repo.replaceSubscriptionServers(context, subscription.id, servers);
@@ -115,8 +198,7 @@ public final class SubscriptionUpdater {
         return result;
     }
 
-    private static void serverFrom(Outbound outbound, Subscription subscription) {
-        Server server = (Server) outbound;
+    private static void serverFrom(Server server, Subscription subscription) {
         server.subId = subscription.id;
         server.sourceType = subscription.kind;
         server.sourceId = String.valueOf(subscription.id);
@@ -193,6 +275,25 @@ public final class SubscriptionUpdater {
 
     /** Adds a subscription or a single share link pasted by the user. */
     public static long addFromInput(Context context, String input, String title) {
+        return addFromInputDetailed(context, input, title).subscriptionId;
+    }
+
+    /**
+     * Same as {@link #addFromInput} but reports what happened, so the UI can tell the user why an
+     * address did not produce locations. Never throws: the app must stay alive even on garbage.
+     */
+    public static Result addFromInputDetailed(Context context, String input, String title) {
+        try {
+            return addFromInputInternal(context, input, title);
+        } catch (Throwable error) {
+            Result result = new Result();
+            result.message = error.getClass().getSimpleName() + ": " + error.getMessage();
+            Bridge.appendLog("E", "импорт подписки не удался: " + result.message);
+            return result;
+        }
+    }
+
+    private static Result addFromInputInternal(Context context, String input, String title) {
         String trimmed = input == null ? "" : input.trim();
         if (trimmed.isEmpty()) {
             return -1;
@@ -214,18 +315,21 @@ public final class SubscriptionUpdater {
         subscription.id = id;
         if (!TextUtils.isEmpty(subscription.url)) {
             Result result = refresh(context, id);
+            result.subscriptionId = id;
             if (!result.ok) {
                 // keep the profile so the user can retry later
                 Bridge.appendLog("W", "профиль добавлен, но загрузка не удалась: " + result.message);
             }
+            return result;
         } else {
             String body = trimmed;
             if (!body.contains("://") && B64.looksBase64(body.replace("\n", "").replace("\r", ""))) {
                 body = B64.decodeToString(body);
             }
-            store(context, subscription, body);
+            Result result = store(context, subscription, body);
+            result.subscriptionId = id;
+            return result;
         }
-        return id;
     }
 
     private static String defaultName(String input) {

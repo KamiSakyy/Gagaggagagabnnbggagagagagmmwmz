@@ -39,6 +39,10 @@ import java.util.List;
 /** Subscription and config profiles: add, refresh, edit and remove. */
 public class ProfilesActivity extends AppCompatActivity {
 
+    /** Started from the empty location list to open the "add profile" dialog right away. */
+    public static final String EXTRA_ADD_PROFILE = "add_profile";
+
+
     private SubscriptionAdapter adapter;
     private SwipeRefreshLayout refresh;
     private TextView empty;
@@ -50,6 +54,8 @@ public class ProfilesActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profiles);
+        boolean addOnStart = getIntent() != null
+                && getIntent().getBooleanExtra(EXTRA_ADD_PROFILE, false);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -101,6 +107,9 @@ public class ProfilesActivity extends AppCompatActivity {
                 showAddDialog();
             }
         });
+        if (addOnStart) {
+            showAddDialog();
+        }
     }
 
     @Override
@@ -341,12 +350,31 @@ public class ProfilesActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                long id = SubscriptionUpdater.addFromInput(ProfilesActivity.this, input, title);
+                long id = 0;
+                String message = null;
+                boolean ok = false;
+                try {
+                    SubscriptionUpdater.Result result =
+                            SubscriptionUpdater.addFromInputDetailed(ProfilesActivity.this, input, title);
+                    id = result.subscriptionId;
+                    message = result.message;
+                    ok = result.ok;
+                } catch (Throwable error) {
+                    message = error.getClass().getSimpleName() + ": " + error.getMessage();
+                    // A failed import must never close the app: report it and keep the profile.
+                    Bridge.appendLog("E", "импорт подписки: " + message);
+                }
+                final long finalId = id;
+                final String finalMessage = message;
+                final boolean finalOk = ok;
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         load();
-                        if (id > 0 && VpnServiceVortex.isActive()) {
+                        if (finalMessage != null && !finalMessage.isEmpty()) {
+                            toast(finalMessage);
+                        }
+                        if (finalOk && finalId > 0 && VpnServiceVortex.isActive()) {
                             VpnServiceVortex.reload(ProfilesActivity.this);
                         }
                     }

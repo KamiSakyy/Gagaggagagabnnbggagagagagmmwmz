@@ -57,6 +57,14 @@ public final class SubImporter {
             return result;
         }
 
+        if (looksLikeJsonList(trimmed)) {
+            List<String> jsonLinks = jsonLinks(trimmed);
+            if (!jsonLinks.isEmpty()) {
+                appendLinks(result, jsonLinks);
+                return result;
+            }
+        }
+
         if (looksLikeClash(trimmed)) {
             result.kind = KIND_CLASH;
             List<Outbound> servers = ClashParser.parse(trimmed);
@@ -69,6 +77,12 @@ public final class SubImporter {
 
         // Plain links or base64 wrapped links.
         List<String> links = extractLinks(trimmed);
+        // Provider pages often wrap the profile into a deep link instead of plain links.
+        for (String inner : PageImporter.deepLinks(trimmed)) {
+            if (!links.contains(inner)) {
+                links.add(inner);
+            }
+        }
         if (links.isEmpty() && B64.looksBase64(trimmed.replace("\n", "").replace("\r", ""))) {
             String decoded = B64.decodeToString(trimmed.replace("\n", "").replace("\r", "").replace(" ", ""));
             links = extractLinks(decoded);
@@ -78,6 +92,13 @@ public final class SubImporter {
             links = extractLinks(decoded);
         }
 
+        appendLinks(result, links);
+        result.kind = KIND_LINKS;
+        return result;
+    }
+
+    /** Parses every share link and stores the result (shared by all input formats). */
+    private static void appendLinks(Result result, List<String> links) {
         for (String link : links) {
             Outbound outbound = LinkParser.parse(link);
             if (outbound == null) {
@@ -93,8 +114,47 @@ public final class SubImporter {
             }
             result.servers.add(outbound);
         }
-        result.kind = KIND_LINKS;
-        return result;
+    }
+
+    /** JSON with a list of share links: {@code ["vless://..."]} or {@code {"servers": [...]}}. */
+    private static boolean looksLikeJsonList(String content) {
+        return (content.startsWith("[") || content.startsWith("{")) && !looksLikeSingBoxConfig(content);
+    }
+
+    private static List<String> jsonLinks(String content) {
+        List<String> strings = new ArrayList<>();
+        try {
+            collectStrings(JsonReader.parse(content), strings, 0);
+        } catch (Exception ignored) {
+        }
+        List<String> valid = new ArrayList<>();
+        for (String value : strings) {
+            if (value.length() > 12 && LINK_PATTERN.matcher(value).find()) {
+                valid.add(value.trim());
+            }
+        }
+        return valid;
+    }
+
+    private static void collectStrings(Object node, List<String> out, int depth) {
+        if (node == null || depth > 6 || out.size() > 4000) {
+            return;
+        }
+        if (node instanceof String) {
+            out.add((String) node);
+            return;
+        }
+        if (node instanceof List) {
+            for (Object item : (List<?>) node) {
+                collectStrings(item, out, depth + 1);
+            }
+            return;
+        }
+        if (node instanceof Map) {
+            for (Object value : ((Map<?, ?>) node).values()) {
+                collectStrings(value, out, depth + 1);
+            }
+        }
     }
 
     private static boolean looksLikeSingBoxConfig(String content) {

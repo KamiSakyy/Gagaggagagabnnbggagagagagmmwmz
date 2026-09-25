@@ -20,7 +20,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingBottom="16dp"
+        android:paddingBottom="12dp"
         android:scrollbars="none">
 
         <LinearLayout
@@ -32,10 +32,10 @@
 
             <com.vortex.vpn.ui.view.PowerView
                 android:id="@+id/power"
-                android:layout_width="212dp"
-                android:layout_height="212dp"
+                android:layout_width="224dp"
+                android:layout_height="224dp"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="8dp"
                 android:clickable="true"
                 android:focusable="true" />
 
@@ -43,19 +43,20 @@
                 android:id="@+id/text_status"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="6dp"
                 android:gravity="center"
                 android:text="@string/status_disconnected"
                 android:textColor="@color/text_primary"
-                android:textSize="26sp"
+                android:textSize="24sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/text_hint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:gravity="center"
+                android:lineSpacingExtra="3dp"
                 android:text="@string/hint_tap_to_connect"
                 android:textColor="@color/text_tertiary"
                 android:textSize="13sp" />
@@ -64,7 +65,7 @@
                 android:id="@+id/card_error"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="16dp"
                 android:background="@drawable/bg_error"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
@@ -80,9 +81,11 @@
 
                 <TextView
                     android:id="@+id/text_error"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:lineSpacingExtra="2dp"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
             </LinearLayout>
@@ -92,19 +95,22 @@
                 style="@style/Widget.Vortex.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="18dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:padding="14dp">
+                    android:paddingStart="16dp"
+                    android:paddingTop="14dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="14dp">
 
                     <TextView
                         android:id="@+id/text_flag"
-                        android:layout_width="46dp"
-                        android:layout_height="46dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:background="@drawable/bg_flag"
                         android:gravity="center"
                         android:text="&#127760;"
@@ -131,79 +137,43 @@
                             style="@style/TextAppearance.Vortex.Body"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
+                            android:layout_marginTop="3dp"
                             android:ellipsize="end"
-                            android:maxLines="1"
+                            android:maxLines="2"
                             android:text="@string/tap_to_choose" />
                     </LinearLayout>
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_servers"
+                        style="@style/Widget.Vortex.Button.Icon"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:contentDescription="@string/title_servers"
-                        android:src="@drawable/ic_chevron"
-                        app:tint="@color/text_tertiary" />
+                        app:icon="@drawable/ic_chevron"
+                        app:iconGravity="textStart"
+                        app:iconPadding="0dp"
+                        app:iconSize="20dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="horizontal">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_auto"
-                    style="@style/Widget.Vortex.Button.Outlined"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:text="@string/mode_auto_selected"
-                    app:icon="@drawable/ic_bolt"
-                    app:iconSize="18dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_profiles"
-                    style="@style/Widget.Vortex.Button.Outlined"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:text="@string/title_profiles"
-                    app:icon="@drawable/ic_globe"
-                    app:iconSize="18dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_servers"
-                    style="@style/Widget.Vortex.Button.Outlined"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:text="@string/title_servers"
-                    app:icon="@drawable/ic_servers"
-                    app:iconSize="18dp" />
-            </LinearLayout>
+            <TextView
+                style="@style/Widget.Vortex.SectionHeader"
+                android:text="@string/setting_mode" />
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chip_group_mode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="8dp"
                 app:chipSpacingHorizontal="8dp"
+                app:chipSpacingVertical="8dp"
                 app:selectionRequired="true"
-                app:singleLine="true"
+                app:singleLine="false"
                 app:singleSelection="true">
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_smart"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Vortex.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
@@ -211,31 +181,34 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_global"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Vortex.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/mode_global" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_bypass"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Vortex.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/mode_bypass" />
             </com.google.android.material.chip.ChipGroup>
 
+            <TextView
+                style="@style/Widget.Vortex.SectionHeader"
+                android:text="@string/section_traffic" />
+
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.Vortex.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
                 android:clickable="false">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="16dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -248,7 +221,7 @@
                             android:layout_weight="1"
                             android:background="@drawable/bg_tile"
                             android:orientation="vertical"
-                            android:padding="12dp">
+                            android:padding="14dp">
 
                             <LinearLayout
                                 android:layout_width="match_parent"
@@ -267,7 +240,8 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="6dp"
-                                    android:text="DOWN"
+                                    android:letterSpacing="0.06"
+                                    android:text="@string/label_down"
                                     android:textColor="@color/text_tertiary"
                                     android:textSize="11sp" />
                             </LinearLayout>
@@ -277,14 +251,16 @@
                                 style="@style/TextAppearance.Vortex.Value"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="0 Б/с" />
+                                android:layout_marginTop="4dp"
+                                android:text="@string/zero_speed" />
 
                             <TextView
                                 android:id="@+id/text_down_total"
                                 style="@style/TextAppearance.Vortex.Body"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="0 Б" />
+                                android:layout_marginTop="2dp"
+                                android:text="@string/zero_bytes" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -294,7 +270,7 @@
                             android:layout_weight="1"
                             android:background="@drawable/bg_tile"
                             android:orientation="vertical"
-                            android:padding="12dp">
+                            android:padding="14dp">
 
                             <LinearLayout
                                 android:layout_width="match_parent"
@@ -313,7 +289,8 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="6dp"
-                                    android:text="UP"
+                                    android:letterSpacing="0.06"
+                                    android:text="@string/label_up"
                                     android:textColor="@color/text_tertiary"
                                     android:textSize="11sp" />
                             </LinearLayout>
@@ -323,14 +300,16 @@
                                 style="@style/TextAppearance.Vortex.Value"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="0 Б/с" />
+                                android:layout_marginTop="4dp"
+                                android:text="@string/zero_speed" />
 
                             <TextView
                                 android:id="@+id/text_up_total"
                                 style="@style/TextAppearance.Vortex.Body"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="0 Б" />
+                                android:layout_marginTop="2dp"
+                                android:text="@string/zero_bytes" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -338,12 +317,12 @@
                         android:id="@+id/chart"
                         android:layout_width="match_parent"
                         android:layout_height="76dp"
-                        android:layout_marginTop="12dp" />
+                        android:layout_marginTop="14dp" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
+                        android:layout_marginTop="12dp"
                         android:orientation="horizontal">
 
                         <TextView
@@ -357,22 +336,34 @@
                             android:id="@+id/text_memory"
                             style="@style/TextAppearance.Vortex.Body"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_connect"
+                style="@style/Widget.Vortex.Button"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="18dp"
+                android:text="@string/action_connect"
+                app:icon="@drawable/ic_power"
+                app:iconGravity="textStart"
+                app:iconPadding="10dp"
+                app:iconSize="20dp" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_connect"
-        style="@style/Widget.Vortex.Button"
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_nav"
+        style="@style/Widget.Vortex.BottomNav"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginStart="@dimen/screen_padding"
-        android:layout_marginEnd="@dimen/screen_padding"
-        android:layout_marginBottom="18dp"
-        android:text="@string/action_connect"
-        app:icon="@drawable/ic_power"
-        app:iconSize="20dp" />
+        android:layout_height="wrap_content"
+        android:background="@color/surface"
+        app:itemIconTint="@color/nav_item"
+        app:itemTextColor="@color/nav_item"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/bottom_nav" />
 </LinearLayout>

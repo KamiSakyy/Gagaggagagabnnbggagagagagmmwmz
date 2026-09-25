@@ -1,5 +1,6 @@
 package com.vortex.vpn.ui;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -39,6 +40,7 @@ public class ServersActivity extends AppCompatActivity {
     private SwipeRefreshLayout refresh;
     private EditText search;
     private TextView empty;
+    private View emptyState;
     private List<Server> all = new ArrayList<>();
     private String query = "";
 
@@ -63,6 +65,14 @@ public class ServersActivity extends AppCompatActivity {
         refresh = findViewById(R.id.refresh);
         search = findViewById(R.id.search);
         empty = findViewById(R.id.text_empty);
+        emptyState = findViewById(R.id.empty_state);
+        findViewById(R.id.btn_add_profile).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(ServersActivity.this, ProfilesActivity.class)
+                        .putExtra(ProfilesActivity.EXTRA_ADD_PROFILE, true));
+            }
+        });
 
         adapter = new ServerAdapter(this, new ServerAdapter.Listener() {
             @Override
@@ -132,7 +142,14 @@ public class ServersActivity extends AppCompatActivity {
     }
 
     private void load() {
-        all = Repo.servers(this);
+        try {
+            all = Repo.servers(this);
+        } catch (Throwable error) {
+            // A broken row must never take the whole screen (and the app) down.
+            all = new ArrayList<>();
+            android.util.Log.e("Vortex", "cannot read servers", error);
+            toast(getString(R.string.servers_read_error));
+        }
         applyFilter();
     }
 
@@ -152,7 +169,7 @@ public class ServersActivity extends AppCompatActivity {
             filtered.add(server);
         }
         adapter.submit(filtered);
-        empty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
+        emptyState.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
         empty.setText(all.isEmpty() ? getString(R.string.servers_empty) : getString(R.string.search_empty));
     }
 
