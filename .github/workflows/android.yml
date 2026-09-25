@@ -11,10 +11,14 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
-  group: echidna-${{ github.ref }}
-  cancel-in-progress: false
+  # The group is per ref and per commit, so a new push never waits for a previous run to
+  # finish (the emulator step can hang on a bad runner). The first step of the new run
+  # cancels the runs that are still going, so one build per branch uses a runner at a time.
+  group: echidna-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: true
 
 env:
   BUILD_LOG: ${{ github.workspace }}/ci-out/build.log
@@ -33,6 +37,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Cancel the earlier runs of this branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "этот прогон: $GITHUB_RUN_ID"
+          gh run list --workflow "$GITHUB_WORKFLOW" --branch "$GITHUB_REF_NAME" --limit 30 \
+            --json databaseId,status --jq '.[] | select(.status != "completed") | .databaseId' \
+            > /tmp/runs.txt 2>/dev/null || true
+          while read -r id; do
+            if [ -n "$id" ] && [ "$id" != "$GITHUB_RUN_ID" ]; then
+              echo "отменяю прогон $id"
+              gh run cancel "$id" || true
+            fi
+          done < /tmp/runs.txt
 
       - name: Cancel the earlier runs of this branch
         env:
