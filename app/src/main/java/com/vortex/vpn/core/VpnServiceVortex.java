@@ -216,6 +216,7 @@ public class VpnServiceVortex extends VpnService implements PlatformInterface {
             return;
         }
         VpnState.setStatus(VpnState.STARTING);
+        VpnState.reportError("");
         startForegroundCompat(getString(R.string.notif_title_starting), getString(R.string.status_connecting));
 
         worker = new Thread(new Runnable() {
@@ -233,6 +234,7 @@ public class VpnServiceVortex extends VpnService implements PlatformInterface {
                     runner = local;
                     local.start();
                     monitor.start();
+                    VpnState.reportError("");
                     VpnState.setStatus(VpnState.STARTED);
                     updateNotification(true, false);
                 } catch (Throwable t) {

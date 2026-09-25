@@ -1,6 +1,8 @@
 package com.vortex.vpn.ui;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.net.VpnService;
 import android.util.Log;
 import android.os.Bundle;
@@ -25,6 +27,7 @@ import com.vortex.vpn.Prefs;
 import com.vortex.vpn.R;
 import com.vortex.vpn.cfg.ConfigSettings;
 import com.vortex.vpn.core.ConfigTags;
+import com.vortex.vpn.core.EngineError;
 import com.vortex.vpn.core.EngineSelfTest;
 import com.vortex.vpn.core.ScreenAudit;
 import com.vortex.vpn.core.VpnServiceVortex;
@@ -43,6 +46,7 @@ import java.util.Map;
 /** Dashboard: connection control, live traffic and the active location. */
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = "VortexMain";
     private static final int REQUEST_VPN = 0x5611;
     /** Set by the CI smoke test: {@code adb shell am start ... --ez vortex_selftest true}. */
     private static final String EXTRA_SELF_TEST = "vortex_selftest";
@@ -61,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView textConnections;
     private TextView textMemory;
     private TextView textError;
+    private TextView textErrorHint;
+    private TextView textErrorDetails;
     private View errorBox;
     private MaterialButton btnConnect;
     private ChipGroup modeGroup;
@@ -124,6 +130,8 @@ public class MainActivity extends AppCompatActivity {
         textConnections = findViewById(R.id.text_connections);
         textMemory = findViewById(R.id.text_memory);
         textError = findViewById(R.id.text_error);
+        textErrorHint = findViewById(R.id.text_error_hint);
+        textErrorDetails = findViewById(R.id.text_error_details);
         errorBox = findViewById(R.id.card_error);
         btnConnect = findViewById(R.id.btn_connect);
         modeGroup = findViewById(R.id.chip_group_mode);
@@ -148,7 +156,15 @@ public class MainActivity extends AppCompatActivity {
             public void onChanged(String message) {
                 boolean visible = message != null && !message.isEmpty();
                 errorBox.setVisibility(visible ? View.VISIBLE : View.GONE);
-                textError.setText(message);
+                if (!visible) {
+                    return;
+                }
+                // The engine reports in its own language; show what the user can act on and keep
+                // the original text as technical details.
+                textError.setText(EngineError.titleRes(message));
+                textErrorHint.setText(EngineError.hintRes(message));
+                textErrorDetails.setText(getString(R.string.error_details) + ": " + message);
+                Log.w(TAG, "engine error: " + message);
             }
         });
         VpnState.activeTag.observe(this, new Observer<String>() {
@@ -317,9 +333,11 @@ public class MainActivity extends AppCompatActivity {
         switch (status) {
             case VpnState.STARTED:
                 textStatus.setText(R.string.status_connected);
+                textStatus.setTextColor(0xFF00E0A0);
                 textHint.setText(R.string.hint_tap_to_disconnect);
                 btnConnect.setText(R.string.action_disconnect);
                 btnConnect.setEnabled(true);
+                styleConnectButton(false);
                 break;
             case VpnState.STARTING:
                 textStatus.setText(R.string.status_connecting);
@@ -335,11 +353,39 @@ public class MainActivity extends AppCompatActivity {
                 break;
             default:
                 textStatus.setText(R.string.status_disconnected);
+                textStatus.setTextColor(0xFFF3F5F9);
                 textHint.setText(R.string.hint_tap_to_connect);
                 btnConnect.setText(R.string.action_connect);
                 btnConnect.setEnabled(true);
+                styleConnectButton(true);
                 chart.reset();
                 break;
+        }
+    }
+
+    /**
+     * The primary button is filled while the tunnel is down (the inviting action) and turns into a
+     * quiet outline once it is up, so the screen has exactly one loud element at a time.
+     */
+    private void styleConnectButton(boolean filled) {
+        int[][] states = new int[][]{
+                new int[]{android.R.attr.state_enabled},
+                new int[]{-android.R.attr.state_enabled},
+        };
+        if (filled) {
+            btnConnect.setBackgroundTintList(new ColorStateList(states, new int[]{
+                    0xFF00E0A0, 0xFF1E4C40}));
+            btnConnect.setTextColor(0xFF04150F);
+            btnConnect.setIconTint(new ColorStateList(states, new int[]{0xFF04150F, 0xFF7A8C86}));
+            btnConnect.setStrokeWidth(0);
+        } else {
+            btnConnect.setBackgroundTintList(new ColorStateList(states, new int[]{
+                    Color.TRANSPARENT, Color.TRANSPARENT}));
+            btnConnect.setTextColor(0xFFF3F5F9);
+            btnConnect.setIconTint(new ColorStateList(states, new int[]{
+                    0xFFF3F5F9, 0xFF6C7382}));
+            btnConnect.setStrokeWidth((int) (getResources().getDisplayMetrics().density * 1.2f));
+            btnConnect.setStrokeColor(new ColorStateList(states, new int[]{0xFF23232E, 0xFF23232E}));
         }
     }
 

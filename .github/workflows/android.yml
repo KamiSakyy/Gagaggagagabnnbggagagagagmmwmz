@@ -165,7 +165,31 @@ jobs:
             echo "some configurations were rejected by the engine"
             grep -aE "FATAL|INVALID" /tmp/clean-validation.log 2>/dev/null | head -50 || true
           fi
-          echo "=== configuration check finished (failed=$FAILED) ==="
+          # `check` only validates the schema. Some rules (for example "detour to an empty direct
+          # outbound makes no sense") are enforced when the engine really starts - that is exactly
+          # the failure the user hit when pressing connect. Start every configuration for real,
+          # with the TUN inbound replaced by a local proxy port.
+          START_FAILED=0
+          for file in ci-out/configs/*.json; do
+            name=$(basename "$file" .json)
+            python3 tools/start_config.py "$file" "/tmp/start-$name.json"
+            set +e
+            timeout 25 "$ENGINE" run -c "/tmp/start-$name.json" > "/tmp/start-$name.log" 2>&1
+            set -e
+            if grep -aq "sing-box started" "/tmp/start-$name.log" \
+                && ! grep -aqE "FATAL|detour to an empty" "/tmp/start-$name.log"; then
+              echo "--- start $name: the engine started and stayed up"
+            else
+              echo "--- start $name: THE ENGINE REFUSED TO START"
+              tail -n 25 "/tmp/start-$name.log" || true
+              START_FAILED=1
+            fi
+          done
+          echo "=== configuration check finished (check failed=$FAILED, start failed=$START_FAILED) ==="
+          if [ "$START_FAILED" -ne 0 ]; then
+            echo "some configurations could not be started by the engine"
+            FAILED=$START_FAILED
+          fi
 
       - name: Save configuration check report
         if: always()

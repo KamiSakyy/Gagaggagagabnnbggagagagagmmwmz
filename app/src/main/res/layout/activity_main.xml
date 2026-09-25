@@ -20,7 +20,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingBottom="12dp"
+        android:paddingBottom="10dp"
         android:scrollbars="none">
 
         <LinearLayout
@@ -30,64 +30,113 @@
             android:paddingStart="@dimen/screen_padding"
             android:paddingEnd="@dimen/screen_padding">
 
-            <com.vortex.vpn.ui.view.PowerView
-                android:id="@+id/power"
-                android:layout_width="224dp"
-                android:layout_height="224dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="8dp"
-                android:clickable="true"
-                android:focusable="true" />
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_glow">
+
+                <com.vortex.vpn.ui.view.PowerView
+                    android:id="@+id/power"
+                    android:layout_width="208dp"
+                    android:layout_height="208dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="10dp"
+                    android:clickable="true"
+                    android:contentDescription="@string/action_toggle"
+                    android:focusable="true" />
+
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/text_status"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="4dp"
                 android:gravity="center"
+                android:maxLines="1"
                 android:text="@string/status_disconnected"
                 android:textColor="@color/text_primary"
-                android:textSize="24sp"
+                android:textSize="25sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/text_hint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="10dp"
                 android:gravity="center"
                 android:lineSpacingExtra="3dp"
                 android:text="@string/hint_tap_to_connect"
                 android:textColor="@color/text_tertiary"
                 android:textSize="13sp" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_connect"
+                style="@style/Widget.Vortex.Button"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="16dp"
+                android:text="@string/action_connect"
+                app:icon="@drawable/ic_power"
+                app:iconGravity="textStart"
+                app:iconPadding="10dp"
+                app:iconSize="20dp" />
+
             <LinearLayout
                 android:id="@+id/card_error"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="14dp"
                 android:background="@drawable/bg_error"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:padding="14dp"
                 android:visibility="gone">
 
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="@string/no_data"
-                    android:src="@drawable/ic_warning"
-                    app:tint="@color/danger" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:contentDescription="@string/no_data"
+                        android:src="@drawable/ic_warning"
+                        app:tint="@color/danger" />
+
+                    <TextView
+                        android:id="@+id/text_error"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <TextView
-                    android:id="@+id/text_error"
-                    android:layout_width="0dp"
+                    android:id="@+id/text_error_hint"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
+                    android:layout_marginTop="6dp"
                     android:lineSpacingExtra="2dp"
-                    android:textColor="@color/text_primary"
+                    android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/text_error_details"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:ellipsize="end"
+                    android:fontFamily="monospace"
+                    android:maxLines="3"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <com.google.android.material.card.MaterialCardView
@@ -95,31 +144,31 @@
                 style="@style/Widget.Vortex.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp">
+                android:layout_marginTop="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="14dp"
-                    android:paddingEnd="8dp"
-                    android:paddingBottom="14dp">
+                    android:paddingStart="14dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="6dp"
+                    android:paddingBottom="12dp">
 
                     <TextView
                         android:id="@+id/text_flag"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
                         android:background="@drawable/bg_flag"
                         android:gravity="center"
                         android:text="&#127760;"
-                        android:textSize="24sp" />
+                        android:textSize="21sp" />
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
+                        android:layout_marginStart="13dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
@@ -146,13 +195,171 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_servers"
                         style="@style/Widget.Vortex.Button.Icon"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
                         android:contentDescription="@string/title_servers"
                         app:icon="@drawable/ic_chevron"
                         app:iconGravity="textStart"
                         app:iconPadding="0dp"
-                        app:iconSize="20dp" />
+                        app:iconSize="18dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                style="@style/Widget.Vortex.SectionHeader"
+                android:text="@string/section_traffic" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.Vortex.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="false">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="14dp"
+                                    android:layout_height="14dp"
+                                    android:contentDescription="@string/no_data"
+                                    android:src="@drawable/ic_download"
+                                    app:tint="@color/accent" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="6dp"
+                                    android:letterSpacing="0.08"
+                                    android:text="@string/label_down"
+                                    android:textColor="@color/text_tertiary"
+                                    android:textSize="10sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/text_down_speed"
+                                style="@style/TextAppearance.Vortex.Value"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="@string/zero_speed" />
+
+                            <TextView
+                                android:id="@+id/text_down_total"
+                                style="@style/TextAppearance.Vortex.Body"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="@string/zero_bytes" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="14dp"
+                            android:layout_marginEnd="14dp"
+                            android:background="@color/stroke" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="14dp"
+                                    android:layout_height="14dp"
+                                    android:contentDescription="@string/no_data"
+                                    android:src="@drawable/ic_upload"
+                                    app:tint="@color/secondary" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="6dp"
+                                    android:letterSpacing="0.08"
+                                    android:text="@string/label_up"
+                                    android:textColor="@color/text_tertiary"
+                                    android:textSize="10sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/text_up_speed"
+                                style="@style/TextAppearance.Vortex.Value"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="@string/zero_speed" />
+
+                            <TextView
+                                android:id="@+id/text_up_total"
+                                style="@style/TextAppearance.Vortex.Body"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="@string/zero_bytes" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <com.vortex.vpn.ui.view.SpeedChartView
+                        android:id="@+id/chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:layout_marginTop="14dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/text_connections"
+                            style="@style/TextAppearance.Vortex.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1" />
+
+                        <TextView
+                            android:id="@+id/text_memory"
+                            style="@style/TextAppearance.Vortex.Body"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:ellipsize="end"
+                            android:maxLines="1" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -164,7 +371,7 @@
                 android:id="@+id/chip_group_mode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="2dp"
                 app:chipSpacingHorizontal="8dp"
                 app:chipSpacingVertical="8dp"
                 app:selectionRequired="true"
@@ -193,166 +400,6 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mode_bypass" />
             </com.google.android.material.chip.ChipGroup>
-
-            <TextView
-                style="@style/Widget.Vortex.SectionHeader"
-                android:text="@string/section_traffic" />
-
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.Vortex.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="false">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="@drawable/bg_tile"
-                            android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <ImageView
-                                    android:layout_width="16dp"
-                                    android:layout_height="16dp"
-                                    android:contentDescription="@string/no_data"
-                                    android:src="@drawable/ic_download"
-                                    app:tint="@color/accent" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="6dp"
-                                    android:letterSpacing="0.06"
-                                    android:text="@string/label_down"
-                                    android:textColor="@color/text_tertiary"
-                                    android:textSize="11sp" />
-                            </LinearLayout>
-
-                            <TextView
-                                android:id="@+id/text_down_speed"
-                                style="@style/TextAppearance.Vortex.Value"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="@string/zero_speed" />
-
-                            <TextView
-                                android:id="@+id/text_down_total"
-                                style="@style/TextAppearance.Vortex.Body"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="@string/zero_bytes" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="10dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/bg_tile"
-                            android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <ImageView
-                                    android:layout_width="16dp"
-                                    android:layout_height="16dp"
-                                    android:contentDescription="@string/no_data"
-                                    android:src="@drawable/ic_upload"
-                                    app:tint="@color/secondary" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="6dp"
-                                    android:letterSpacing="0.06"
-                                    android:text="@string/label_up"
-                                    android:textColor="@color/text_tertiary"
-                                    android:textSize="11sp" />
-                            </LinearLayout>
-
-                            <TextView
-                                android:id="@+id/text_up_speed"
-                                style="@style/TextAppearance.Vortex.Value"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="@string/zero_speed" />
-
-                            <TextView
-                                android:id="@+id/text_up_total"
-                                style="@style/TextAppearance.Vortex.Body"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="@string/zero_bytes" />
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <com.vortex.vpn.ui.view.SpeedChartView
-                        android:id="@+id/chart"
-                        android:layout_width="match_parent"
-                        android:layout_height="76dp"
-                        android:layout_marginTop="14dp" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/text_connections"
-                            style="@style/TextAppearance.Vortex.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1" />
-
-                        <TextView
-                            android:id="@+id/text_memory"
-                            style="@style/TextAppearance.Vortex.Body"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="10dp" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_connect"
-                style="@style/Widget.Vortex.Button"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="18dp"
-                android:text="@string/action_connect"
-                app:icon="@drawable/ic_power"
-                app:iconGravity="textStart"
-                app:iconPadding="10dp"
-                app:iconSize="20dp" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

@@ -151,8 +151,9 @@ public class LayoutAuditTest {
                 context.getResources().getDisplayMetrics());
     }
 
+    /** The dashboard must keep its single primary action and the readable error card. */
     @Test
-    public void theCrampedQuickActionRowIsGone() {
+    public void theDashboardKeepsItsPrimaryAction() {
         Context themed = new ContextThemeWrapper(org.robolectric.RuntimeEnvironment.getApplication(),
                 R.style.Theme_Vortex);
         View main = LayoutInflater.from(themed).inflate(R.layout.activity_main, null, false);
@@ -162,5 +163,10 @@ public class LayoutAuditTest {
         buttons += main.findViewById(R.id.btn_connect) != null ? 1 : 0;
         buttons += main.findViewById(R.id.btn_servers) != null ? 1 : 0;
         assertTrue("unexpected extra buttons on the dashboard: " + buttons, buttons <= 2);
+        // the failure must be explained, not dumped as a raw engine sentence
+        assertTrue("the error explanation is missing",
+                main.findViewById(R.id.text_error_hint) != null);
+        assertTrue("the technical details line is missing",
+                main.findViewById(R.id.text_error_details) != null);
     }
 }

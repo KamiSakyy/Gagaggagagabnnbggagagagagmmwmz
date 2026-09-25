@@ -243,7 +243,14 @@ public final class ConfigBuilder {
             result.add(proxy);
         }
 
-        result.add(Json.obj().put("type", "direct").put("tag", TAG_DIRECT));
+        // sing-box 1.12+ refuses a detour that points at an "empty" direct outbound
+        // ("detour to an empty direct outbound makes no sense"), and both the local DNS server
+        // and the private-network rules detour here. Giving the outbound the same resolver the
+        // route already uses makes it non-empty without changing behaviour.
+        result.add(Json.obj()
+                .put("type", "direct")
+                .put("tag", TAG_DIRECT)
+                .put("domain_resolver", Json.obj().put("server", TAG_DNS_DIRECT)));
         return result;
     }
 
