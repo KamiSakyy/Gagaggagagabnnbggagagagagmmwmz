@@ -26,7 +26,14 @@ public final class ConfigBuilder {
     }
 
     public static String build(ConfigSettings s, List<Outbound> servers) {
-        List<Outbound> list = servers == null ? new ArrayList<Outbound>() : servers;
+        List<Outbound> list = new ArrayList<>();
+        if (servers != null) {
+            for (Outbound server : servers) {
+                if (server.isSupported()) {
+                    list.add(server);
+                }
+            }
+        }
         boolean hasProxies = !list.isEmpty();
         Json.Obj root = Json.obj();
         root.put("log", log(s));

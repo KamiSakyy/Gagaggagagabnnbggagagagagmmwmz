@@ -100,6 +100,29 @@ public class Outbound {
     /** Optional warning shown in the UI (e.g. unsupported transport downgraded to tcp). */
     public String warn;
 
+    /**
+     * Protocols the bundled sing-box build no longer implements. Such locations are
+     * still imported and listed, but they are skipped when the configuration is built
+     * so the engine never rejects the whole profile.
+     */
+    private static final String[] REMOVED_BY_ENGINE = {"shadowsocksr"};
+
+    public static boolean isSupportedType(String protocol) {
+        if (protocol == null) {
+            return false;
+        }
+        for (String removed : REMOVED_BY_ENGINE) {
+            if (removed.equalsIgnoreCase(protocol)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isSupported() {
+        return isSupportedType(type);
+    }
+
     public String displayName() {
         return tag == null || tag.isEmpty() ? (server + ":" + port) : tag;
     }

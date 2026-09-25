@@ -92,11 +92,19 @@ public final class SubscriptionUpdater {
         Repo.updateSubscription(context, subscription);
         Repo.replaceSubscriptionServers(context, subscription.id, servers);
 
-        result.ok = !servers.isEmpty();
-        result.imported = servers.size();
+        int usable = 0;
+        for (Server server : servers) {
+            if (server.isSupported()) {
+                usable++;
+            }
+        }
+        result.ok = usable > 0;
+        result.imported = usable;
         result.message = servers.isEmpty()
                 ? "не найдено ни одной локации"
-                : ("локаций: " + servers.size());
+                : (usable == servers.size()
+                        ? ("локаций: " + servers.size())
+                        : ("локаций: " + usable + " (не поддерживается: " + (servers.size() - usable) + ")"));
         Bridge.appendLog(result.ok ? "I" : "W", "«" + subscription.name + "»: " + result.message
                 + (parsed.skipped > 0 ? " (пропущено: " + parsed.skipped + ")" : ""));
 

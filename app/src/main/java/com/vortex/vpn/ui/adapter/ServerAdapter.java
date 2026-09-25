@@ -80,6 +80,11 @@ public class ServerAdapter extends RecyclerView.Adapter<ServerAdapter.Holder> {
         if (server.server != null && !server.server.isEmpty()) {
             meta.append(" \u2022 ").append(server.server).append(':').append(server.port);
         }
+        if (!server.isSupported()) {
+            meta.append(" \u2022 ").append(context.getString(R.string.unsupported_protocol));
+        } else if (server.warn != null && !server.warn.isEmpty()) {
+            meta.append(" \u2022 ").append(server.warn);
+        }
         holder.meta.setText(meta.toString());
 
         int latency = server.ping;

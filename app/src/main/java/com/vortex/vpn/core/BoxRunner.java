@@ -145,9 +145,14 @@ public class BoxRunner implements CommandServerHandler {
         String activeTag = "";
         String selectedFp = Prefs.getString(Prefs.KEY_SERVER_FP, "");
         int index = 0;
+        int skipped = 0;
         for (Server server : servers) {
             if (index >= MAX_SERVERS_IN_CONFIG) {
                 break;
+            }
+            if (!server.isSupported()) {
+                skipped++;
+                continue;
             }
             String tag = uniqueName(server.displayName(), used);
             used.add(tag);
@@ -161,6 +166,9 @@ public class BoxRunner implements CommandServerHandler {
         }
         if (activeTag.isEmpty() && !outbounds.isEmpty()) {
             activeTag = outbounds.get(0).tag;
+        }
+        if (skipped > 0) {
+            Bridge.appendLog("W", "пропущено неподдерживаемых локаций: " + skipped);
         }
         settings.selectedTag = activeTag;
         Prefs.setString(Prefs.KEY_ACTIVE_TAG, activeTag);

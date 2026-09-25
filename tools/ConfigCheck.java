@@ -85,10 +85,33 @@ public final class ConfigCheck {
                 throw new IllegalStateException(name + ": no outbounds");
             }
             if (!name.startsWith("direct-only")) {
+                // wireguard lives in "endpoints" and removed protocols are filtered out
+                int expectedOutbounds = 0;
+                int expectedEndpoints = 0;
+                for (Outbound outbound : servers) {
+                    if (!outbound.isSupported()) {
+                        continue;
+                    }
+                    if ("wireguard".equals(outbound.type)) {
+                        expectedEndpoints++;
+                    } else {
+                        expectedOutbounds++;
+                    }
+                }
                 List<?> outbounds = (List<?>) root.get("outbounds");
-                if (outbounds.size() < servers.size()) {
+                // selector + urltest groups are added on top of the servers themselves
+                if (outbounds.size() < expectedOutbounds) {
                     throw new IllegalStateException(name + ": outbounds were dropped ("
-                            + outbounds.size() + " < " + servers.size() + ")");
+                            + outbounds.size() + " < " + expectedOutbounds + ")");
+                }
+                if (expectedEndpoints > 0) {
+                    if (!root.containsKey("endpoints")) {
+                        throw new IllegalStateException(name + ": wireguard endpoints are missing");
+                    }
+                    List<?> endpoints = (List<?>) root.get("endpoints");
+                    if (endpoints.isEmpty()) {
+                        throw new IllegalStateException(name + ": no wireguard endpoints");
+                    }
                 }
                 List<?> inbounds = (List<?>) root.get("inbounds");
                 Map<?, ?> first = (Map<?, ?>) inbounds.get(0);
@@ -177,7 +200,8 @@ public final class ConfigCheck {
         List<Outbound> all = new ArrayList<>(raw);
         all.addAll(clash);
         List<Outbound> unique = SubImporter.dedupe(all);
-        System.out.println("after dedupe: " + unique.size() + " locations");
+        System.out.println("after dedupe: " + unique.size() + " locations (including one "
+                + "shadowsocksr location that is intentionally filtered out of the config)");
         for (Outbound outbound : unique) {
             require(outbound.country == null || outbound.country.isEmpty()
                             || Geo.flag(outbound.country) != null,
