@@ -68,6 +68,11 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
+      - name: Lint the Android resources
+        run: |
+          set -o pipefail
+          python3 tools/check_resources.py . 2>&1 | tee -a "$BUILD_LOG"
+
       - name: Fetch the MediaPipe face model
         run: |
           set -o pipefail

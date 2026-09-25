@@ -27,27 +27,30 @@ compile() {          # compile <output dir> <sources file> <classpath>
   "${JAVAC[@]}" -cp "$cp" -d "$out" "@$sources"
 }
 
-echo "=== 1/5 заглушки внешних библиотек ==="
+echo "=== 0/6 проверка ресурсов Android ==="
+python3 "$ROOT/tools/check_resources.py" "$ROOT"
+
+echo "=== 1/6 заглушки внешних библиотек ==="
 find "$ROOT/tools/stubs" -name '*.java' > "$OUT/stubs.txt"
 compile "$OUT/stubs" "$OUT/stubs.txt" "$JAVA"
 cp -r "$ROOT/tools/stubs/." "$OUT/stubs-src" 2>/dev/null || true
 
-echo "=== 2/5 распаковка Live2D Cubism Core ==="
+echo "=== 2/6 распаковка Live2D Cubism Core ==="
 rm -rf "$OUT/aar"; mkdir -p "$OUT/aar"
 unzip -o -q "$ROOT/app/libs/Live2DCubismCore.aar" -d "$OUT/aar"
 if [ ! -f "$OUT/aar/classes.jar" ]; then
   unzip -o -q "$ROOT/Live2DCubismCore.aar" -d "$OUT/aar"
 fi
 
-echo "=== 3/5 фреймворк Live2D ==="
+echo "=== 3/6 фреймворк Live2D ==="
 find "$ROOT/app/src/main/java/com/live2d" -name '*.java' > "$OUT/framework.txt"
 compile "$OUT/framework" "$OUT/framework.txt" "$OUT/aar/classes.jar"
 
-echo "=== 4/5 код приложения ==="
+echo "=== 4/6 код приложения ==="
 find "$ROOT/app/src/main/java/com/echidna" -name '*.java' > "$OUT/app.txt"
 compile "$OUT/app" "$OUT/app.txt" "$OUT/framework:$OUT/aar/classes.jar:$OUT/stubs"
 
-echo "=== 5/5 юнит-тесты ==="
+echo "=== 5/6 юнит-тесты ==="
 find "$ROOT/tools/junit-stub" "$ROOT/tools/android-stub" -name '*.java' > "$OUT/junit-stub.txt"
 compile "$OUT/junit" "$OUT/junit-stub.txt" "$JAVA"
 "${JAVAC[@]}" -cp "$OUT/junit" -d "$OUT/junit" "$ROOT/tools/LocalTestRunner.java"

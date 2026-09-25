@@ -25,8 +25,14 @@ verify() {
     echo "  слишком маленький файл: $size байт"
     return 1
   fi
-  if ! head -c 2 "$file" | grep -q "PK"; then
-    echo "  файл не является zip-контейнером задачи"
+  if grep -q "git-lfs" "$file" 2>/dev/null; then
+    echo "  вместо модели скачался указатель Git LFS - источник не годится"
+    return 1
+  fi
+  # The official bundle is a flatbuffer with metadata and weighs 3.7 MB; anything much smaller is a
+  # truncated download or an error page.
+  if [ "$size" -lt 2000000 ]; then
+    echo "  файл слишком мал для модели MediaPipe"
     return 1
   fi
   local sha

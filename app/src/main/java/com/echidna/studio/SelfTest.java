@@ -47,6 +47,9 @@ public final class SelfTest {
 
         String trackerReport();
 
+        /** Why the camera is not running, empty when it runs fine. */
+        String cameraReport();
+
         /** Parameters of the native model right now. */
         String parameterReport();
     }
@@ -217,10 +220,19 @@ public final class SelfTest {
             case 9: {
                 if (cameraRequested) {
                     pass("камера после проверки: " + callbacks.trackerReport());
-                    if (!cameraFramesSeen) {
-                        fail("камера не выдала ни одного кадра");
-                    } else {
+                    if (cameraFramesSeen) {
                         pass("камера выдаёт кадры");
+                    } else {
+                        final String camera = String.valueOf(callbacks.cameraReport());
+                        if (camera.contains("не найдена") || camera.contains("недоступна")
+                                || camera.contains("нет разрешения")) {
+                            // A device without a usable camera cannot be blamed on the app, but the
+                            // reason is reported loudly so nobody mistakes it for a pass.
+                            EchidnaLog.w("SELFTEST", "камеры на устройстве нет: " + camera);
+                            pass("камеры на устройстве нет, проверка камеры пропущена: " + camera);
+                        } else {
+                            fail("камера не выдала ни одного кадра: " + camera);
+                        }
                     }
                 }
                 callbacks.leaveCameraMode();

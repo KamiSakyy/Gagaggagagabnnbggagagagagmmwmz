@@ -697,6 +697,11 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                 }
 
                 @Override
+                public String cameraReport() {
+                    return hub.camera().lastError();
+                }
+
+                @Override
                 public String parameterReport() {
                     return renderer.parameterSummary();
                 }
