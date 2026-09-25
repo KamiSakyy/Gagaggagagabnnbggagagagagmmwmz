@@ -63,9 +63,10 @@ public final class ModelStage implements Motions {
     private final FaceSignals lostSignals = new FaceSignals();
     private float signalTimeout = 10.0f;
 
-    private float micLevel;
-    private float micGain = 1.0f;
-    private boolean micEnabled;
+    // Written from the UI thread and the audio thread, read by the GL thread every frame.
+    private volatile float micLevel;
+    private volatile float micGain = 1.0f;
+    private volatile boolean micEnabled;
 
     private boolean autoBlink = true;
     private String manualMotion;

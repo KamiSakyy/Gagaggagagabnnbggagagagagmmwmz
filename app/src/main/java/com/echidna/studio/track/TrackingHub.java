@@ -199,8 +199,20 @@ public final class TrackingHub {
             EchidnaLog.i("TRACK", "выбран ML Kit Face Detection");
             return true;
         } catch (Throwable t) {
-            EchidnaLog.e("TRACK", "ни один трекер не запустился", t);
+            EchidnaLog.w("TRACK", "ни один трекер не запустился: " + t);
             addDiagnostic("трекеры недоступны: " + t.getClass().getSimpleName());
+        }
+        // Never leave the streamer with a dead camera mode: the synthetic source keeps the avatar
+        // alive and the diagnostics say exactly what is missing.
+        try {
+            final SyntheticFaceTracker fallback = new SyntheticFaceTracker();
+            fallback.start();
+            tracker = fallback;
+            addDiagnostic("трекер: демонстрационный (живая мимика без лица)");
+            EchidnaLog.i("TRACK", "трекеры недоступны, включён демонстрационный источник");
+            return true;
+        } catch (Throwable t) {
+            EchidnaLog.e("TRACK", "демонстрационный источник тоже не поднялся", t);
             return false;
         }
     }

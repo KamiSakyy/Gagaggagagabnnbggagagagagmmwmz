@@ -45,7 +45,11 @@
 
 ## Установка
 
-1. Скачайте APK из папки [`handoff`](handoff) — **arm64** для телефона, **x86_64** для эмулятора.
+1. Скачайте APK — **arm64** для телефона, **x86_64** для эмулятора:
+
+   * телефон: [`EchidnaStudio-1.0.0-arm64-v8a.apk`](https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/raw/arena/01a0d529-gagaggagagabnnbggagagagagmmwmz/handoff/EchidnaStudio-1.0.0-arm64-v8a.apk)
+   * эмулятор: [`EchidnaStudio-1.0.0-x86_64.apk`](https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/raw/arena/01a0d529-gagaggagagabnnbggagagagagmmwmz/handoff/EchidnaStudio-1.0.0-x86_64.apk)
+   * исходники одним архивом: [`EchidnaStudio-source.zip`](https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/raw/arena/01a0d529-gagaggagagabnnbggagagagagmmwmz/handoff/EchidnaStudio-source.zip)
 2. Разрешите установку из неизвестных источников, установите, откройте.
 3. Разрешите камеру (и микрофон, если нужен липсинк) — приложение спросит один раз.
 

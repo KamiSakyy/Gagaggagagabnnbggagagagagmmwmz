@@ -27,8 +27,9 @@ compile() {          # compile <output dir> <sources file> <classpath>
   "${JAVAC[@]}" -cp "$cp" -d "$out" "@$sources"
 }
 
-echo "=== 0/6 проверка ресурсов Android ==="
+echo "=== 0/6 проверка ресурсов и порядка запуска ==="
 python3 "$ROOT/tools/check_resources.py" "$ROOT"
+python3 "$ROOT/tools/check_startup_order.py" "$ROOT"
 
 echo "=== 1/6 заглушки внешних библиотек ==="
 find "$ROOT/tools/stubs" -name '*.java' > "$OUT/stubs.txt"

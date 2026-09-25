@@ -40,6 +40,7 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
 
     private final AssetManager assets;
     private final ModelStage stage;
+    private final android.content.Context appContext;
 
     private EchidnaModel model;
     private final CubismMatrix44 projection = CubismMatrix44.create();
@@ -68,12 +69,15 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
 
     private volatile BackgroundStyle background = BackgroundStyle.NIGHT;
     private volatile float modelScale = 1.0f;
+    private volatile float modelOffsetX = 0.0f;
     private volatile float modelOffsetY = 0.0f;
     private volatile boolean lookAtTouch;
     private volatile float touchX;
     private volatile float touchY;
 
     private volatile String parameterSummary = "модель не загружена";
+    private volatile String lastError = "";
+    private int consecutiveErrors;
     private long lastParameterSummaryNanos;
 
     private long lastFrameNanos;
@@ -84,8 +88,9 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
     private int surfaceHeight = 1;
     private final AtomicBoolean ready = new AtomicBoolean(false);
 
-    public EchidnaRenderer(AssetManager assets, ModelStage stage) {
-        this.assets = assets;
+    public EchidnaRenderer(android.content.Context context, ModelStage stage) {
+        this.appContext = context.getApplicationContext();
+        this.assets = this.appContext.getAssets();
         this.stage = stage;
     }
 
@@ -130,8 +135,24 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         modelScale = scale;
     }
 
+    public float modelScale() {
+        return modelScale;
+    }
+
     public void setModelOffsetY(float offset) {
         modelOffsetY = offset;
+    }
+
+    public void setModelOffsetX(float offset) {
+        modelOffsetX = offset;
+    }
+
+    public float modelOffsetX() {
+        return modelOffsetX;
+    }
+
+    public float modelOffsetY() {
+        return modelOffsetY;
     }
 
     public void setPreviewFrame(Bitmap frame) {
@@ -165,32 +186,47 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
     private static final int CMD_RANDOM = 3;
     private static final int CMD_CAMERA = 4;
     private static final int CMD_IDLE = 5;
+    private static final int CMD_RELOAD = 6;
 
     // ------------------------------------------------------------------- GL
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        GLES20.glEnable(GLES20.GL_BLEND);
-        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
-        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
-
-        CubismFramework.initialize();
-        CubismRendererAndroid.setExtShaderMode(false, false);
-        final CubismIdManager ids = CubismFramework.getIdManager();
-        idTouchAngleX = ids.getId("ParamAngleX");
-        idTouchAngleY = ids.getId("ParamAngleY");
-        idTouchEyeX = ids.getId("ParamEyeBallX");
-        idTouchEyeY = ids.getId("ParamEyeBallY");
-
-        if (model != null) {
-            // The context was recreated: drop the previous model before building a new one.
-            releaseModel();
-        }
-        model = new EchidnaModel(assets);
+        // Nothing on a GL thread may ever throw uncaught: an escaping exception kills the whole
+        // process, which is exactly how the app used to die instead of showing a message.
         try {
+            GLES20.glEnable(GLES20.GL_BLEND);
+            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+            GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+
+            // startUp() runs in the application; initialize() secures the framework resources.
+            if (!CubismFramework.isStarted()) {
+                fail("движок Live2D не был запущен при старте приложения");
+                return;
+            }
+            CubismFramework.initialize();
+            CubismRendererAndroid.setExtShaderMode(false, false);
+            final CubismIdManager ids = CubismFramework.getIdManager();
+            if (ids == null) {
+                fail("движок Live2D не отдал менеджер идентификаторов");
+                return;
+            }
+            idTouchAngleX = ids.getId("ParamAngleX");
+            idTouchAngleY = ids.getId("ParamAngleY");
+            idTouchEyeX = ids.getId("ParamEyeBallX");
+            idTouchEyeY = ids.getId("ParamEyeBallY");
+
+            if (model != null) {
+                // The context was recreated: drop the previous model before building a new one.
+                releaseModel();
+            }
+            initPreview();
+
+            model = new EchidnaModel(assets);
             model.load();
             stage.attach(model, stageListener);
             ready.set(true);
+            EchidnaLog.MODEL_NOTE = model.loadReport();
             EchidnaLog.i("GL", "модель готова: " + model.loadReport());
             if (statusListener != null) {
                 statusListener.onModelReady(model.loadReport());
@@ -198,25 +234,79 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
             // Start with something alive on screen instead of a frozen pose.
             stage.startShow(com.echidna.studio.anim.ShowLibrary.byId(
                     com.echidna.studio.anim.ShowLibrary.ID_GREET));
-        } catch (Throwable t) {
-            ready.set(false);
-            EchidnaLog.e("GL", "модель не загрузилась: " + t, t);
-            if (statusListener != null) {
-                statusListener.onModelFailed(String.valueOf(t));
+        } catch (Throwable error) {
+            fail("модель не загрузилась: " + describe(error));
+        }
+    }
+
+    /** Reports a failure without ever throwing out of a GL callback. */
+    private void fail(String message) {
+        ready.set(false);
+        model = null;
+        lastError = message;
+        EchidnaLog.e("GL", message);
+        if (statusListener != null) {
+            try {
+                statusListener.onModelFailed(message);
+            } catch (Throwable ignored) {
+                // The UI is the least important thing when the model is broken.
             }
         }
-        initPreview();
+    }
+
+    private static String describe(Throwable error) {
+        final String message = error.getMessage();
+        return error.getClass().getSimpleName() + (message == null ? "" : ": " + message);
+    }
+
+    /** The last model or render error, empty while everything is fine. */
+    public String lastError() {
+        return lastError;
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        GLES20.glViewport(0, 0, width, height);
-        surfaceWidth = Math.max(1, width);
-        surfaceHeight = Math.max(1, height);
+        try {
+            GLES20.glViewport(0, 0, width, height);
+            surfaceWidth = Math.max(1, width);
+            surfaceHeight = Math.max(1, height);
+        } catch (Throwable error) {
+            EchidnaLog.e("GL", "ошибка смены размера: " + describe(error));
+        }
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
+        try {
+            drawFrame();
+        } catch (Throwable error) {
+            consecutiveErrors++;
+            if (consecutiveErrors == 1 || consecutiveErrors % 60 == 0) {
+                EchidnaLog.e("GL", "ошибка кадра (" + consecutiveErrors + "): " + describe(error));
+            }
+            if (consecutiveErrors == 1) {
+                lastError = "ошибка отрисовки: " + describe(error);
+                EchidnaLog.saveCrashReport(appContext, error);
+                if (statusListener != null) {
+                    try {
+                        statusListener.onModelFailed(lastError);
+                    } catch (Throwable ignored) {
+                        // ignore
+                    }
+                }
+            }
+            // Keep drawing: the background and the preview do not depend on the model, and the next
+            // frame may well succeed (a lost EGL context does exactly that).
+            try {
+                GLES20.glClearColor(0.07f, 0.05f, 0.13f, 1.0f);
+                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+            } catch (Throwable ignored) {
+                // nothing left to do
+            }
+        }
+    }
+
+    private void drawFrame() {
         final long now = System.nanoTime();
         float dt = (now - lastFrameNanos) / 1_000_000_000.0f;
         lastFrameNanos = now;
@@ -277,8 +367,34 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
             case CMD_IDLE:
                 stage.toIdle();
                 break;
+            case CMD_RELOAD:
+                reloadModel();
+                break;
             default:
                 break;
+        }
+    }
+
+    /** Drops the current model and builds it again on the GL thread. */
+    private void reloadModel() {
+        try {
+            if (model != null) {
+                releaseModel();
+            }
+            lastError = "";
+            consecutiveErrors = 0;
+            model = new EchidnaModel(assets);
+            model.load();
+            stage.attach(model, stageListener);
+            ready.set(true);
+            EchidnaLog.MODEL_NOTE = model.loadReport();
+            parameterSummary = "модель загружена";
+            EchidnaLog.i("GL", "модель перезагружена: " + model.loadReport());
+            if (statusListener != null) {
+                statusListener.onModelReady(model.loadReport());
+            }
+        } catch (Throwable error) {
+            fail("повторная загрузка не удалась: " + describe(error));
         }
     }
 
@@ -298,7 +414,8 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         // these at zero and one, so the shows are framed exactly as authored.
         final float zoom = ParamLimits.zoom(stage.viewZoom());
         projection.scale(modelScale * zoom, modelScale * zoom);
-        projection.translate(stage.viewOffsetX(), modelOffsetY + stage.viewOffsetY());
+        projection.translate(modelOffsetX + stage.viewOffsetX(),
+                modelOffsetY + stage.viewOffsetY());
 
         final CubismModelMatrix matrix = model.getModelMatrix();
         projection.multiplyByMatrix(matrix);
@@ -316,6 +433,16 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
                 statusListener.onFps(lastFps);
             }
         }
+    }
+
+    /**
+     * Queues a fresh attempt at loading the model on the GL thread. Used by the error screen, so a
+     * broken first attempt (a lost context, a recycled surface) can be retried without restarting
+     * the app.
+     */
+    public void requestModelReload() {
+        modelRequested = true;
+        pendingCommand = CMD_RELOAD;
     }
 
     /** Releases the model - called from the activity when the surface goes away. */

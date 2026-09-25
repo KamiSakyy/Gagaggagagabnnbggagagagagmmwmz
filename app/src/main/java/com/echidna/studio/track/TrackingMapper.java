@@ -50,7 +50,7 @@ public final class TrackingMapper {
     private final Pose tracked = new Pose();
     private final Pose demo = new Pose();
 
-    private boolean mirrored = true;
+    private volatile boolean mirrored = true;
     private float lostFor = 10.0f;
     private float demoBlend = 1.0f;
     private float clock;

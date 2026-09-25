@@ -72,28 +72,36 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
     private String currentMotionName;
     private String loadReport = "не загружено";
 
+    /**
+     * Looks an identifier up in the framework's manager, falling back to a plain id object when the
+     * manager is not available: a missing manager must never take the model down.
+     */
+    private static CubismId id(String name) {
+        final CubismIdManager manager = CubismFramework.getIdManager();
+        return manager != null ? manager.getId(name) : new CubismId(name);
+    }
+
     public EchidnaModel(AssetManager assets) {
         this.assets = assets;
         mocConsistency = true;
 
-        final CubismIdManager ids = CubismFramework.getIdManager();
-        idAngleX = ids.getId(ParameterId.ANGLE_X.getId());
-        idAngleY = ids.getId(ParameterId.ANGLE_Y.getId());
-        idAngleZ = ids.getId(ParameterId.ANGLE_Z.getId());
-        idBodyX = ids.getId(ParameterId.BODY_ANGLE_X.getId());
-        idBodyY = ids.getId(ParameterId.BODY_ANGLE_Y.getId());
-        idBodyZ = ids.getId(ParameterId.BODY_ANGLE_Z.getId());
-        idEyeLOpen = ids.getId(ParameterId.EYE_L_OPEN.getId());
-        idEyeROpen = ids.getId(ParameterId.EYE_R_OPEN.getId());
-        idEyeLSmile = ids.getId(ParameterId.EYE_L_SMILE.getId());
-        idEyeRSmile = ids.getId(ParameterId.EYE_R_SMILE.getId());
-        idEyeBallX = ids.getId(ParameterId.EYE_BALL_X.getId());
-        idEyeBallY = ids.getId(ParameterId.EYE_BALL_Y.getId());
-        idMouthOpenY = ids.getId(ParameterId.MOUTH_OPEN_Y.getId());
-        idMouthForm = ids.getId(ParameterId.MOUTH_FORM.getId());
-        idBrowLY = ids.getId(ParameterId.BROW_L_Y.getId());
-        idBrowRY = ids.getId(ParameterId.BROW_R_Y.getId());
-        idCheek = ids.getId("ParamCheek");
+        idAngleX = id(ParameterId.ANGLE_X.getId());
+        idAngleY = id(ParameterId.ANGLE_Y.getId());
+        idAngleZ = id(ParameterId.ANGLE_Z.getId());
+        idBodyX = id(ParameterId.BODY_ANGLE_X.getId());
+        idBodyY = id(ParameterId.BODY_ANGLE_Y.getId());
+        idBodyZ = id(ParameterId.BODY_ANGLE_Z.getId());
+        idEyeLOpen = id(ParameterId.EYE_L_OPEN.getId());
+        idEyeROpen = id(ParameterId.EYE_R_OPEN.getId());
+        idEyeLSmile = id(ParameterId.EYE_L_SMILE.getId());
+        idEyeRSmile = id(ParameterId.EYE_R_SMILE.getId());
+        idEyeBallX = id(ParameterId.EYE_BALL_X.getId());
+        idEyeBallY = id(ParameterId.EYE_BALL_Y.getId());
+        idMouthOpenY = id(ParameterId.MOUTH_OPEN_Y.getId());
+        idMouthForm = id(ParameterId.MOUTH_FORM.getId());
+        idBrowLY = id(ParameterId.BROW_L_Y.getId());
+        idBrowRY = id(ParameterId.BROW_R_Y.getId());
+        idCheek = id("ParamCheek");
     }
 
     public String loadReport() {
@@ -149,7 +157,7 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         breathParameters.add(new CubismBreath.BreathParameterData(idAngleZ, 0.0f, 3.0f, 5.5345f, 0.5f));
         breathParameters.add(new CubismBreath.BreathParameterData(idBodyX, 0.0f, 2.0f, 15.5345f, 0.5f));
         breathParameters.add(new CubismBreath.BreathParameterData(
-                CubismFramework.getIdManager().getId(ParameterId.BREATH.getId()), 0.5f, 0.5f, 3.2345f, 0.5f));
+                id(ParameterId.BREATH.getId()), 0.5f, 0.5f, 3.2345f, 0.5f));
         breath.setParameters(breathParameters);
 
         for (int i = 0; i < modelSetting.getLipSyncParameterCount(); i++) {
@@ -174,7 +182,13 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
 
         // Renderer and textures need a current GL context.
         final CubismRenderer renderer = CubismRendererAndroid.create();
+        if (renderer == null) {
+            throw new IOException("не удалось создать GL-рендерер Live2D");
+        }
         setupRenderer(renderer);
+        if (getRenderer() == null) {
+            throw new IOException("рендерер не привязался к модели");
+        }
         setupTextures();
 
         final StringBuilder report = new StringBuilder();
@@ -228,9 +242,9 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             }
 
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            final int[] id = new int[1];
-            GLES20.glGenTextures(1, id, 0);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, id[0]);
+            final int[] glTexture = new int[1];
+            GLES20.glGenTextures(1, glTexture, 0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, glTexture[0]);
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
             GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
@@ -238,9 +252,11 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
 
-            textureIds.add(id[0]);
-            this.<CubismRendererAndroid>getRenderer().bindTexture(i, id[0]);
-            this.<CubismRendererAndroid>getRenderer().isPremultipliedAlpha(false);
+            textureIds.add(glTexture[0]);
+            this.<CubismRendererAndroid>getRenderer().bindTexture(i, glTexture[0]);
+            // Android decodes PNGs into premultiplied bitmaps, and the texture is uploaded as is.
+            // Telling the renderer otherwise leaves dark fringes around the character.
+            this.<CubismRendererAndroid>getRenderer().isPremultipliedAlpha(true);
             bitmap.recycle();
         }
     }

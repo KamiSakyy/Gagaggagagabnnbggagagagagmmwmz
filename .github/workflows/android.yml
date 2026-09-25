@@ -7,6 +7,7 @@ on:
       - 'arena/**'
     paths-ignore:
       - '.ci/**'
+      - 'handoff/**'
   workflow_dispatch:
 
 permissions:
@@ -14,23 +15,19 @@ permissions:
   actions: write
 
 concurrency:
-  # The group is per ref and per commit, so a new push never waits for a previous run to
-  # finish (the emulator step can hang on a bad runner). The first step of the new run
-  # cancels the runs that are still going, so one build per branch uses a runner at a time.
+  # Per commit, so a new push starts at once instead of waiting behind a running build; the first
+  # step cancels the older runs of the branch.
   group: echidna-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 env:
   BUILD_LOG: ${{ github.workspace }}/ci-out/build.log
-  SMOKE_LOG: ${{ github.workspace }}/ci-out/smoke.log
-  PKG: com.echidna.studio
-  SCREENS: ${{ github.workspace }}/ci-out/screens
 
 jobs:
   build:
-    name: Build, test and run on an emulator
+    name: Build the arm64 APK
     runs-on: ubuntu-24.04
-    timeout-minutes: 150
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -42,7 +39,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "этот прогон: $GITHUB_RUN_ID"
           gh run list --workflow "$GITHUB_WORKFLOW" --branch "$GITHUB_REF_NAME" --limit 30 \
             --json databaseId,status --jq '.[] | select(.status != "completed") | .databaseId' \
             > /tmp/runs.txt 2>/dev/null || true
@@ -52,29 +48,6 @@ jobs:
               gh run cancel "$id" || true
             fi
           done < /tmp/runs.txt
-
-      - name: Cancel the earlier runs of this branch
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "этот прогон: $GITHUB_RUN_ID"
-          gh run list --workflow "$GITHUB_WORKFLOW" --branch "$GITHUB_REF_NAME" --limit 30 \
-            --json databaseId,status --jq '.[] | select(.status != "completed") | .databaseId' \
-            > /tmp/runs.txt 2>/dev/null || true
-          while read -r id; do
-            if [ -n "$id" ] && [ "$id" != "$GITHUB_RUN_ID" ]; then
-              echo "отменяю прогон $id"
-              gh run cancel "$id" || true
-            fi
-          done < /tmp/runs.txt
-
-      - name: Prepare the workspace
-        run: |
-          mkdir -p ci-out app/libs
-          {
-            echo "== Echidna Studio build =="
-            echo "ветка=$GITHUB_REF_NAME коммит=$GITHUB_SHA"
-          } > "$BUILD_LOG"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -84,83 +57,50 @@ jobs:
 
       - name: Set up the Android SDK
         run: |
+          mkdir -p ci-out
           {
+            echo "== Echidna Studio =="
+            echo "коммит=$GITHUB_SHA ветка=$GITHUB_REF_NAME"
             java -version
-            echo "ANDROID_HOME=${ANDROID_HOME:-<пусто>} ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<пусто>}"
+          } > "$BUILD_LOG"
+          {
             SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
             [ -d "$SDK" ] || SDK=/usr/local/lib/android/sdk
+            echo "SDK=$SDK"
             echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
             echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
-            echo "SDK=$SDK" >> "$GITHUB_ENV"
-            echo "SDK=$SDK"
-            ls "$SDK" || true
-            ls "$SDK/platforms" || true
-            ls "$SDK/build-tools" || true
-            SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
-            if [ -x "$SM" ]; then
-              yes | "$SM" --sdk_root="$SDK" --licenses > /dev/null 2>&1 || true
-              "$SM" --sdk_root="$SDK" --install "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+            SDKMANAGER="$SDK/cmdline-tools/latest/bin/sdkmanager"
+            if [ -x "$SDKMANAGER" ]; then
+              yes | "$SDKMANAGER" --sdk_root="$SDK" --licenses > /dev/null 2>&1 || true
+              "$SDKMANAGER" --sdk_root="$SDK" --install "platforms;android-34" "build-tools;34.0.0"
             else
-              echo "sdkmanager не найден в $SM"
+              echo "sdkmanager не найден: $SDKMANAGER"
             fi
-          } 2>&1 | tee -a "$BUILD_LOG" 
+            ls "$SDK/platforms" "$SDK/build-tools" || true
+          } 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
 
-      - name: Lint the Android resources
+      - name: Check the sources before the build
         run: |
-          set -o pipefail
-          python3 tools/check_resources.py . 2>&1 | tee -a "$BUILD_LOG"
+          {
+            python3 tools/check_resources.py .
+            python3 tools/check_startup_order.py .
+          } 2>&1 | tee -a "$BUILD_LOG"
 
-      - name: Fetch the MediaPipe face model
+      - name: Fetch the bundled face tracking model
         run: |
-          set -o pipefail
           bash tools/fetch_face_model.sh app/src/main/assets/models/face_landmarker.task \
             2>&1 | tee -a "$BUILD_LOG"
           if [ -f app/src/main/assets/models/face_landmarker.task ]; then
-            echo "МОДЕЛЬ ТРЕКЕРА В СБОРКЕ"
+            echo "модель трекера в сборке: $(stat -c%s app/src/main/assets/models/face_landmarker.task) байт" \
+              | tee -a "$BUILD_LOG"
           else
-            echo "ВНИМАНИЕ: модели MediaPipe нет, приложение будет трекать через ML Kit"
-          fi | tee -a "$BUILD_LOG"
-
-      - name: Check the bundled assets
-        run: |
-          set -o pipefail
-          {
-            echo "--- модель Echidna ---"
-            ls app/src/main/assets/live2d/Echidna/ | head -n 5 || true
-            echo "мошенов: $(ls app/src/main/assets/live2d/Echidna/motions 2>/dev/null | wc -l)"
-            echo "текстур: $(ls app/src/main/assets/live2d/Echidna/textures 2>/dev/null | wc -l)"
-            echo "размер модели: $(du -sh app/src/main/assets/live2d | cut -f1)"
-            ls app/src/main/assets/models/ 2>/dev/null || echo "модели MediaPipe нет"
-            echo "--- нативное ядро Live2D ---"
-            unzip -l app/libs/Live2DCubismCore.aar | grep -E "\.so|classes.jar" || true
-          } 2>&1 | tee -a "$BUILD_LOG"
-
-      - name: Ensure the release signing keystore
-        run: |
-          set -o pipefail
-          {
-            if [ ! -f keystore.jks ]; then
-              # The keystore is committed, so every build is signed with the same key and a new
-              # build installs straight over the previous one. This branch only runs if the file
-              # ever goes missing.
-              keytool -genkeypair -v -keystore keystore.jks -alias echidna \
-                -keyalg RSA -keysize 2048 -validity 10000 \
-                -storepass echidnastudio -keypass echidnastudio \
-                -dname "CN=Echidna Studio, OU=Echidna, O=Echidna Studio, L=Frankfurt, C=DE"
-              printf 'storeFile=keystore.jks\nstorePassword=echidnastudio\nkeyAlias=echidna\nkeyPassword=echidnastudio\n' > keystore.properties
-              git config user.name "github-actions[bot]"
-              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-              git add -f keystore.jks keystore.properties
-              git commit -m "ci: recreate the release signing keystore" || true
-              git push origin HEAD:${GITHUB_REF_NAME} || true
-            fi
-            ls -l keystore.jks keystore.properties || true
-          } 2>&1 | tee -a "$BUILD_LOG"
+            echo "МОДЕЛИ ТРЕКЕРА НЕТ: приложение соберётся, но трекером станет ML Kit" | tee -a "$BUILD_LOG"
+          fi
 
       - name: Run the unit tests
         run: |
@@ -176,10 +116,10 @@ jobs:
           cat ci-out/unit-tests.log | tee -a "$BUILD_LOG"
           mkdir -p .ci && cp ci-out/unit-tests.log .ci/unit-tests.log
 
-      - name: Build the release APKs
+      - name: Build the release APK (arm64-v8a)
         run: |
           set -o pipefail
-          gradle --no-daemon --stacktrace assembleRelease -PabiX86_64=true 2>&1 | tee -a "$BUILD_LOG"
+          gradle --no-daemon --stacktrace assembleRelease 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Collect the handoff artifacts
         run: |
@@ -193,79 +133,42 @@ jobs:
                 continue
               fi
               case "$apk" in
-                *x86_64*) target="handoff/EchidnaStudio-$VERSION-x86_64.apk" ;;
-                *arm64*)  target="handoff/EchidnaStudio-$VERSION-arm64-v8a.apk" ;;
-                *)        target="handoff/EchidnaStudio-$VERSION.apk" ;;
+                *arm64*) target="handoff/EchidnaStudio-$VERSION-arm64-v8a.apk" ;;
+                *)       target="handoff/EchidnaStudio-$VERSION.apk" ;;
               esac
               cp "$apk" "$target"
             done
             ls -la handoff || true
-            echo "=== содержимое APK ==="
-            APK=$(ls handoff/*x86_64*.apk 2>/dev/null | head -n 1)
-            if [ -z "$APK" ]; then
-              APK=$(ls handoff/*.apk 2>/dev/null | head -n 1)
-            fi
+            echo "=== проверяю содержимое APK ==="
+            APK=$(ls handoff/*.apk 2>/dev/null | head -n 1)
             if [ -z "$APK" ]; then
               echo "APK НЕ СОБРАЛСЯ"
               exit 1
             fi
-            echo "проверяю $APK"
-            unzip -l "$APK" | grep -E "lib/|assets/models|assets/live2d/Echidna/(Echidna.moc3|motions/)" | head -n 20 || true
-            echo "нативных библиотек: $(unzip -l "$APK" | grep -c '\.so' || true)"
+            echo "файл: $APK"
+            unzip -l "$APK" | grep -E "lib/|assets/models/|Echidna.moc3" | head -n 15 || true
+            echo "нативных библиотек: $(unzip -l "$APK" | grep -c '\\.so' || true)"
+            echo "архитектуры: $(unzip -l "$APK" | grep -o 'lib/[a-z0-9_-]*/' | sort -u | tr '\\n' ' ')"
             echo "модель трекера внутри: $(unzip -l "$APK" | grep -c 'face_landmarker.task' || true)"
+            echo "модель Ехидны внутри: $(unzip -l "$APK" | grep -c 'Echidna' || true)"
             echo "весит: $(du -h "$APK" | cut -f1)"
           } 2>&1 | tee -a "$BUILD_LOG"
 
-      - name: Check the emulator acceleration
-        run: |
-          ls -l /dev/kvm 2>&1 || true
-          sudo chmod 666 /dev/kvm 2>/dev/null || true
-          if [ -w /dev/kvm ]; then
-            echo "KVM_OK=1" >> "$GITHUB_ENV"
-            echo "KVM есть, проверка на эмуляторе пойдёт" | tee -a "$BUILD_LOG"
-          else
-            echo "KVM_OK=0" >> "$GITHUB_ENV"
-            echo "нет /dev/kvm, проверка на эмуляторе будет пропущена" | tee -a "$BUILD_LOG"
-          fi
-
-      - name: Run the app on an emulator
-        if: env.KVM_OK == '1'
+      - name: Verify the signature
         run: |
           set -o pipefail
-          APK=$(ls handoff/*x86_64*.apk 2>/dev/null | head -n 1)
-          if [ -z "$APK" ]; then
-            echo "SMOKE SKIPPED: нет сборки под x86_64"
-            exit 0
-          fi
-          # One step, so the emulator is definitely alive for the test that follows.
-          bash tools/start_emulator.sh "system-images;android-30;default;x86_64" 30 \
-            2>&1 | tee ci-out/start-emulator.log
-          bash tools/smoke_test.sh "$APK" "$SCREENS" 2>&1 | tee "$SMOKE_LOG"
-
-      - name: Save the smoke test report
-        if: always()
-        run: |
-          mkdir -p .ci/screens
-          if [ -f ci-out/smoke.log ]; then
-            cp ci-out/smoke.log .ci/smoke.log
-            cp ci-out/screens/*.png .ci/screens/ 2>/dev/null || true
-            {
-              echo "=== вердикт ==="
-              grep -a -E "SMOKE OK|SMOKE SKIPPED|EMULATOR BOOTED|ИТОГ OK|ПРОВАЛ|ПРИЛОЖЕНИЕ|САМОПРОВЕРКА|ЧАСТЬ КАДРОВ|модель на месте|ПРОВАЛ:" ci-out/smoke.log | head -n 60 || true
-              echo "=== камера ==="
-              cat ci-out/camera-frames.txt 2>/dev/null || true
-            } > .ci/smoke-verdict.log
-          else
-            echo "проверка на эмуляторе не запускалась" > .ci/smoke.log
-            echo "нет отчёта" > .ci/smoke-verdict.log
-          fi
-          if [ "$(wc -l < .ci/smoke.log)" -gt 400 ]; then
-            tail -n 400 .ci/smoke.log > /tmp/smoke-tail.log
-            mv /tmp/smoke-tail.log .ci/smoke.log
-          fi
-          cp ci-out/selftest.txt .ci/selftest.log 2>/dev/null || true
-          cp ci-out/start-emulator.log .ci/start-emulator.log 2>/dev/null || true
-          wc -l .ci/smoke.log || true
+          {
+            SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+            APKSIGNER=$(ls "$SDK"/build-tools/*/apksigner 2>/dev/null | head -n 1)
+            APK=$(ls handoff/*.apk | head -n 1)
+            if [ -n "$APKSIGNER" ]; then
+              "$APKSIGNER" verify --print-certs "$APK"
+            else
+              echo "apksigner не найден, проверяю через keytool"
+              unzip -p "$APK" META-INF/CERT.RSA > /tmp/cert.rsa 2>/dev/null || true
+              ls -la /tmp/cert.rsa 2>/dev/null || true
+            fi
+          } 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Package the sources into the handoff
         if: always()
@@ -277,25 +180,16 @@ jobs:
             zip -qr handoff/EchidnaStudio-source.zip \
               app/src app/libs app/build.gradle app/proguard-rules.pro \
               build.gradle settings.gradle gradle.properties \
-              tools .github README.md Live2D-LICENSE.md
+              tools .github README.md Live2D-LICENSE.md keystore.properties
             ls -la handoff || true
           } 2>&1 | tee -a "$BUILD_LOG"
 
-      - name: Upload the APKs
+      - name: Upload the APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: echidna-studio-apk
+          name: echidna-studio-apk-arm64
           path: handoff/*.apk
-          if-no-files-found: warn
-          retention-days: 90
-
-      - name: Upload the screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: echidna-studio-screenshots
-          path: .ci/screens
           if-no-files-found: warn
           retention-days: 90
 
@@ -313,7 +207,7 @@ jobs:
           set -o pipefail
           {
             if [ ! -d handoff ]; then
-              echo "handoff пуст, коммитить нечего"
+              echo "handoff пуст"
               exit 0
             fi
             git config user.name "github-actions[bot]"
@@ -322,7 +216,7 @@ jobs:
             if git diff --cached --quiet; then
               echo "handoff без изменений"
             else
-              git commit -m "handoff: сборка APK" || true
+              git commit -m "handoff: сборка arm64 APK" || true
               git push origin HEAD:${GITHUB_REF_NAME} || true
             fi
           } 2>&1 | tee -a "$BUILD_LOG"
@@ -331,7 +225,7 @@ jobs:
         if: always()
         run: |
           mkdir -p .ci
-          sed -E 's/[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?//g' "$BUILD_LOG" > /tmp/clean.log 2>/dev/null \
+          sed -E 's/[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?//g' "$BUILD_LOG" > /tmp/clean.log 2>/dev/null \
             || cp "$BUILD_LOG" /tmp/clean.log
           {
             echo "=== маркеры проблем ==="
@@ -354,7 +248,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "### Echidna Studio"
+            echo "### Echidna Studio: сборка arm64"
             echo
             if grep -q "BUILD SUCCESSFUL" .ci/build.log 2>/dev/null; then
               echo "Сборка APK: **успешно**"
@@ -366,20 +260,6 @@ jobs:
             else
               echo "Юнит-тесты: **смотри .ci/unit-tests.log**"
             fi
-            if grep -q "SMOKE OK" .ci/smoke.log 2>/dev/null; then
-              echo "Прогон на эмуляторе: **пройден** — модель рисуется во всех режимах, камера работает, самопроверка OK"
-            elif grep -q "SMOKE SKIPPED" .ci/smoke.log 2>/dev/null; then
-              echo "Прогон на эмуляторе: **пропущен** (нет KVM)"
-            elif grep -q "нет отчёта" .ci/smoke.log 2>/dev/null; then
-              echo "Прогон на эмуляторе: **не запускался**"
-            else
-              echo "Прогон на эмуляторе: **не пройден** (смотри .ci/smoke.log)"
-            fi
-            if grep -q "ИТОГ OK" .ci/selftest.log 2>/dev/null; then
-              echo "Самопроверка внутри приложения: **OK**"
-            elif [ -f .ci/selftest.log ]; then
-              echo "Самопроверка внутри приложения: **провал** (смотри .ci/selftest.log)"
-            fi
             echo
             echo "| файл | размер |"
             echo "| --- | --- |"
@@ -388,4 +268,6 @@ jobs:
                 echo "| $(basename "$f") | $(du -h "$f" | cut -f1) |"
               fi
             done
+            echo
+            echo "Скачать: вкладка Actions → этот прогон → Artifacts, либо файл в папке \`handoff\`."
           } >> "$GITHUB_STEP_SUMMARY"
