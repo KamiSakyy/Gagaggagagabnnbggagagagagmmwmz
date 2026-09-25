@@ -51,10 +51,6 @@ CGO: disabled
 + echo '--- check hardened.json'
 --- check hardened.json
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/hardened.json
-[31mFATAL[0m[0000] initialize outbound[27]: fragment is not supported on naive outbound
-+ echo 'INVALID: ci-out/configs/hardened.json'
-INVALID: ci-out/configs/hardened.json
-+ FAILED=1
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/minimal.json
 + echo '--- check minimal.json'
@@ -105,11 +101,6 @@ INVALID: ci-out/configs/hardened.json
 + echo '--- check mode2-system.json'
 --- check mode2-system.json
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode2-system.json
-+ '[' 1 -ne 0 ']'
-+ echo 'some configurations were rejected by the engine'
-some configurations were rejected by the engine
-+ grep -aE 'FATAL|INVALID' /tmp/clean-validation.log
-+ head -50
-+ true
-+ echo '=== configuration check finished (failed=1) ==='
-=== configuration check finished (failed=1) ===
++ '[' 0 -ne 0 ']'
++ echo '=== configuration check finished (failed=0) ==='
+=== configuration check finished (failed=0) ===

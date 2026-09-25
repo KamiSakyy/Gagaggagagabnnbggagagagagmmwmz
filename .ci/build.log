@@ -37,14 +37,14 @@ Loading package information...                                                  
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
- 17  112M   17 20.0M    0     0  30.6M      0  0:00:03 --:--:--  0:00:03 30.6M 62  112M   62 70.3M    0     0  42.1M      0  0:00:02  0:00:01  0:00:01 49.4M100  112M  100  112M    0     0  51.6M      0  0:00:02  0:00:02 --:--:-- 60.6M
--rw-r--r-- 1 runner runner 113M Sep 25 08:54 app/libs/libbox.aar
+100  112M  100  112M    0     0   224M      0 --:--:-- --:--:-- --:--:--  224M
+-rw-r--r-- 1 runner runner 113M Sep 25 09:00 app/libs/libbox.aar
  72706412  1980-00-00 00:00   jni/armeabi-v7a/libbox.so
  80751056  1980-00-00 00:00   jni/arm64-v8a/libbox.so
  78457644  1980-00-00 00:00   jni/x86/libbox.so
  85478392  1980-00-00 00:00   jni/x86_64/libbox.so
--rw-r--r-- 1 runner runner 2696 Sep 25 08:54 keystore.jks
--rw-r--r-- 1 runner runner   85 Sep 25 08:54 keystore.properties
+-rw-r--r-- 1 runner runner 2696 Sep 25 09:00 keystore.jks
+-rw-r--r-- 1 runner runner   85 Sep 25 09:00 keystore.properties
 + mkdir -p ci-out/cfgcheck
 + curl -fsSL --retry 6 --retry-delay 5 --retry-all-errors -o /tmp/snakeyaml.jar https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar
 ++ find app/src/main/java/com/vortex/vpn/cfg app/src/main/java/com/vortex/vpn/model app/src/main/java/com/vortex/vpn/sub -name '*.java'
@@ -98,10 +98,6 @@ CGO: disabled
 + echo '--- check hardened.json'
 --- check hardened.json
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/hardened.json
-[31mFATAL[0m[0000] initialize outbound[27]: fragment is not supported on naive outbound
-+ echo 'INVALID: ci-out/configs/hardened.json'
-INVALID: ci-out/configs/hardened.json
-+ FAILED=1
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/minimal.json
 + echo '--- check minimal.json'
@@ -152,14 +148,9 @@ INVALID: ci-out/configs/hardened.json
 + echo '--- check mode2-system.json'
 --- check mode2-system.json
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/mode2-system.json
-+ '[' 1 -ne 0 ']'
-+ echo 'some configurations were rejected by the engine'
-some configurations were rejected by the engine
-+ grep -aE 'FATAL|INVALID' /tmp/clean-validation.log
-+ head -50
-+ true
-+ echo '=== configuration check finished (failed=1) ==='
-=== configuration check finished (failed=1) ===
++ '[' 0 -ne 0 ']'
++ echo '=== configuration check finished (failed=0) ==='
+=== configuration check finished (failed=0) ===
 === gradle assembleRelease ===
 
 Welcome to Gradle 8.10.2!
@@ -177,24 +168,24 @@ Daemon will be stopped at the end of the build
 > Task :app:preReleaseBuild UP-TO-DATE
 > Task :app:mergeReleaseJniLibFolders
 > Task :app:mergeReleaseNativeLibs
-> Task :app:checkReleaseDuplicateClasses
 > Task :app:generateReleaseBuildConfig
+> Task :app:checkReleaseDuplicateClasses
 > Task :app:javaPreCompileRelease
-> Task :app:generateReleaseResValues
-> Task :app:checkReleaseAarMetadata
 
 > Task :app:stripReleaseDebugSymbols
 Unable to strip the following libraries, packaging them as they are: libbox.so.
 
-> Task :app:mapReleaseSourceSetPaths
-> Task :app:generateReleaseResources
+> Task :app:checkReleaseAarMetadata
+> Task :app:generateReleaseResValues
 > Task :app:extractReleaseNativeSymbolTables
+> Task :app:mapReleaseSourceSetPaths
 > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:generateReleaseResources
 > Task :app:packageReleaseResources
+> Task :app:mergeReleaseResources
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease
 > Task :app:parseReleaseLocalResources
-> Task :app:mergeReleaseResources
 > Task :app:processReleaseMainManifest
 > Task :app:processReleaseManifest
 > Task :app:processReleaseManifestForPackage
@@ -231,24 +222,24 @@ Note: Recompile with -Xlint:unchecked for details.
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_9-1790326508603.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_9-1790326838902.json
 
-BUILD SUCCESSFUL in 1m 38s
+BUILD SUCCESSFUL in 1m 37s
 42 actionable tasks: 42 executed
 === gradle finished ===
 app/build/outputs/apk/release/app-armeabi-v7a-release.apk
 app/build/outputs/apk/release/app-arm64-v8a-release.apk
 total 63M
--rw-r--r-- 1 runner runner 2.0K Sep 25 08:54 README.md
--rw-r--r-- 1 runner runner  32M Sep 25 08:56 VortexVPN-1.0.0-arm64-v8a.apk
--rw-r--r-- 1 runner runner  32M Sep 25 08:56 VortexVPN-1.0.0-armeabi-v7a.apk
--rw-r--r-- 1 runner runner 198K Sep 25 08:54 VortexVPN-source.zip
+-rw-r--r-- 1 runner runner 2.0K Sep 25 09:00 README.md
+-rw-r--r-- 1 runner runner  32M Sep 25 09:02 VortexVPN-1.0.0-arm64-v8a.apk
+-rw-r--r-- 1 runner runner  32M Sep 25 09:02 VortexVPN-1.0.0-armeabi-v7a.apk
+-rw-r--r-- 1 runner runner 199K Sep 25 09:00 VortexVPN-source.zip
 total 63M
--rw-r--r-- 1 runner runner 2.0K Sep 25 08:54 README.md
--rw-r--r-- 1 runner runner  32M Sep 25 08:56 VortexVPN-1.0.0-arm64-v8a.apk
--rw-r--r-- 1 runner runner  32M Sep 25 08:56 VortexVPN-1.0.0-armeabi-v7a.apk
--rw-r--r-- 1 runner runner 199K Sep 25 08:56 VortexVPN-source.zip
-[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz b67a5d1] handoff: signed APK build ()
+-rw-r--r-- 1 runner runner 2.0K Sep 25 09:00 README.md
+-rw-r--r-- 1 runner runner  32M Sep 25 09:02 VortexVPN-1.0.0-arm64-v8a.apk
+-rw-r--r-- 1 runner runner  32M Sep 25 09:02 VortexVPN-1.0.0-armeabi-v7a.apk
+-rw-r--r-- 1 runner runner 199K Sep 25 09:02 VortexVPN-source.zip
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz a81740b] handoff: signed APK build ()
  3 files changed, 0 insertions(+), 0 deletions(-)
 To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
-   42800ec..b67a5d1  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+   b7685da..a81740b  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
