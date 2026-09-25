@@ -343,6 +343,24 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         }
 
         countFps(dt);
+
+        // A frame that got here drew everything it had to draw, so an error of an earlier frame is
+        // over: the screen must not keep reporting a failure that no longer happens.
+        if (consecutiveErrors > 0) {
+            final boolean wasReported = !lastError.isEmpty();
+            consecutiveErrors = 0;
+            lastError = "";
+            if (wasReported && ready.get() && model != null) {
+                EchidnaLog.i("GL", "отрисовка восстановилась");
+                if (statusListener != null) {
+                    try {
+                        statusListener.onModelReady(model.loadReport());
+                    } catch (Throwable ignored) {
+                        // The picture is back; a broken listener must not hide it again.
+                    }
+                }
+            }
+        }
     }
 
     private void applyCommands() {

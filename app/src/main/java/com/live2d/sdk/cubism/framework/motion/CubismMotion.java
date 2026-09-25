@@ -677,6 +677,68 @@ public final class CubismMotion extends ACubismMotion {
      *
      * @param motionJson buffer where motion3.json is loaded
      */
+    /**
+     * Counts the segments and the points the curves of a motion really hold.
+     *
+     * The counters of the Meta block are written by the tool that exported the motion, and in a
+     * number of published models they are smaller than the data (the Echidna model of this project
+     * is one of them). Because the lists in parse() are pre-sized from those counters, a motion
+     * like that used to end in IndexOutOfBoundsException and the model never became visible. The
+     * walk below repeats exactly what parse() does with the same checks, so the lists can never end
+     * up shorter than the data, whatever a motion contains.
+     *
+     * @param json motion to inspect
+     * @return two ints: the number of segments, then the number of points
+     */
+    private static int[] countSegmentsAndPoints(CubismMotionJson json) {
+        int segmentTotal = 0;
+        int pointTotal = 0;
+
+        final int curveCount = json.getMotionCurveCount();
+        for (int curveIndex = 0; curveIndex < curveCount; curveIndex++) {
+            final int count = json.getMotionCurveSegmentCount(curveIndex);
+            for (int position = 0; position < count; ) {
+                if (position == 0) {
+                    pointTotal += 1;
+                    position += 2;
+                    if (position >= count) {
+                        break;
+                    }
+                }
+
+                final int segmentType = (int) json.getMotionCurveSegment(curveIndex, position);
+                final int step;
+                final int points;
+                switch (segmentType) {
+                    case 0:     // LINEAR
+                    case 2:     // STEPPED
+                    case 3:     // INVERSESTEPPED
+                        step = 3;
+                        points = 1;
+                        break;
+                    case 1:     // BEZIER
+                        step = 7;
+                        points = 3;
+                        break;
+                    default:
+                        // parse() skips the rest of a curve it cannot read.
+                        return new int[]{segmentTotal, pointTotal};
+                }
+
+                if (position + step > count) {
+                    // parse() stops at an incomplete segment as well.
+                    break;
+                }
+
+                position += step;
+                pointTotal += points;
+                segmentTotal += 1;
+            }
+        }
+
+        return new int[]{segmentTotal, pointTotal};
+    }
+
     private void parse(byte[] motionJson) {
         motionData = new CubismMotionData();
         final CubismMotionJson json;
@@ -712,13 +774,19 @@ public final class CubismMotion extends ACubismMotion {
             motionData.curves.add(new CubismMotionCurve());
         }
 
-        motionData.segments = new ArrayList<CubismMotionSegment>(json.getMotionTotalSegmentCount());
-        for (int i = 0; i < json.getMotionTotalSegmentCount(); i++) {
+        // The counters of the motion file can be lower than the data, so take the larger of the two:
+        // the lists must cover every segment and point parse() is going to write.
+        final int[] counted = countSegmentsAndPoints(json);
+        final int segmentListSize = Math.max(json.getMotionTotalSegmentCount(), counted[0]);
+        final int pointListSize = Math.max(json.getMotionTotalPointCount(), counted[1]);
+
+        motionData.segments = new ArrayList<CubismMotionSegment>(segmentListSize);
+        for (int i = 0; i < segmentListSize; i++) {
             motionData.segments.add(new CubismMotionSegment());
         }
 
-        motionData.points = new ArrayList<CubismMotionPoint>(json.getMotionTotalPointCount());
-        for (int i = 0; i < json.getMotionTotalPointCount(); i++) {
+        motionData.points = new ArrayList<CubismMotionPoint>(pointListSize);
+        for (int i = 0; i < pointListSize; i++) {
             motionData.points.add(new CubismMotionPoint());
         }
 
@@ -758,7 +826,8 @@ public final class CubismMotion extends ACubismMotion {
                 : -1.0f;
 
             // Segments
-            for (int segmentPosition = 0; segmentPosition < json.getMotionCurveSegmentCount(curveCount); ) {
+            final int curveSegmentTotal = json.getMotionCurveSegmentCount(curveCount);
+            for (int segmentPosition = 0; segmentPosition < curveSegmentTotal; ) {
                 if (segmentPosition == 0) {
                     motionData.segments.get(totalSegmentCount).basePointIndex = totalPointCount;
 
@@ -767,6 +836,11 @@ public final class CubismMotion extends ACubismMotion {
 
                     totalPointCount += 1;
                     segmentPosition += 2;
+
+                    // A curve may hold nothing but its starting point.
+                    if (segmentPosition >= curveSegmentTotal) {
+                        break;
+                    }
                 } else {
                     motionData.segments.get(totalSegmentCount).basePointIndex = totalPointCount - 1;
                 }
@@ -783,8 +857,17 @@ public final class CubismMotion extends ACubismMotion {
                     segmentType = CubismMotionSegmentType.STEPPED;
                 } else if (tmpSegment == 3) {
                     segmentType = CubismMotionSegmentType.INVERSESTEPPED;
-                } else {
-                    assert (false);
+                }
+
+                // Cut a curve short instead of reading past its data: a motion that is damaged or
+                // written by another tool must not crash the model.
+                final int valuesNeeded = (segmentType == CubismMotionSegmentType.BEZIER) ? 6 : 2;
+                if (segmentType == null || segmentPosition + valuesNeeded >= curveSegmentTotal) {
+                    CubismDebug.cubismLogWarning(
+                        "Warning: curve \"" + curve.id + "\" of the motion ends with an incomplete segment, "
+                        + "the rest of the curve is skipped."
+                    );
+                    break;
                 }
 
                 switch (segmentType) {

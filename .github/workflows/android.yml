@@ -89,6 +89,8 @@ jobs:
           {
             python3 tools/check_resources.py .
             python3 tools/check_startup_order.py .
+            python3 tools/fix_motion_meta.py --check app/src/main/assets/live2d
+            python3 tools/fix_native_alignment.py --check app/libs/Live2DCubismCore.aar
           } 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Fetch the bundled face tracking model

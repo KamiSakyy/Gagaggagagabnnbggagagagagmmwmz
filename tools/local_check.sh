@@ -27,9 +27,13 @@ compile() {          # compile <output dir> <sources file> <classpath>
   "${JAVAC[@]}" -cp "$cp" -d "$out" "@$sources"
 }
 
-echo "=== 0/6 проверка ресурсов и порядка запуска ==="
+echo "=== 0/6 ресурсы, порядок запуска, счётчики движений, выравнивание библиотек ==="
 python3 "$ROOT/tools/check_resources.py" "$ROOT"
 python3 "$ROOT/tools/check_startup_order.py" "$ROOT"
+# Счётчики движения обязаны совпадать с данными кривых, иначе разбор падает с IndexOutOfBounds.
+python3 "$ROOT/tools/fix_motion_meta.py" --check "$ROOT/app/src/main/assets/live2d"
+# Живое ядро Live2D должно грузиться и на устройствах с 16 КБ страницами (Android 15 и 16).
+python3 "$ROOT/tools/fix_native_alignment.py" --check "$ROOT/app/libs/Live2DCubismCore.aar"
 
 echo "=== 1/6 заглушки внешних библиотек ==="
 find "$ROOT/tools/stubs" -name '*.java' > "$OUT/stubs.txt"

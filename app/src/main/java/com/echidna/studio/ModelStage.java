@@ -65,7 +65,10 @@ public final class ModelStage implements Motions {
 
     // Written from the UI thread and the audio thread, read by the GL thread every frame.
     private volatile float micLevel;
-    private volatile float micGain = 1.0f;
+    /** Усиление микрофона по умолчанию; им же заменяется испорченное значение. */
+    private static final float DEFAULT_MIC_GAIN = 1.0f;
+
+    private volatile float micGain = DEFAULT_MIC_GAIN;
     private volatile boolean micEnabled;
 
     // The automatic blink of the framework runs in every mode; in the camera mode the eyelids are
@@ -132,7 +135,8 @@ public final class ModelStage implements Motions {
     }
 
     public void setMicGain(float gain) {
-        micGain = Math.max(0.1f, gain);
+        // Math.max would keep a NaN, and a NaN gain would make every mouth value unusable.
+        micGain = Float.isNaN(gain) ? DEFAULT_MIC_GAIN : Math.max(0.1f, Math.min(8.0f, gain));
     }
 
     /** Raw RMS level of the microphone, 0..1. */
