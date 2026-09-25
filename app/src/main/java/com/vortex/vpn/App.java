@@ -7,6 +7,10 @@ import android.util.Log;
 import com.vortex.vpn.core.Notifications;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Date;
 import java.util.Locale;
 
 import io.nekohasekai.libbox.Libbox;
@@ -18,17 +22,66 @@ public class App extends Application {
     private static final String TAG = "Vortex";
     private static App instance;
 
+    /** File the crash handler writes to; LogsActivity shows it on the next launch. */
+    public static final String CRASH_LOG = "crash.log";
+
     public static App get() {
         return instance;
+    }
+
+    /** Where a crash report is written (see {@link #installCrashHandler()}). */
+    public static File crashLogFile() {
+        return new File(new File(instance.getFilesDir(), "logs"), CRASH_LOG);
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
         instance = this;
+        installCrashHandler();
         Prefs.init(this);
         Notifications.createChannels(this);
         setupEngine();
+    }
+
+    /**
+     * Keeps evidence of an unexpected crash: logcat (tag {@code VortexCrash}) plus a file that the
+     * in-app log shows after the next start. The default handler still runs, so the system
+     * behaviour (app closes, "app crashed" dialog) is unchanged.
+     */
+    private void installCrashHandler() {
+        final Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable error) {
+                try {
+                    StringWriter buffer = new StringWriter();
+                    error.printStackTrace(new PrintWriter(buffer));
+                    String text = buffer.toString();
+                    Log.e(TAG, "FATAL EXCEPTION in " + thread.getName() + "\n" + text);
+                    File file = crashLogFile();
+                    File parent = file.getParentFile();
+                    if (parent != null) {
+                        //noinspection ResultOfMethodCallIgnored
+                        parent.mkdirs();
+                    }
+                    FileWriter writer = new FileWriter(file, false);
+                    writer.write(new Date().toString());
+                    writer.write(" ");
+                    writer.write(thread.getName());
+                    writer.write("\n");
+                    writer.write(text);
+                    writer.close();
+                } catch (Throwable ignored) {
+                    // never mask the original failure
+                }
+                if (previous != null) {
+                    previous.uncaughtException(thread, error);
+                } else {
+                    android.os.Process.killProcess(android.os.Process.myPid());
+                }
+            }
+        });
     }
 
     private void setupEngine() {

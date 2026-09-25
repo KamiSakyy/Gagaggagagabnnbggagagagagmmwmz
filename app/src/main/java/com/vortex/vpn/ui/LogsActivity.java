@@ -66,8 +66,31 @@ public class LogsActivity extends AppCompatActivity {
         reload();
     }
 
+    /** Crash reports are shown first: they explain why the app closed last time. */
+    private java.util.List<String> crashLines() {
+        java.util.List<String> result = new java.util.ArrayList<>();
+        try {
+            java.io.File file = com.vortex.vpn.App.crashLogFile();
+            if (file.exists()) {
+                result.add("=== отчёт о последнем сбое ===");
+                java.io.BufferedReader reader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(new java.io.FileInputStream(file), "UTF-8"));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    result.add(line);
+                }
+                reader.close();
+                result.add("=== конец отчёта ===");
+            }
+        } catch (Throwable ignored) {
+            // an unreadable report must never break the log screen
+        }
+        return result;
+    }
+
     private void reload() {
         lines.clear();
+        lines.addAll(crashLines());
         lines.addAll(Bridge.logSnapshot());
         adapter.notifyDataSetChanged();
         empty.setVisibility(lines.isEmpty() ? View.VISIBLE : View.GONE);

@@ -26,7 +26,12 @@ android {
         abi {
             enable true
             reset()
-            include 'arm64-v8a', 'armeabi-v7a'
+            def abis = ['arm64-v8a', 'armeabi-v7a']
+            // CI adds x86_64 when the engine ships it, so the APK can be installed on an emulator.
+            if (project.hasProperty('abiX86_64')) {
+                abis.add('x86_64')
+            }
+            include(*abis)
             universalApk false
         }
     }

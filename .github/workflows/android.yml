@@ -183,8 +183,15 @@ jobs:
         run: |
           exec > >(stdbuf -oL tee -a "$BUILD_LOG") 2>&1
           set -o pipefail
-          echo "=== gradle assembleRelease ==="
-          gradle --no-daemon --stacktrace assembleRelease
+          EXTRA=""
+          if unzip -l app/libs/libbox.aar | grep -q "jni/x86_64/"; then
+            EXTRA="-PabiX86_64=true"
+            echo "libbox.aar ships x86_64: the emulator ABI is built as well"
+          else
+            echo "WARNING: libbox.aar has no x86_64 libraries, the emulator smoke test will be skipped"
+          fi
+          echo "=== gradle assembleRelease $EXTRA ==="
+          gradle --no-daemon --stacktrace assembleRelease $EXTRA
           echo "=== gradle finished ==="
 
       - name: Collect handoff artifacts
@@ -200,12 +207,119 @@ jobs:
               case "$name" in
                 *arm64*) target="VortexVPN-1.0.0-arm64-v8a.apk" ;;
                 *armeabi*) target="VortexVPN-1.0.0-armeabi-v7a.apk" ;;
-                *) target="VortexVPN-1.0.0-universal.apk" ;;
+                *) echo "not published to handoff: $name"; continue ;;
               esac
               cp "$apk" "handoff/$target"
             done
             ls -lh handoff
           } 2>&1 | tee -a "$BUILD_LOG"
+
+      - name: Check emulator acceleration
+        if: always()
+        run: |
+          {
+            echo "--- kvm ---"
+            ls -l /dev/kvm 2>&1 || true
+            sudo chmod 666 /dev/kvm 2>/dev/null || true
+            if [ -w /dev/kvm ]; then
+              echo "KVM_OK=1" >> "$GITHUB_ENV"
+              echo "hardware acceleration is available"
+            else
+              echo "KVM_OK=0" >> "$GITHUB_ENV"
+              echo "no usable /dev/kvm: the emulator smoke test will be skipped"
+            fi
+            nproc
+            free -m | head -2
+          } 2>&1 | tee -a "$BUILD_LOG"
+
+      - name: Install APK on an Android emulator and launch it
+        if: always() && env.KVM_OK == '1'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: default
+          profile: pixel_5
+          disable-animations: true
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: |
+            set -o pipefail
+            mkdir -p ci-out
+            SMOKE="$PWD/ci-out/smoke.log"
+            exec > >(stdbuf -oL tee -a "$SMOKE") 2>&1
+            set -x
+            PKG=com.vortex.vpn
+            APK=$(ls app/build/outputs/apk/release/*x86_64*.apk 2>/dev/null | head -1)
+            if [ -z "$APK" ]; then
+              echo "SMOKE SKIPPED: no x86_64 APK was produced"
+              exit 0
+            fi
+            echo "installing $APK ($(du -h "$APK" | cut -f1))"
+            adb install -r -t "$APK"
+            adb shell pm list packages | grep "$PKG"
+            adb logcat -c || true
+            set +e
+            adb shell am start -W -n $PKG/.ui.MainActivity > /tmp/start.log 2>&1
+            cat /tmp/start.log
+            set -e
+            if grep -qi "error" /tmp/start.log; then echo "could not start MainActivity"; exit 1; fi
+            sleep 12
+            echo "--- process after launch ---"
+            adb shell pidof "$PKG"
+            adb shell dumpsys window 2>/dev/null | grep -E "mCurrentFocus|mFocusedApp" || true
+            if adb logcat -d | grep -q "FATAL EXCEPTION"; then
+              echo "CRASH DETECTED right after launch"
+              adb logcat -d -s AndroidRuntime:E | tail -n 200
+              exit 1
+            fi
+            echo "--- on-device engine self test ---"
+            adb shell am start -n $PKG/.ui.MainActivity --ez vortex_selftest true > /dev/null
+            for i in $(seq 1 24); do
+              if adb logcat -d -s VortexSelfTest:I | grep -q "SELFTEST OK"; then break; fi
+              sleep 5
+            done
+            adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | tail -n 40
+            adb logcat -d | grep -A 40 "FATAL EXCEPTION" | tail -n 200 || true
+            HAD_CRASH=0
+            if adb logcat -d | grep -q "FATAL EXCEPTION"; then HAD_CRASH=1; fi
+            echo "--- visiting every screen ---"
+            for activity in ServersActivity ProfilesActivity SettingsActivity LogsActivity ConnectionsActivity AboutActivity ConfigEditorActivity AppListActivity; do
+              adb shell am start -n $PKG/.ui.$activity > /dev/null || true
+              sleep 5
+              if ! adb shell pidof "$PKG" > /dev/null; then
+                echo "$activity killed the app"
+                adb logcat -d -s AndroidRuntime:E | tail -n 200
+                exit 1
+              fi
+            done
+            echo "--- ui monkey (no --ignore-crashes on purpose) ---"
+            adb shell monkey -p $PKG --throttle 300 -v 150 || true
+            sleep 3
+            if ! adb shell pidof "$PKG" > /dev/null; then
+              echo "the app died during the monkey run"
+              adb logcat -d -s AndroidRuntime:E | tail -n 200
+              exit 1
+            fi
+            if [ "$HAD_CRASH" -ne 0 ] || adb logcat -d | grep -q "FATAL EXCEPTION"; then
+              echo "the app crashed (see logcat above)"
+              adb logcat -d -s AndroidRuntime:E | tail -n 200
+              exit 1
+            fi
+            adb logcat -d -s VortexSelfTest:I | grep -q "SELFTEST OK" || { echo "engine self test did not report OK"; exit 1; }
+            echo "SMOKE OK: app launched, stayed alive, every screen opened, engine self test passed"
+
+      - name: Save emulator smoke test report
+        if: always()
+        run: |
+          mkdir -p .ci
+          if [ -f ci-out/smoke.log ]; then
+            cp ci-out/smoke.log .ci/smoke.log
+          else
+            echo "the emulator smoke test did not run" > .ci/smoke.log
+          fi
+          tail -n 250 .ci/smoke.log > /tmp/smoke-tail.log && mv /tmp/smoke-tail.log .ci/smoke.log
+          wc -l .ci/smoke.log
 
       - name: Package sources into handoff
         run: |
@@ -270,6 +384,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f .ci/build.log .ci/config-check.log
+          [ -f .ci/smoke.log ] && git add -f .ci/smoke.log || true
           if git diff --cached --quiet; then
             echo "logs unchanged"
           else
@@ -289,9 +404,16 @@ jobs:
             echo "### Vortex VPN build"
             echo
             if grep -q "failed=0" .ci/config-check.log 2>/dev/null; then
-              echo "Configuration validation: **passed**"
+              echo "Configuration validation (12 configs through sing-box 1.14.1): **passed**"
             else
               echo "Configuration validation: **needs attention** (see .ci/config-check.log)"
+            fi
+            if grep -q "SMOKE OK" .ci/smoke.log 2>/dev/null; then
+              echo "Launch on a real Android emulator: **passed** (app started, all screens opened, engine self test OK)"
+            elif grep -q "SMOKE SKIPPED" .ci/smoke.log 2>/dev/null; then
+              echo "Launch on a real Android emulator: **skipped** (no x86_64 engine build)"
+            else
+              echo "Launch on a real Android emulator: **failed** (see .ci/smoke.log)"
             fi
             echo
             echo "| file | size |"

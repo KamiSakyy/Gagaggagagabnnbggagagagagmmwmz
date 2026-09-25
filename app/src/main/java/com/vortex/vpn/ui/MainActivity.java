@@ -2,6 +2,7 @@ package com.vortex.vpn.ui;
 
 import android.content.Intent;
 import android.net.VpnService;
+import android.util.Log;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -22,6 +23,7 @@ import com.vortex.vpn.Prefs;
 import com.vortex.vpn.R;
 import com.vortex.vpn.cfg.ConfigSettings;
 import com.vortex.vpn.core.ConfigTags;
+import com.vortex.vpn.core.EngineSelfTest;
 import com.vortex.vpn.core.VpnServiceVortex;
 import com.vortex.vpn.core.VpnState;
 import com.vortex.vpn.db.Repo;
@@ -39,6 +41,8 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_VPN = 0x5611;
+    /** Set by the CI smoke test: {@code adb shell am start ... --ez vortex_selftest true}. */
+    private static final String EXTRA_SELF_TEST = "vortex_selftest";
     private static final long SAMPLE_INTERVAL = 900L;
 
     private PowerView power;
@@ -54,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView textConnections;
     private TextView textMemory;
     private TextView textError;
-    private MaterialCardView cardError;
+    private View errorBox;
     private MaterialButton btnConnect;
     private ChipGroup modeGroup;
     private SpeedChartView chart;
@@ -70,6 +74,26 @@ public class MainActivity extends AppCompatActivity {
         bindState();
         bindActions();
         requestNotificationPermission();
+        if (getIntent() != null && getIntent().getBooleanExtra(EXTRA_SELF_TEST, false)) {
+            runEngineSelfTest();
+        }
+    }
+
+    /** Exercises the real engine on this device (see {@link EngineSelfTest}). */
+    private void runEngineSelfTest() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final String result = EngineSelfTest.run();
+                EngineSelfTest.logResult(result, "ci");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        toast(result);
+                    }
+                });
+            }
+        }, "engine-self-test").start();
     }
 
     private void requestNotificationPermission() {
@@ -95,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
         textConnections = findViewById(R.id.text_connections);
         textMemory = findViewById(R.id.text_memory);
         textError = findViewById(R.id.text_error);
-        cardError = findViewById(R.id.card_error);
+        errorBox = findViewById(R.id.card_error);
         btnConnect = findViewById(R.id.btn_connect);
         modeGroup = findViewById(R.id.chip_group_mode);
         chart = findViewById(R.id.chart);
@@ -118,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onChanged(String message) {
                 boolean visible = message != null && !message.isEmpty();
-                cardError.setVisibility(visible ? View.VISIBLE : View.GONE);
+                errorBox.setVisibility(visible ? View.VISIBLE : View.GONE);
                 textError.setText(message);
             }
         });

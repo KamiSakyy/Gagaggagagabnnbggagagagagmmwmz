@@ -55,6 +55,9 @@
     <string name="about_device">%1$s %2$s • Android %3$s (API %4$s) • %5$s</string>
     <string name="ping_measuring">Проверка задержки: %1$s</string>
 
+    <string name="about_self_test">Проверка ядра</string>
+    <string name="about_self_test_hint">Нажмите, чтобы проверить ядро и конфигурации на этом устройстве</string>
+    <string name="about_self_test_running">Проверяю ядро…</string>
     <string name="unsupported_protocol">не поддерживается движком</string>
     <string name="no_server_selected">Локация не выбрана</string>
     <string name="tap_to_choose">Нажмите, чтобы выбрать сервер</string>
