@@ -56,7 +56,7 @@ APK лежат в каталоге [`handoff`](handoff) этого репози�
 Стабильная ссылка на сборку:
 
 ```
-https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/raw/<branch>/handoff/VortexVPN-1.0.0-arm64-v8a.apk
+https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/raw/arena/01a0d529-gagaggagagabnnbggagagagagmmwmz/handoff/VortexVPN-1.0.0-arm64-v8a.apk
 ```
 
 ## Сборка

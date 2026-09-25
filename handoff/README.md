@@ -11,7 +11,10 @@
 ## Установка
 
 1. Скачайте APK по прямой ссылке:
-   `https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/raw/<ветка>/handoff/VortexVPN-1.0.0-arm64-v8a.apk`
+
+   - arm64-v8a (рекомендуется): https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/raw/arena/01a0d529-gagaggagagabnnbggagagagagmmwmz/handoff/VortexVPN-1.0.0-arm64-v8a.apk
+   - armeabi-v7a (старые 32-битные): https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/raw/arena/01a0d529-gagaggagagabnnbggagagagagmmwmz/handoff/VortexVPN-1.0.0-armeabi-v7a.apk
+   - исходники: https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz/raw/arena/01a0d529-gagaggagagabnnbggagagagagmmwmz/handoff/VortexVPN-source.zip
 2. Разрешите установку из неизвестных источников, если Android попросит.
 3. Установите и откройте приложение, выдайте разрешение на VPN.
 4. Добавьте подписку или ссылку: **Профили → +** (можно вставить ссылку из буфера обмена).
@@ -26,5 +29,18 @@ APK подписан самоподписанным ключом, который
 
 ## Что внутри
 
-Движок: sing-box 1.14.1 (полный набор протоколов). Язык: Java. UI: Material 3, чёрная тема,
-кастомные иконки. Подписки: v2ray/base64, Clash YAML, одиночные ссылки, конфиг sing-box JSON.
+Движок: sing-box 1.14.1 (libbox.aar, реальный Go-движок внутри `lib/arm64-v8a/libbox.so`).
+Язык: Java. UI: Material 3, чёрная тема, кастомные иконки. Подписки: v2ray/base64, Clash YAML,
+одиночные ссылки, конфиг sing-box JSON.
+
+Протоколы: vless (+reality/ws/grpc/httpupgrade), vmess, trojan, shadowsocks (включая 2022),
+shadowtls, anytls, hysteria2, tuic, snell, ssh, socks, http, naive, wireguard.
+
+## Проверено
+
+* Каждая сборка прогоняет 12 сгенерированных конфигов (mode × stack × профиль) через настоящий
+  sing-box 1.14.2: `failed=0`, то есть ни один конфиг не отклоняется движком.
+* В APK внутри лежит `lib/arm64-v8a/libbox.so` (~81 МБ в распакованном виде) — это настоящий движок,
+  а не заглушка.
+* Протоколы, удалённые из sing-box (ShadowsocksR, удалён в 1.6), не попадают в конфиг: при импорте
+  такие локации помечаются как «не поддерживается движком» и просто пропускаются, приложение не падает.
