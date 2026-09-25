@@ -1,6 +1,8 @@
 === failure markers ===
 
 === tail ===
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box check -c ci-out/configs/minimal.json
++ for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode0-gvisor.json
 + echo '--- check mode0-gvisor.json'
 --- check mode0-gvisor.json
@@ -53,24 +55,24 @@
 + python3 tools/start_config.py ci-out/configs/direct-only.json /tmp/start-direct-only.json
 + startlog=/tmp/start-direct-only.log
 + set +e
-+ pid=2695
++ pid=2768
 + started=0
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-direct-only.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-direct-only.log
-+ kill -0 2695
++ kill -0 2768
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-direct-only.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2695
++ kill -0 2768
 + echo '--- start direct-only: the engine accepted the configuration and is running'
 --- start direct-only: the engine accepted the configuration and is running
-+ kill -INT 2695
-+ wait 2695
++ kill -INT 2768
++ wait 2768
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/hardened.json .json
@@ -78,24 +80,24 @@
 + python3 tools/start_config.py ci-out/configs/hardened.json /tmp/start-hardened.json
 + startlog=/tmp/start-hardened.log
 + set +e
-+ pid=2710
++ pid=2784
 + started=0
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-hardened.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-hardened.log
-+ kill -0 2710
++ kill -0 2784
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-hardened.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2710
++ kill -0 2784
 + echo '--- start hardened: the engine accepted the configuration and is running'
 --- start hardened: the engine accepted the configuration and is running
-+ kill -INT 2710
-+ wait 2710
++ kill -INT 2784
++ wait 2784
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/minimal.json .json
@@ -103,24 +105,24 @@
 + python3 tools/start_config.py ci-out/configs/minimal.json /tmp/start-minimal.json
 + startlog=/tmp/start-minimal.log
 + set +e
-+ pid=2733
++ pid=2808
 + started=0
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-minimal.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-minimal.log
-+ kill -0 2733
++ kill -0 2808
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-minimal.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2733
++ kill -0 2808
 + echo '--- start minimal: the engine accepted the configuration and is running'
 --- start minimal: the engine accepted the configuration and is running
-+ kill -INT 2733
-+ wait 2733
++ kill -INT 2808
++ wait 2808
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode0-gvisor.json .json
@@ -128,24 +130,24 @@
 + python3 tools/start_config.py ci-out/configs/mode0-gvisor.json /tmp/start-mode0-gvisor.json
 + startlog=/tmp/start-mode0-gvisor.log
 + set +e
-+ pid=2757
-+ started=0
++ pid=2831
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-gvisor.json
++ started=0
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-gvisor.log
-+ kill -0 2757
++ kill -0 2831
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-gvisor.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2757
++ kill -0 2831
 + echo '--- start mode0-gvisor: the engine accepted the configuration and is running'
 --- start mode0-gvisor: the engine accepted the configuration and is running
-+ kill -INT 2757
-+ wait 2757
++ kill -INT 2831
++ wait 2831
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode0-mixed.json .json
@@ -153,24 +155,24 @@
 + python3 tools/start_config.py ci-out/configs/mode0-mixed.json /tmp/start-mode0-mixed.json
 + startlog=/tmp/start-mode0-mixed.log
 + set +e
-+ pid=2781
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-mixed.json
++ pid=2854
 + started=0
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-mixed.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-mixed.log
-+ kill -0 2781
++ kill -0 2854
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-mixed.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2781
++ kill -0 2854
 + echo '--- start mode0-mixed: the engine accepted the configuration and is running'
 --- start mode0-mixed: the engine accepted the configuration and is running
-+ kill -INT 2781
-+ wait 2781
++ kill -INT 2854
++ wait 2854
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode0-system.json .json
@@ -178,24 +180,24 @@
 + python3 tools/start_config.py ci-out/configs/mode0-system.json /tmp/start-mode0-system.json
 + startlog=/tmp/start-mode0-system.log
 + set +e
-+ pid=2804
-+ started=0
++ pid=2877
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode0-system.json
++ started=0
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-system.log
-+ kill -0 2804
++ kill -0 2877
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode0-system.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2804
++ kill -0 2877
 + echo '--- start mode0-system: the engine accepted the configuration and is running'
 --- start mode0-system: the engine accepted the configuration and is running
-+ kill -INT 2804
-+ wait 2804
++ kill -INT 2877
++ wait 2877
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode1-gvisor.json .json
@@ -203,24 +205,24 @@
 + python3 tools/start_config.py ci-out/configs/mode1-gvisor.json /tmp/start-mode1-gvisor.json
 + startlog=/tmp/start-mode1-gvisor.log
 + set +e
-+ pid=2828
-+ started=0
++ pid=2900
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-gvisor.json
++ started=0
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-gvisor.log
-+ kill -0 2828
++ kill -0 2900
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-gvisor.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2828
++ kill -0 2900
 + echo '--- start mode1-gvisor: the engine accepted the configuration and is running'
 --- start mode1-gvisor: the engine accepted the configuration and is running
-+ kill -INT 2828
-+ wait 2828
++ kill -INT 2900
++ wait 2900
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode1-mixed.json .json
@@ -228,24 +230,24 @@
 + python3 tools/start_config.py ci-out/configs/mode1-mixed.json /tmp/start-mode1-mixed.json
 + startlog=/tmp/start-mode1-mixed.log
 + set +e
-+ pid=2851
-+ started=0
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-mixed.json
++ pid=2923
++ started=0
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-mixed.log
-+ kill -0 2851
++ kill -0 2923
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-mixed.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2851
++ kill -0 2923
 + echo '--- start mode1-mixed: the engine accepted the configuration and is running'
 --- start mode1-mixed: the engine accepted the configuration and is running
-+ kill -INT 2851
-+ wait 2851
++ kill -INT 2923
++ wait 2923
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode1-system.json .json
@@ -253,24 +255,24 @@
 + python3 tools/start_config.py ci-out/configs/mode1-system.json /tmp/start-mode1-system.json
 + startlog=/tmp/start-mode1-system.log
 + set +e
-+ pid=2874
++ pid=2946
 + started=0
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode1-system.json
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-system.log
-+ kill -0 2874
++ kill -0 2946
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode1-system.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2874
++ kill -0 2946
 + echo '--- start mode1-system: the engine accepted the configuration and is running'
 --- start mode1-system: the engine accepted the configuration and is running
-+ kill -INT 2874
-+ wait 2874
++ kill -INT 2946
++ wait 2946
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode2-gvisor.json .json
@@ -278,24 +280,24 @@
 + python3 tools/start_config.py ci-out/configs/mode2-gvisor.json /tmp/start-mode2-gvisor.json
 + startlog=/tmp/start-mode2-gvisor.log
 + set +e
-+ pid=2898
++ pid=2969
 + started=0
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-gvisor.json
 ++ seq 1 20
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-gvisor.json
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-gvisor.log
-+ kill -0 2898
++ kill -0 2969
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-gvisor.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2898
++ kill -0 2969
 + echo '--- start mode2-gvisor: the engine accepted the configuration and is running'
 --- start mode2-gvisor: the engine accepted the configuration and is running
-+ kill -INT 2898
-+ wait 2898
++ kill -INT 2969
++ wait 2969
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode2-mixed.json .json
@@ -303,24 +305,24 @@
 + python3 tools/start_config.py ci-out/configs/mode2-mixed.json /tmp/start-mode2-mixed.json
 + startlog=/tmp/start-mode2-mixed.log
 + set +e
-+ pid=2921
++ pid=2992
 + started=0
-+ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-mixed.json
 ++ seq 1 20
++ /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-mixed.json
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-mixed.log
-+ kill -0 2921
++ kill -0 2992
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-mixed.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2921
++ kill -0 2992
 + echo '--- start mode2-mixed: the engine accepted the configuration and is running'
 --- start mode2-mixed: the engine accepted the configuration and is running
-+ kill -INT 2921
-+ wait 2921
++ kill -INT 2992
++ wait 2992
 + set -e
 + for file in ci-out/configs/*.json
 ++ basename ci-out/configs/mode2-system.json .json
@@ -328,24 +330,24 @@
 + python3 tools/start_config.py ci-out/configs/mode2-system.json /tmp/start-mode2-system.json
 + startlog=/tmp/start-mode2-system.log
 + set +e
++ pid=3015
 + /tmp/sing-box-1.14.1-linux-amd64/sing-box run -c /tmp/start-mode2-system.json
-+ pid=2944
 + started=0
 ++ seq 1 20
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-system.log
-+ kill -0 2944
++ kill -0 3015
 + sleep 1
 + for i in $(seq 1 20)
 + grep -aq 'sing-box started' /tmp/start-mode2-system.log
 + started=1
 + break
 + '[' 1 = 1 ']'
-+ kill -0 2944
++ kill -0 3015
 + echo '--- start mode2-system: the engine accepted the configuration and is running'
 --- start mode2-system: the engine accepted the configuration and is running
-+ kill -INT 2944
-+ wait 2944
++ kill -INT 3015
++ wait 3015
 + set -e
 + echo '=== configuration check finished (check failed=0, start failed=0) ==='
 === configuration check finished (check failed=0, start failed=0) ===
@@ -374,18 +376,18 @@ Daemon will be stopped at the end of the build
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
 > Task :app:parseDebugLocalResources
-> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
+> Task :app:mergeDebugResources
 > Task :app:processDebugManifest
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
 > Task :app:mergeDebugShaders
-> Task :app:processDebugManifestForPackage
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
@@ -395,18 +397,18 @@ Note: Some input files use unchecked or unsafe operations.
 Note: Recompile with -Xlint:unchecked for details.
 
 > Task :app:packageDebugUnitTestForUnitTest
-> Task :app:bundleDebugClassesToCompileJar
-> Task :app:generateDebugUnitTestConfig
 > Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:generateDebugUnitTestConfig
+> Task :app:bundleDebugClassesToCompileJar
 
 > Task :app:compileDebugUnitTestJavaWithJavac
 Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/test/java/com/vortex/vpn/ImportFlowTest.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 
 > Task :app:testDebugUnitTest
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790349045673.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790349454417.json
 
-BUILD SUCCESSFUL in 1m 20s
+BUILD SUCCESSFUL in 1m 15s
 25 actionable tasks: 24 executed, 1 from cache
 libbox.aar ships x86_64: the emulator ABI is built as well
 === gradle assembleRelease -PabiX86_64=true ===
@@ -415,16 +417,16 @@ Daemon will be stopped at the end of the build
 > Task :app:preBuild UP-TO-DATE
 > Task :app:preReleaseBuild UP-TO-DATE
 > Task :app:mergeReleaseJniLibFolders
-> Task :app:checkReleaseDuplicateClasses
 > Task :app:mergeReleaseNativeLibs
+> Task :app:checkReleaseDuplicateClasses
 > Task :app:generateReleaseBuildConfig
 > Task :app:javaPreCompileRelease FROM-CACHE
 > Task :app:generateReleaseResValues FROM-CACHE
+> Task :app:checkReleaseAarMetadata
 
 > Task :app:stripReleaseDebugSymbols
 Unable to strip the following libraries, packaging them as they are: libbox.so.
 
-> Task :app:checkReleaseAarMetadata
 > Task :app:mapReleaseSourceSetPaths
 > Task :app:generateReleaseResources
 > Task :app:extractReleaseNativeSymbolTables
@@ -434,12 +436,12 @@ Unable to strip the following libraries, packaging them as they are: libbox.so.
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
+> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifest
 > Task :app:mergeReleaseStartupProfile
-> Task :app:mergeReleaseResources
+> Task :app:processReleaseManifestForPackage
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
-> Task :app:processReleaseManifestForPackage
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
@@ -470,9 +472,9 @@ Note: Recompile with -Xlint:unchecked for details.
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_10-1790349123596.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_10-1790349528106.json
 
-BUILD SUCCESSFUL in 1m 4s
+BUILD SUCCESSFUL in 1m
 42 actionable tasks: 38 executed, 4 from cache
 === gradle finished ===
 app/build/outputs/apk/release/app-x86_64-release.apk
@@ -480,24 +482,22 @@ app/build/outputs/apk/release/app-armeabi-v7a-release.apk
 app/build/outputs/apk/release/app-arm64-v8a-release.apk
 not published to handoff: app-x86_64-release.apk
 total 63M
--rw-r--r-- 1 runner runner  11K Sep 25 15:10 README.md
--rw-r--r-- 1 runner runner  32M Sep 25 15:13 VortexVPN-1.0.0-arm64-v8a.apk
--rw-r--r-- 1 runner runner  32M Sep 25 15:13 VortexVPN-1.0.0-armeabi-v7a.apk
--rw-r--r-- 1 runner runner 243K Sep 25 15:10 VortexVPN-source.zip
+-rw-r--r-- 1 runner runner  12K Sep 25 15:17 README.md
+-rw-r--r-- 1 runner runner  32M Sep 25 15:19 VortexVPN-1.0.0-arm64-v8a.apk
+-rw-r--r-- 1 runner runner  32M Sep 25 15:19 VortexVPN-1.0.0-armeabi-v7a.apk
+-rw-r--r-- 1 runner runner 243K Sep 25 15:17 VortexVPN-source.zip
 --- kvm ---
-crw-rw---- 1 root kvm 10, 232 Sep 25 15:09 /dev/kvm
+crw-rw---- 1 root kvm 10, 232 Sep 25 15:16 /dev/kvm
 hardware acceleration is available
 4
                total        used        free      shared  buff/cache   available
-Mem:           15989        1033        9545          49        5806       14955
+Mem:           15989        1021        9498          49        5865       14968
 total 63M
--rw-r--r-- 1 runner runner  11K Sep 25 15:10 README.md
--rw-r--r-- 1 runner runner  32M Sep 25 15:13 VortexVPN-1.0.0-arm64-v8a.apk
--rw-r--r-- 1 runner runner  32M Sep 25 15:13 VortexVPN-1.0.0-armeabi-v7a.apk
--rw-r--r-- 1 runner runner 243K Sep 25 15:15 VortexVPN-source.zip
-[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 984d472] handoff: signed APK build ()
+-rw-r--r-- 1 runner runner  12K Sep 25 15:17 README.md
+-rw-r--r-- 1 runner runner  32M Sep 25 15:19 VortexVPN-1.0.0-arm64-v8a.apk
+-rw-r--r-- 1 runner runner  32M Sep 25 15:19 VortexVPN-1.0.0-armeabi-v7a.apk
+-rw-r--r-- 1 runner runner 243K Sep 25 15:22 VortexVPN-source.zip
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz a7f0893] handoff: signed APK build ()
  3 files changed, 0 insertions(+), 0 deletions(-)
- create mode 100644 handoff/VortexVPN-1.0.0-arm64-v8a.apk
- create mode 100644 handoff/VortexVPN-1.0.0-armeabi-v7a.apk
 To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
-   3dfc659..984d472  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+   6c0636f..a7f0893  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
