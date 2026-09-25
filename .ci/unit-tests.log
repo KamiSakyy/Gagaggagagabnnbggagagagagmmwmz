@@ -19,9 +19,9 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
+> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
-> Task :app:mergeDebugResources
 > Task :app:parseDebugLocalResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
@@ -39,7 +39,7 @@ Daemon will be stopped at the end of the build
 > Task :app:compileDebugJavaWithJavac
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
-Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/java/com/vortex/vpn/cfg/JsonReader.java uses unchecked or unsafe operations.
+Note: Some input files use unchecked or unsafe operations.
 Note: Recompile with -Xlint:unchecked for details.
 
 > Task :app:packageDebugUnitTestForUnitTest
@@ -52,9 +52,9 @@ Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagag
 Note: Recompile with -Xlint:deprecation for details.
 
 > Task :app:testDebugUnitTest
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790334687370.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/unittests-1790335634998.json
 
-BUILD SUCCESSFUL in 1m 5s
+BUILD SUCCESSFUL in 1m 16s
 25 actionable tasks: 24 executed, 1 from cache
 === unit test result files ===
 tests="4" skipped="0" failures="0" errors="0"
