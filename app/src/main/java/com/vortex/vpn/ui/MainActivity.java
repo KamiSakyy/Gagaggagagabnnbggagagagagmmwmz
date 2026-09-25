@@ -99,7 +99,9 @@ public class MainActivity extends AppCompatActivity {
         if (getIntent() != null && getIntent().getBooleanExtra(EXTRA_DEMO, false)) {
             loadDemoServers();
         }
-        // CI walks through every screen from here (see ScreenAudit); a no-op in normal use.
+        // CI opens a single screen for a screenshot, then walks through all of them; both are
+        // no-ops in normal use (see ScreenAudit).
+        ScreenAudit.openRequested(this);
         ScreenAudit.handOff(this);
     }
 

@@ -435,15 +435,16 @@ jobs:
           sleep 12
           mkdir -p ci-out/screens
           adb exec-out screencap -p > ci-out/screens/01-dashboard.png || true
-          adb shell am start -n $PKG/.ui.ServersActivity || true
-          sleep 6
-          adb exec-out screencap -p > ci-out/screens/02-locations.png || true
-          adb shell am start -n $PKG/.ui.ProfilesActivity || true
-          sleep 6
-          adb exec-out screencap -p > ci-out/screens/03-profiles.png || true
-          adb shell am start -n $PKG/.ui.SettingsActivity || true
-          sleep 6
-          adb exec-out screencap -p > ci-out/screens/04-settings.png || true
+          # release builds do not export their screens, so the app opens them itself
+          for entry in "0 02-locations" "1 03-profiles" "2 04-settings" "4 05-connections"; do
+            set -- $entry
+            adb shell am force-stop $PKG
+            sleep 2
+            adb shell am start -n $PKG/.ui.MainActivity --ez vortex_demo_servers true \
+              --ez vortex_screen $1 || true
+            sleep 9
+            adb exec-out screencap -p > ci-out/screens/$2.png || true
+          done
           ls -la ci-out/screens || true
           adb shell am force-stop $PKG
           sleep 2

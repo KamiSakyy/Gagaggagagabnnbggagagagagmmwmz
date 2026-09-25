@@ -28,6 +28,12 @@ public final class ScreenAudit {
 
     /** Extra that turns the audit on (release builds cannot be started screen by screen from adb). */
     public static final String EXTRA = "vortex_screens_audit";
+    /**
+     * Extra that opens exactly one screen: {@code adb shell am start ... --ez vortex_screen 1}.
+     * Release builds do not export their screens, so adb cannot start them directly - this is how
+     * CI takes a screenshot of a specific screen.
+     */
+    public static final String EXTRA_SCREEN = "vortex_screen";
     private static final String EXTRA_STEP = "vortex_screens_audit_step";
     private static final String TAG = "VortexSelfTest";
 
@@ -44,6 +50,20 @@ public final class ScreenAudit {
     };
 
     private ScreenAudit() {
+    }
+
+    /** Opens the screen asked for by {@link #EXTRA_SCREEN}; does nothing without the extra. */
+    public static boolean openRequested(Activity activity) {
+        Intent intent = activity.getIntent();
+        if (intent == null) {
+            return false;
+        }
+        int index = intent.getIntExtra(EXTRA_SCREEN, -1);
+        if (index < 0 || index >= SCREENS.length) {
+            return false;
+        }
+        activity.startActivity(new Intent(activity, SCREENS[index]));
+        return true;
     }
 
     /** Called at the end of every screen's {@code onCreate}; does nothing without the extra. */
