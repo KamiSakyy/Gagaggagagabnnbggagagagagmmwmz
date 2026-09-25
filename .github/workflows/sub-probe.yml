@@ -1,0 +1,86 @@
+name: Subscription probe
+
+# One-off diagnostic: downloads a subscription URL, tries several user agents and
+# common subscription endpoints and writes a STRUCTURE dump into .ci/sub-sample.log.
+# Every long alphanumeric token is masked, so no secret ends up in the repository.
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Subscription page URL (masked in all outputs)
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    name: Probe subscription format
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Probe
+        env:
+          TARGET: ${{ inputs.url }}
+        run: |
+          set -o pipefail
+          echo "::add-mask::$TARGET"
+          HOST=$(python3 -c "import urllib.parse,os;print(urllib.parse.urlparse(os.environ['TARGET']).netloc)")
+          echo "::add-mask::$HOST"
+          mkdir -p .ci probe
+          mask() { sed -E 's/[A-Za-z0-9_-]{12,}/[TOKEN]/g' | sed -E 's/([0-9]{1,3}\.){3}[0-9]{1,3}/[IP]/g'; }
+
+          fetch() {
+            local label="$1" url="$2" ua="$3"
+            echo "### $label"
+            echo "url-shape: $(echo "$url" | sed -E 's#(https?://[^/]+).*#\1/...#')"
+            curl -sS -L --max-time 25 -A "$ua" -D /tmp/h.txt -o /tmp/b.bin "$url" \
+              -w "http=%{http_code} type=%{content_type} bytes=%{size_download}\n" 2>&1 || true
+            echo "--- response headers (masked)"
+            mask < /tmp/h.txt | head -30
+            echo "--- body (masked, first 4000 bytes)"
+            head -c 4000 /tmp/b.bin | mask
+            echo
+            echo "--- url-like tokens in the body (masked)"
+            grep -aoE 'https?://[^"'"'"' <>)]{4,200}' /tmp/b.bin | sort -u | head -40 | mask || true
+            echo "--- deep links in the body (scheme only)"
+            grep -aoE '(v2rayng|hiddify|sing-box|clash|v2ray|ssconf|sub|shadowrocket|incy)://[^"'"'"' <>)]{0,120}' /tmp/b.bin | sed -E 's#(://)[^?&]{6,}#\1[VALUE]#g' | sort -u | head -30 || true
+            echo "--- html attributes that usually hold the subscription link"
+            grep -aoiE '(data-clipboard-text|data-clipboard|data-url|data-link|data-href|content)="[^"]{4,200}"' /tmp/b.bin | head -20 | mask || true
+            echo "--- script variables"
+            grep -aoE '(var|let|const)[[:space:]]+[A-Za-z0-9_]+[[:space:]]*=[[:space:]]*["'"'"'][^"'"'"']{6,200}["'"'"']' /tmp/b.bin | head -20 | mask || true
+            echo "--- json keys"
+            grep -aoE '"[a-z_]{3,24}"[[:space:]]*:' /tmp/b.bin | sort -u | head -40 || true
+            echo "--- fetched via api or fetch("
+            grep -aoE '(fetch|axios\.get|XMLHttpRequest)\([^)]{0,160}' /tmp/b.bin | head -20 | mask || true
+            echo
+          }
+
+          {
+            echo "== probe $(date -u +%FT%TZ) =="
+            fetch "browser user agent" "$TARGET" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36"
+            fetch "v2rayNG user agent" "$TARGET" "v2rayNG/1.9.16"
+            fetch "Hiddify user agent" "$TARGET" "Hiddify/2.0.5"
+            fetch "Clash user agent" "$TARGET" "ClashforWindows/0.20.39"
+            fetch "sing-box user agent" "$TARGET" "sing-box/1.14.1"
+            fetch "plain" "$TARGET" "curl/8"
+          } > probe/probe.txt 2>&1
+          mask < probe/probe.txt > .ci/sub-sample.log
+          wc -l .ci/sub-sample.log
+
+      - name: Publish probe report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f .ci/sub-sample.log
+          if git diff --cached --quiet; then
+            echo "probe report unchanged"
+          else
+            git commit -m "ci: subscription probe report"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
