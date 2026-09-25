@@ -229,6 +229,20 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * The activity is {@code singleTop}: when it is already on screen the system delivers the new
+     * intent here instead of calling {@code onCreate} again, so the self-test extra must be checked
+     * in both places.
+     */
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (intent != null && intent.getBooleanExtra(EXTRA_SELF_TEST, false)) {
+            runEngineSelfTest();
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();

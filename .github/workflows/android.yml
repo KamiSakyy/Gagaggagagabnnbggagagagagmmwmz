@@ -360,11 +360,12 @@ jobs:
           fi
 
           echo "--- on-device engine self test ---"
-          adb shell am start -n $PKG/.ui.MainActivity --ez vortex_selftest true > /dev/null
-          for i in $(seq 1 24); do
-            if adb logcat -d -s VortexSelfTest:I | grep -q "SELFTEST OK"; then break; fi
+          adb shell am start -n $PKG/.ui.MainActivity --ez vortex_selftest true || true
+          for i in $(seq 1 30); do
+            if adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | grep -q "SELFTEST"; then break; fi
             sleep 5
           done
+          echo "--- self test verdict ---"
           adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | tail -n 40
 
           echo "--- visiting every screen ---"
@@ -391,7 +392,11 @@ jobs:
             adb logcat -d -s AndroidRuntime:E | tail -n 200
             exit 1
           fi
-          adb logcat -d -s VortexSelfTest:I | grep -q "SELFTEST OK" || { echo "engine self test did not report OK"; exit 1; }
+          if ! adb logcat -d -s VortexSelfTest:I VortexSelfTest:E | grep -q "SELFTEST OK"; then
+            echo "engine self test did not report OK"
+            adb logcat -d | grep -a "SELFTEST" | tail -n 20 || true
+            exit 1
+          fi
           echo "SMOKE OK: app launched, stayed alive, every screen opened, engine self test passed"
 
       - name: Save emulator smoke test report
