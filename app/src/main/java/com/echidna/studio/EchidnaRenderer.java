@@ -696,6 +696,10 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         final int[] textures = new int[1];
         GLES20.glGenTextures(1, textures, 0);
         previewTexture = textures[0];
+        // Текстура только что создана и пуста. Без сброса номера рендер считал бы, что последний
+        // кадр уже загружен (номер-то не менялся), и окошко оставалось бы чёрным - это и было
+        // "камера иногда не показывается" после сворачивания приложения.
+        uploadedPreviewSerial = -1;
     }
 
     /**

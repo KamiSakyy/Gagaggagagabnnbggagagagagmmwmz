@@ -1856,8 +1856,8 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         }
     }
 
-    private void onPreview(Bitmap frame) {
-        renderer.setPreviewFrame(frame, hub.previewSerial());
+    private void onPreview(Bitmap frame, int serial) {
+        renderer.setPreviewFrame(frame, serial);
     }
 
     @Override

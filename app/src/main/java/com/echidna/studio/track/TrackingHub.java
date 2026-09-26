@@ -26,7 +26,11 @@ public final class TrackingHub {
     }
 
     public interface CameraPreviewListener {
-        void onPreview(Bitmap frame);
+        /**
+         * @param frame  готовая копия кадра: камера в неё больше не пишет
+         * @param serial номер кадра: он растёт, и по нему рендер понимает, что картинка новая
+         */
+        void onPreview(Bitmap frame, int serial);
     }
 
     private static final long ANALYSIS_INTERVAL_MS = 33;
@@ -709,8 +713,8 @@ public final class TrackingHub {
             }
             final android.graphics.Canvas canvas = new android.graphics.Canvas(slot);
             canvas.drawBitmap(frame, 0f, 0f, null);
-            previewSerial++;
-            listener.onPreview(slot);
+            final int serial = ++previewSerial;
+            listener.onPreview(slot, serial);
         } catch (Throwable error) {
             EchidnaLog.w("TRACK", "кадр окошка не подготовлен: " + error);
         }
