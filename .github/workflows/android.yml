@@ -133,6 +133,36 @@ jobs:
           set -o pipefail
           python3 tools/check_tree.py . 2>&1 | tee -a "$BUILD_LOG"
 
+      - name: Set up the signing key
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -o pipefail
+          {
+            if [ -n "${ANDROID_KEYSTORE_B64:-}" ]; then
+              echo "подпись: ключ из секретов репозитория"
+              printf '%s' "$ANDROID_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+              KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
+            else
+              echo "подпись: постоянный ключ из репозитория (keystore/echidna-release.jks)"
+              KEYSTORE_PATH="keystore/echidna-release.jks"
+            fi
+            if [ ! -f "$KEYSTORE_PATH" ]; then
+              echo "КЛЮЧА НЕТ: сборка будет подписана отладочным ключом и не встанет поверх прошлой версии"
+              exit 0
+            fi
+            printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+              "$KEYSTORE_PATH" \
+              "${ANDROID_KEYSTORE_PASSWORD:-echidna-studio}" \
+              "${ANDROID_KEY_ALIAS:-echidna}" \
+              "${ANDROID_KEY_PASSWORD:-echidna-studio}" > keystore.properties
+            echo "keystore.properties готов:"
+            sed 's/^\(storePassword=\).*/\1***/; s/^\(keyPassword=\).*/\1***/' keystore.properties
+          } 2>&1 | tee -a "$BUILD_LOG"
+
       - name: Run the unit tests
         run: |
           set -o pipefail
