@@ -14,7 +14,7 @@ public final class IdleDirector {
     private static final float[] BROW_DELAY = {6.0f, 15.0f};
 
     private final Random random;
-    private final List<String> pool;
+    private final List<String> pool = new ArrayList<String>();
     private final Damp gazeX = new Damp(0.5f);
     private final Damp gazeY = new Damp(0.45f);
 
@@ -33,9 +33,20 @@ public final class IdleDirector {
     }
 
     public IdleDirector(List<String> pool, long seed) {
-        this.pool = new ArrayList<String>(pool);
         this.random = new Random(seed);
+        setPool(pool);
         reset();
+    }
+
+    /**
+     * Replaces the pool: the idle behaviour is rebuilt when another character is loaded, because
+     * every character owns a different set of motions.
+     */
+    public void setPool(List<String> motions) {
+        pool.clear();
+        if (motions != null) {
+            pool.addAll(motions);
+        }
     }
 
     public void reset() {

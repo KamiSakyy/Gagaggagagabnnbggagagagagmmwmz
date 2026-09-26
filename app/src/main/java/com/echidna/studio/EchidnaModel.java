@@ -39,12 +39,24 @@ import java.util.Map;
  * layer only deals with degrees and normalised values.</p>
  */
 public class EchidnaModel extends CubismUserModel implements AvatarBridge {
-    public static final String MODEL_DIR = "live2d/Echidna/";
-    public static final String MODEL_JSON = "Echidna.model3.json";
+    /** Пути по умолчанию: модель Ехидны, если персонажа не выбрали. */
+    public static final String MODEL_DIR = "live2d/echidna/";
+    public static final String MODEL_JSON = "model3.json";
 
     private final AssetManager assets;
+    private final ModelCatalog.ModelSpec spec;
+    private final String modelDir;
+    private final String modelJson;
+
+    /** Выражения лица модели: имя -> файл exp3.json. */
+    private final Map<String, String> expressionIndex = new java.util.LinkedHashMap<String, String>();
     private final Map<String, Integer> motionIndex = new HashMap<String, Integer>();
     private final Map<String, CubismMotion> motionCache = new HashMap<String, CubismMotion>();
+    private final Map<String, com.live2d.sdk.cubism.framework.motion.ACubismMotion> expressionCache =
+            new HashMap<String, com.live2d.sdk.cubism.framework.motion.ACubismMotion>();
+    /** Выражения лица живут отдельно от движений: у них свои правила смешивания. */
+    private final com.live2d.sdk.cubism.framework.motion.CubismMotionManager expressionManager =
+            new com.live2d.sdk.cubism.framework.motion.CubismMotionManager();
     private final List<Integer> textureIds = new ArrayList<Integer>();
     private final List<CubismId> lipSyncIds = new ArrayList<CubismId>();
     private final List<CubismId> eyeBlinkIdList = new ArrayList<CubismId>();
@@ -82,7 +94,14 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
     }
 
     public EchidnaModel(AssetManager assets) {
+        this(assets, ModelCatalog.defaultModel());
+    }
+
+    public EchidnaModel(AssetManager assets, ModelCatalog.ModelSpec spec) {
         this.assets = assets;
+        this.spec = spec == null ? ModelCatalog.defaultModel() : spec;
+        this.modelDir = this.spec.assetDir;
+        this.modelJson = this.spec.modelJson;
         mocConsistency = true;
 
         idAngleX = id(ParameterId.ANGLE_X.getId());
@@ -128,10 +147,10 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
     public void load() throws IOException {
         final long started = System.currentTimeMillis();
 
-        final byte[] settingBuffer = readAsset(MODEL_DIR + MODEL_JSON);
+        final byte[] settingBuffer = readAsset(modelDir + modelJson);
         modelSetting = new CubismModelSettingJson(settingBuffer);
 
-        loadModel(readAsset(MODEL_DIR + modelSetting.getModelFileName()));
+        loadModel(readAsset(modelDir + modelSetting.getModelFileName()));
         if (model == null) {
             throw new IOException("moc3 не загрузился");
         }
@@ -139,12 +158,12 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         // Physics and pose are absent for this model, but loading them defensively costs nothing.
         final String physicsFile = modelSetting.getPhysicsFileName();
         if (physicsFile != null && !physicsFile.isEmpty()) {
-            loadPhysics(readAsset(MODEL_DIR + physicsFile));
+            loadPhysics(readAsset(modelDir + physicsFile));
         }
         final String poseFile = modelSetting.getPoseFileName();
         if (poseFile != null && !poseFile.isEmpty()) {
-            loadPose(readAsset(MODEL_DIR + poseFile));
-            poseEffect = CubismPose.create(readAsset(MODEL_DIR + poseFile));
+            loadPose(readAsset(modelDir + poseFile));
+            poseEffect = CubismPose.create(readAsset(modelDir + poseFile));
         }
 
         if (modelSetting.getEyeBlinkParameterCount() > 0) {
@@ -179,6 +198,19 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             }
         }
         motionManager.stopAllMotions();
+
+        // Expressions are the second animation channel of a model: on this rig they are the whole
+        // point (a VTuber model ships reactions instead of motion files).
+        expressionManager.stopAllMotions();
+        expressionIndex.clear();
+        for (int i = 0; i < modelSetting.getExpressionCount(); i++) {
+            final String name = modelSetting.getExpressionName(i);
+            final String file = modelSetting.getExpressionFileName(i);
+            if (name != null && file != null && !file.isEmpty()) {
+                expressionIndex.put(name, file);
+            }
+        }
+        expressionCache.clear();
 
         // Renderer and textures need a current GL context.
         final CubismRenderer renderer = CubismRendererAndroid.create();
@@ -376,6 +408,10 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             breath.updateParameters(model, delta);
         }
 
+        // Facial expressions are added on top of the motion of the frame, the way the engine mixes
+        // the expression channel.
+        updateExpression(delta);
+
         // The procedural layer (camera tracking, shows, the idle director) is applied before the
         // physics and pose effects, so hair and the body sway react to head movement in the same
         // frame instead of one frame late. The mic lipsync is driven by the same layer through
@@ -434,9 +470,124 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         if (model == null) {
             return;
         }
-        matrix.multiplyByMatrix(modelMatrix);
         this.<CubismRendererAndroid>getRenderer().setMvpMatrix(matrix);
         this.<CubismRendererAndroid>getRenderer().drawModel();
+    }
+
+    /** The character this instance shows. */
+    public ModelCatalog.ModelSpec spec() {
+        return spec;
+    }
+
+    // ------------------------------------------------------------- выражения лица
+
+    /** Names of the facial expressions of the model, empty when it has none. */
+    public List<String> expressionNames() {
+        return new ArrayList<String>(expressionIndex.keySet());
+    }
+
+    /**
+     * Plays a facial expression on top of everything else.
+     *
+     * @return true when the model has an expression with that name
+     */
+    public boolean playExpression(String name) {
+        if (name == null || model == null) {
+            return false;
+        }
+        final String file = expressionIndex.get(name);
+        if (file == null) {
+            return false;
+        }
+        com.live2d.sdk.cubism.framework.motion.ACubismMotion expression = expressionCache.get(name);
+        if (expression == null) {
+            try {
+                expression = com.live2d.sdk.cubism.framework.motion.CubismExpressionMotion
+                        .create(readAsset(modelDir + file));
+            } catch (IOException error) {
+                EchidnaLog.e("EXPRESSION", "не удалось прочитать " + file, error);
+                return false;
+            }
+            expressionCache.put(name, expression);
+        }
+        expressionManager.stopAllMotions();
+        expressionManager.startMotion(expression, 0.0f);
+        return true;
+    }
+
+    /** Fades the current expression out. */
+    public void stopExpression() {
+        expressionManager.stopAllMotions();
+    }
+
+    /** Called every frame by {@link #update}; applies the expression with its own fade. */
+    private void updateExpression(float dt) {
+        if (model == null) {
+            return;
+        }
+        try {
+            expressionManager.updateMotion(model, dt);
+        } catch (Throwable error) {
+            EchidnaLog.w("EXPRESSION", "выражение пропущено: " + error);
+            expressionManager.stopAllMotions();
+        }
+    }
+
+    // ------------------------------------------------------------------- границы
+
+    /**
+     * Bounding box of everything that is drawn, in model units: {@code {centerX, centerY, width,
+     * height}}.
+     *
+     * <p>The canvas of a model is much larger than the character standing on it - a 6500x10000
+     * canvas holds a girl of roughly 2300 units wide - so framing the screen by the canvas leaves
+     * the character small in the middle of a lot of empty space. The renderer frames by these
+     * bounds instead. The measurement is taken from the vertices of the meshes, so it is exact for
+     * whatever pose the model is in right now.</p>
+     */
+    public float[] characterBounds() {
+        if (model == null) {
+            return new float[]{0.0f, 0.0f, 1.0f, 1.0f};
+        }
+        float minX = Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE;
+        float maxX = -Float.MAX_VALUE;
+        float maxY = -Float.MAX_VALUE;
+        final int drawables = model.getDrawableCount();
+        for (int index = 0; index < drawables; index++) {
+            if (model.getDrawableOpacity(index) < 0.01f) {
+                continue;
+            }
+            final float[] vertices = model.getDrawableVertexPositions(index);
+            if (vertices == null || vertices.length < 2) {
+                continue;
+            }
+            for (int i = 0; i + 1 < vertices.length; i += 2) {
+                final float x = vertices[i];
+                final float y = vertices[i + 1];
+                if (Float.isNaN(x) || Float.isNaN(y) || Float.isInfinite(x) || Float.isInfinite(y)) {
+                    continue;
+                }
+                if (x < minX) {
+                    minX = x;
+                }
+                if (x > maxX) {
+                    maxX = x;
+                }
+                if (y < minY) {
+                    minY = y;
+                }
+                if (y > maxY) {
+                    maxY = y;
+                }
+            }
+        }
+        if (minX > maxX || minY > maxY) {
+            return new float[]{0.0f, 0.0f, model.getCanvasWidth(), model.getCanvasHeight()};
+        }
+        final float width = Math.max(0.0001f, maxX - minX);
+        final float height = Math.max(0.0001f, maxY - minY);
+        return new float[]{(minX + maxX) * 0.5f, (minY + maxY) * 0.5f, width, height};
     }
 
     /** True when {@code name} is a motion of this model - used by the self test and the gallery. */

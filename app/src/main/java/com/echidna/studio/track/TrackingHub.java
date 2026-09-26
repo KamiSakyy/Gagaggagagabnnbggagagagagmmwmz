@@ -29,7 +29,12 @@ public final class TrackingHub {
         void onPreview(Bitmap frame);
     }
 
-    private static final long ANALYSIS_INTERVAL_MS = 33;   // up to 30 analyses per second
+    private static final long ANALYSIS_INTERVAL_MS = 33;
+    /**
+     * Тело считается реже лица: плечи и руки не мигают, а два графа MediaPipe на одном кадре
+     * съедают телефон. Между замерами используется последний результат - он всё равно сглаживается.
+     */
+    private static final long POSE_INTERVAL_MS = 80;
 
     private final Context context;
     private final CameraController camera;
@@ -38,6 +43,11 @@ public final class TrackingHub {
     private final List<String> diagnostics = new ArrayList<String>();
 
     private FaceTracker tracker;
+    /** Трекер тела и рук: работает вместе с лицом и подстраховывает его. */
+    private FaceTracker poseTracker;
+    private long lastPoseMs;
+    private FaceSignals lastPoseSignals;
+    private final FaceSignals merged = new FaceSignals();
     private SignalsListener signalsListener;
     private CameraPreviewListener previewListener;
 
@@ -79,7 +89,10 @@ public final class TrackingHub {
     }
 
     public String trackerName() {
-        return tracker == null ? "нет" : tracker.name();
+        if (tracker == null) {
+            return "нет";
+        }
+        return poseTracker == null ? tracker.name() : tracker.name() + " + " + poseTracker.name();
     }
 
     public long analyzedFrames() {
@@ -170,6 +183,34 @@ public final class TrackingHub {
         return true;
     }
 
+    /**
+     * Starts the body tracker next to the face tracker.
+     *
+     * <p>The two see different things: the face model is precise about the eyes and the mouth, the
+     * pose model is robust and knows the shoulders, the hips and the hands. Running both is what
+     * makes the camera mode feel like a mirror instead of a guessing game.</p>
+     */
+    private void openPoseTracker() {
+        if (poseTracker != null) {
+            poseTracker.stop();
+            poseTracker = null;
+        }
+        if (!MediaPipePoseTracker.assetAvailable(context)) {
+            addDiagnostic("модель позы отсутствует в APK, тело не отслеживается");
+            return;
+        }
+        try {
+            final MediaPipePoseTracker pose = new MediaPipePoseTracker(context);
+            pose.start();
+            poseTracker = pose;
+            addDiagnostic("трекер тела: " + pose.name() + " (плечи, наклон, руки)");
+            EchidnaLog.i("TRACK", "поднят трекер тела " + pose.name());
+        } catch (Throwable error) {
+            EchidnaLog.w("TRACK", "трекер тела не поднялся: " + error);
+            addDiagnostic("трекер тела не поднялся: " + error.getClass().getSimpleName());
+        }
+    }
+
     /** Picks the best tracker that actually starts on this device. */
     private boolean openTracker() {
         if (tracker != null) {
@@ -183,6 +224,7 @@ public final class TrackingHub {
                 tracker = mediaPipe;
                 addDiagnostic("трекер: MediaPipe Face Landmarker (52 blendshape)");
                 EchidnaLog.i("TRACK", "выбран MediaPipe Face Landmarker");
+                openPoseTracker();
                 return true;
             } catch (Throwable t) {
                 EchidnaLog.w("TRACK", "MediaPipe не поднялся (" + t + "), пробуем ML Kit");
@@ -197,6 +239,7 @@ public final class TrackingHub {
             tracker = mlKit;
             addDiagnostic("трекер: ML Kit Face Detection");
             EchidnaLog.i("TRACK", "выбран ML Kit Face Detection");
+            openPoseTracker();
             return true;
         } catch (Throwable t) {
             EchidnaLog.w("TRACK", "ни один трекер не запустился: " + t);
@@ -223,6 +266,12 @@ public final class TrackingHub {
             tracker.stop();
             tracker = null;
         }
+        if (poseTracker != null) {
+            poseTracker.stop();
+            poseTracker = null;
+        }
+        lastPoseSignals = null;
+        lastPoseMs = 0L;
         camera.stop();
     }
 
@@ -248,30 +297,48 @@ public final class TrackingHub {
 
     // ------------------------------------------------------------------ plumbing
 
+    /**
+     * A frame arrived from the camera.
+     *
+     * <p>The camera recycles its buffers, so the bitmap it hands over is overwritten by the next
+     * frame. It used to be given to the analysis thread as it was: the tracker then read half of the
+     * old picture and half of the new one and reported "лицо не найдено" every other frame. The copy
+     * below is what makes the analysis see a complete, frozen frame.</p>
+     */
     private void onCameraFrame(Bitmap frame, long timestampMs) {
-        if (previewListener != null) {
-            previewListener.onPreview(frame);
-        }
-        if (!running || analyzing) {
+        if (!running) {
+            if (previewListener != null) {
+                previewListener.onPreview(frame);
+            }
             return;
         }
         final long now = SystemClock.elapsedRealtime();
-        if (now - lastAnalysisMs < ANALYSIS_INTERVAL_MS) {
+        final boolean mayAnalyze = !analyzing && now - lastAnalysisMs >= ANALYSIS_INTERVAL_MS;
+        if (previewListener != null) {
+            previewListener.onPreview(frame);
+        }
+        if (!mayAnalyze) {
             return;
         }
         lastAnalysisMs = now;
         analyzing = true;
+
+        final Bitmap stable;
+        try {
+            stable = frame.copy(Bitmap.Config.ARGB_8888, false);
+        } catch (Throwable error) {
+            EchidnaLog.w("TRACK", "не удалось скопировать кадр: " + error);
+            analyzing = false;
+            return;
+        }
+
         analysisHandler.post(() -> {
             try {
-                if (tracker == null) {
-                    return;
-                }
-                final FaceSignals signals = tracker.analyze(
-                        new FaceTracker.Frame(frame, 0, null), SystemClock.elapsedRealtime());
-                analyzedFrames++;
+                final FaceSignals signals = analyzeFrame(stable);
                 if (signals == null) {
                     return;
                 }
+                analyzedFrames++;
                 if (!signals.found) {
                     analyzedEmpty++;
                 }
@@ -285,6 +352,76 @@ public final class TrackingHub {
                 analyzing = false;
             }
         });
+    }
+
+    /** Runs both trackers on one frame and merges what they saw. */
+    private FaceSignals analyzeFrame(Bitmap frame) {
+        final long now = SystemClock.elapsedRealtime();
+        final FaceTracker.Frame wrapper = new FaceTracker.Frame(frame, 0, null);
+        FaceSignals face = null;
+        if (tracker != null) {
+            face = tracker.analyze(wrapper, now);
+        }
+        FaceSignals pose = null;
+        if (poseTracker != null) {
+            if (now - lastPoseMs >= POSE_INTERVAL_MS) {
+                lastPoseMs = now;
+                final FaceSignals fresh = poseTracker.analyze(wrapper, now);
+                if (fresh != null) {
+                    lastPoseSignals = fresh;
+                }
+            }
+            pose = lastPoseSignals;
+        }
+        if (face == null && pose == null) {
+            return null;
+        }
+        return merge(face, pose);
+    }
+
+    /**
+     * Builds the frame the stage works with: the face supplies the eyes, the mouth and the smile,
+     * the body supplies the shoulders, the lean and the hands.
+     *
+     * <p>When the face is gone but the body is there, the head pose of the pose tracker is used -
+     * that is how the avatar keeps following the user instead of falling back to the demo sway the
+     * moment the face model loses track.</p>
+     */
+    private FaceSignals merge(FaceSignals face, FaceSignals pose) {
+        if (face == null) {
+            return pose;
+        }
+        if (pose == null || !pose.found) {
+            return face;
+        }
+        merged.set(face);
+        merged.body = pose.body;
+        merged.bodyYaw = pose.bodyYaw;
+        merged.bodyRoll = pose.bodyRoll;
+        merged.bodyLift = pose.bodyLift;
+        merged.bodyShift = pose.bodyShift;
+        merged.handUp = pose.handUp;
+        if (!face.found) {
+            // The face tracker lost the user: the pose tracker takes over the head as well.
+            merged.found = true;
+            merged.poseOnly = true;
+            merged.yaw = pose.yaw;
+            merged.pitch = pose.pitch;
+            merged.roll = pose.roll;
+            merged.centerX = pose.centerX;
+            merged.centerY = pose.centerY;
+            if (pose.scale > 0.05f) {
+                merged.scale = pose.scale;
+            }
+            merged.eyeLeft = 1.0f;
+            merged.eyeRight = 1.0f;
+            merged.smile = 0.0f;
+            merged.mouthOpen = 0.0f;
+            merged.blendshapes = false;
+        } else {
+            merged.poseOnly = false;
+        }
+        return merged;
     }
 
     private void syntheticLoop() {
@@ -338,6 +475,12 @@ public final class TrackingHub {
                 .put("mouth", round(s.mouthOpen))
                 .put("smile", round(s.smile))
                 .put("blendshapes", s.blendshapes)
+                .put("body", s.body)
+                .put("bodyYaw", round(s.bodyYaw))
+                .put("bodyRoll", round(s.bodyRoll))
+                .put("bodyLift", round(s.bodyLift))
+                .put("handUp", round(s.handUp))
+                .put("poseOnly", s.poseOnly)
                 .toString();
     }
 

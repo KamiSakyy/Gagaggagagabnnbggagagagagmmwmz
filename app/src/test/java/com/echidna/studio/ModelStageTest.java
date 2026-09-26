@@ -33,6 +33,8 @@ public class ModelStageTest {
                 "face_normal_w", "face_talk_small", "face_talk_normal", "face_metozi", "face_cheek_on"));
         String current;
         boolean finished = true;
+        final List<String> expressions = new ArrayList<String>();
+        String lastExpression;
 
         @Override
         public boolean playMotion(String name, float fadeIn, int priority) {
@@ -63,6 +65,25 @@ public class ModelStageTest {
         @Override
         public boolean hasMotion(String name) {
             return known.contains(name);
+        }
+
+        @Override
+        public java.util.List<String> expressionNames() {
+            return expressions;
+        }
+
+        @Override
+        public boolean playExpression(String name) {
+            if (expressions.contains(name)) {
+                lastExpression = name;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void stopExpression() {
+            lastExpression = null;
         }
     }
 
@@ -107,6 +128,7 @@ public class ModelStageTest {
         final FakeAvatar avatar = new FakeAvatar();
         final ModelStage stage = new ModelStage();
         stage.attach(avatar, null);
+        stage.mapper().setAutoCalibration(false);
         stage.toCamera();
 
         final FaceSignals signals = new FaceSignals();
@@ -130,6 +152,7 @@ public class ModelStageTest {
         final FakeAvatar avatar = new FakeAvatar();
         final ModelStage stage = new ModelStage();
         stage.attach(avatar, null);
+        stage.mapper().setAutoCalibration(false);
         stage.toCamera();
 
         final FaceSignals signals = new FaceSignals();
@@ -158,6 +181,7 @@ public class ModelStageTest {
         final FakeAvatar avatar = new FakeAvatar();
         final ModelStage stage = new ModelStage();
         stage.attach(avatar, null);
+        stage.mapper().setAutoCalibration(false);
         stage.toCamera();
         stage.setMicEnabled(true);
 
@@ -225,7 +249,8 @@ public class ModelStageTest {
                     stage.startShow(ShowLibrary.ID_DANCE);
                     break;
                 case "camera":
-                    stage.toCamera();
+                    stage.mapper().setAutoCalibration(false);
+        stage.toCamera();
                     break;
                 case "manual":
                     stage.playManualMotion("act_kouyou");
@@ -263,7 +288,8 @@ public class ModelStageTest {
                     stage.startShow(ShowLibrary.ID_DANCE);
                     break;
                 case 2:
-                    stage.toCamera();
+                    stage.mapper().setAutoCalibration(false);
+        stage.toCamera();
                     break;
                 default:
                     stage.toIdle();
@@ -296,6 +322,7 @@ public class ModelStageTest {
         final FakeAvatar avatar = new FakeAvatar();
         final ModelStage stage = new ModelStage();
         stage.attach(avatar, null);
+        stage.mapper().setAutoCalibration(false);
         stage.toCamera();
         // No camera frames at all: the stage must fall back to the demo pose, not freeze or crash.
         final Pose pose = run(stage, 6.0f);

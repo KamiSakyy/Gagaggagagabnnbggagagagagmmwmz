@@ -113,4 +113,31 @@ public class FacePoseTest {
         assertNotNull(FacePose.matrixOf(raw));
         assertNotNull(FacePose.matrixOf(java.util.Optional.of(raw)));
     }
+
+    // ------------------------------------------------------- сигналы: тело и поза
+
+    /** Копирование сигналов обязано переносить и данные тела: иначе кнопка «калибровка» их теряет. */
+    @Test
+    public void copyingSignalsKeepsTheBodyData() {
+        final FaceSignals source = new FaceSignals();
+        source.found = true;
+        source.body = true;
+        source.bodyYaw = 21.5f;
+        source.bodyRoll = -7.0f;
+        source.bodyLift = 0.4f;
+        source.bodyShift = -0.3f;
+        source.handUp = 0.8f;
+        source.poseOnly = true;
+
+        final FaceSignals copy = new FaceSignals();
+        copy.set(source);
+
+        assertTrue(copy.body);
+        assertEquals(21.5f, copy.bodyYaw, 0.001f);
+        assertEquals(-7.0f, copy.bodyRoll, 0.001f);
+        assertEquals(0.4f, copy.bodyLift, 0.001f);
+        assertEquals(-0.3f, copy.bodyShift, 0.001f);
+        assertEquals(0.8f, copy.handUp, 0.001f);
+        assertTrue("метка «только тело» потерялась", copy.poseOnly);
+    }
 }

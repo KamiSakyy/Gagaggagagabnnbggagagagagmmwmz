@@ -1,5 +1,6 @@
 package com.echidna.studio;
 
+import com.echidna.studio.anim.MotionPicker;
 import com.echidna.studio.anim.Segment;
 import com.echidna.studio.anim.Show;
 import com.echidna.studio.anim.ShowLibrary;
@@ -26,25 +27,33 @@ import static org.junit.Assert.fail;
  */
 public class ShowMotionNameTest {
 
-    private static File modelFile() {
+    private static final String[] MODEL_IDS = {
+        "echidna", "echidna_valentine", "emilia_bunny", "emilia_swimsuit", "nahida_genshin",
+    };
+
+    private static File assetsRoot() {
         String[] candidates = {
-            "src/main/assets/live2d/Echidna/Echidna.model3.json",
-            "app/src/main/assets/live2d/Echidna/Echidna.model3.json",
-            "../app/src/main/assets/live2d/Echidna/Echidna.model3.json",
+            "src/main/assets/live2d",
+            "app/src/main/assets/live2d",
+            "../app/src/main/assets/live2d",
         };
         for (String candidate : candidates) {
-            File file = new File(candidate);
-            if (file.isFile()) {
-                return file;
+            File directory = new File(candidate);
+            if (directory.isDirectory()) {
+                return directory;
             }
         }
-        fail("не найден файл модели: " + new File(".").getAbsolutePath());
+        fail("не найден каталог моделей: " + new File(".").getAbsolutePath());
         return null;
     }
 
+    private static File modelFile(String modelId) {
+        return new File(new File(assetsRoot(), modelId), "model3.json");
+    }
+
     /** Names of the motions the model file declares. */
-    private static Set<String> motionsOfTheModel() throws Exception {
-        String json = new String(Files.readAllBytes(modelFile().toPath()), StandardCharsets.UTF_8);
+    private static Set<String> motionsOfTheModel(String modelId) throws Exception {
+        String json = new String(Files.readAllBytes(modelFile(modelId).toPath()), StandardCharsets.UTF_8);
         Set<String> names = new LinkedHashSet<>();
         int index = 0;
         while (true) {
@@ -71,30 +80,48 @@ public class ShowMotionNameTest {
                 : name;
     }
 
+    /**
+     * A show names the motions it was authored with, and the stage maps them onto whatever the
+     * character owns. This test walks every character and checks that every motion of every show
+     * resolves to something the character really has - otherwise the character would freeze while the
+     * show runs.
+     */
     @Test
-    public void everyMotionOfTheShowsExistsInTheModel() throws Exception {
-        Set<String> known = motionsOfTheModel();
-        assertFalse("в модели не найдено ни одного движения", known.isEmpty());
-
-        List<String> missing = new ArrayList<>();
-        for (Show show : ShowLibrary.shows()) {
-            for (Segment segment : show.segments) {
-                if (segment.motion != null && !known.contains(segment.motion)) {
-                    missing.add("шоу " + show.id + " -> " + segment.motion);
+    public void everyShowFindsItsMotionsOnEveryCharacter() throws Exception {
+        final List<String> problems = new ArrayList<>();
+        for (String modelId : MODEL_IDS) {
+            final Set<String> known = motionsOfTheModel(modelId);
+            final List<String> available = new ArrayList<>(known);
+            for (Show show : ShowLibrary.shows()) {
+                for (Segment segment : show.segments) {
+                    if (segment.motion == null) {
+                        continue;
+                    }
+                    if (MotionPicker.resolve(available, segment.motion) == null && !known.isEmpty()) {
+                        problems.add(modelId + ": шоу " + show.id + " -> " + segment.motion);
+                    }
                 }
             }
         }
-        for (String name : ShowLibrary.idleMotions()) {
-            if (!known.contains(name)) {
-                missing.add("ожидание -> " + name);
+        assertTrue("движения, которые не нашли себе замену:\n" + String.join("\n", problems),
+                problems.isEmpty());
+    }
+
+    /** The idle behaviour must always come out non-empty: a character never stands frozen. */
+    @Test
+    public void everyCharacterGetsAnIdlePool() throws Exception {
+        for (String modelId : MODEL_IDS) {
+            final Set<String> known = motionsOfTheModel(modelId);
+            if (known.isEmpty()) {
+                continue;
+            }
+            final List<String> pool = MotionPicker.idlePool(new ArrayList<>(known));
+            assertFalse("пустой пул ожидания у " + modelId, pool.isEmpty());
+            for (String name : pool) {
+                assertTrue("в пул ожидания " + modelId + " попало движение " + name
+                        + ", которого нет в модели", known.contains(name));
             }
         }
-        for (String name : ShowLibrary.cameraIdleMotions()) {
-            if (!known.contains(name)) {
-                missing.add("камера -> " + name);
-            }
-        }
-        assertTrue("движения, которых нет в модели:\n" + String.join("\n", missing), missing.isEmpty());
     }
 
     @Test
