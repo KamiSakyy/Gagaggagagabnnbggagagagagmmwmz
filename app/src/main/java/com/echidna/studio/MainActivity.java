@@ -1133,6 +1133,12 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
 
     private void populateGallery() {
         final List<String> motions = stage.knownMotions();
+        if (motions.isEmpty()) {
+            // Объёмный персонаж и риг вроде Нахиды не имеют файлов движений: всё, что они умеют, -
+            // это мимика, и галерея должна показывать именно её, а не пустой список.
+            populateExpressionGallery(stage.knownExpressions());
+            return;
+        }
         final List<String[]> groups = ModelStage.motionGroups(motions);
         for (int g = 0; g < groups.size(); g++) {
             final String[] group = groups.get(g);
@@ -1170,6 +1176,49 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             galleryPanel.addView(scroll);
         }
         EchidnaLog.i("APP", "галерея: " + motions.size() + " анимаций");
+    }
+
+    /** Галерея модели без движений: все выражения лица её рига, включая объёмного персонажа. */
+    private void populateExpressionGallery(List<String> expressions) {
+        final TextView title = new TextView(this);
+        title.setTextColor(0xFFB388FF);
+        title.setTextSize(12);
+        title.setPadding(0, dp(6), 0, dp(4));
+        if (expressions.isEmpty()) {
+            title.setText("у этой модели нет ни движений, ни выражений");
+            galleryPanel.addView(title);
+            EchidnaLog.i("APP", "галерея: у модели нет ни движений, ни выражений");
+            return;
+        }
+        title.setText("Выражения · " + expressions.size());
+        galleryPanel.addView(title);
+
+        final LinearLayout wrap = new LinearLayout(this);
+        wrap.setOrientation(LinearLayout.HORIZONTAL);
+        final HorizontalScrollView scroll = new HorizontalScrollView(this);
+        scroll.setHorizontalScrollBarEnabled(false);
+        scroll.addView(wrap);
+        for (int i = 0; i < expressions.size(); i++) {
+            final String name = expressions.get(i);
+            final Button chip = new Button(this);
+            chip.setText(name.replace('_', ' '));
+            chip.setAllCaps(false);
+            chip.setTextSize(11);
+            chip.setTextColor(0xFFF3ECFF);
+            chip.setBackground(rounded(0x44FFFFFF, 14));
+            chip.setPadding(dp(10), dp(4), dp(10), dp(4));
+            chip.setOnClickListener(v -> {
+                stage.playExpression(name);
+                toast("Выражение: " + name);
+            });
+            final LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.setMargins(0, 0, dp(6), 0);
+            chip.setLayoutParams(params);
+            wrap.addView(chip);
+        }
+        galleryPanel.addView(scroll);
+        EchidnaLog.i("APP", "галерея: " + expressions.size() + " выражений");
     }
 
     private void runSelfTest() {
