@@ -45,29 +45,8 @@ public class StageStressTest {
                 "face_normal_w", "face_talk_small", "face_talk_normal", "face_talk_large", "face_metozi",
                 "face_cheek_on", "face_cheek_off", "face_shinken_w", "add_select_L", "add_select_C"));
         final List<String> played = new ArrayList<String>();
-        final List<String> expressions = new ArrayList<String>(Arrays.asList("Happy1", "Wink", "Shy"));
         String current;
-        String lastExpression;
         boolean finished = true;
-
-        @Override
-        public List<String> expressionNames() {
-            return expressions;
-        }
-
-        @Override
-        public boolean playExpression(String name) {
-            if (expressions.contains(name)) {
-                lastExpression = name;
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public void stopExpression() {
-            lastExpression = null;
-        }
 
         @Override
         public boolean playMotion(String name, float fadeIn, int priority) {

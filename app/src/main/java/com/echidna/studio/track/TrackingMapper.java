@@ -1,6 +1,5 @@
 package com.echidna.studio.track;
 
-import com.echidna.studio.EchidnaLog;
 import com.echidna.studio.anim.Damp;
 import com.echidna.studio.anim.ParamLimits;
 import com.echidna.studio.anim.Pose;
@@ -47,12 +46,6 @@ public final class TrackingMapper {
     private final Damp centerX = new Damp(0.16f);
     private final Damp centerY = new Damp(0.16f);
     private final Damp faceSize = new Damp(0.30f);
-    // Тело: плечи и наклон идут от трекера позы, поэтому сглаживаются отдельно.
-    private final Damp bodyYaw = new Damp(0.14f);
-    private final Damp bodyRoll = new Damp(0.16f);
-    private final Damp bodyLift = new Damp(0.20f);
-    private final Damp bodyShift = new Damp(0.18f);
-    private final Damp handUp = new Damp(0.22f);
 
     private final Pose tracked = new Pose();
     private final Pose demo = new Pose();
@@ -62,34 +55,6 @@ public final class TrackingMapper {
      * the tracker six seconds to prove it can see blinks before the framework takes over.
      */
     private float sinceBlink;
-
-    /**
-     * Нейтраль пользователя: поза, в которой он сидит перед камерой.
-     *
-     * <p>Без неё человек, сидящий чуть боком или наклонив голову, навсегда получает повёрнутого
-     * персонажа. Нейтраль снимается автоматически в первые полторы секунды уверенного трекинга и
-     * может быть снята заново по кнопке.</p>
-     */
-    private float neutralYaw;
-    private float neutralPitch;
-    private float neutralRoll;
-    private float neutralCenterX;
-    private float neutralCenterY;
-    private float neutralFace = NEUTRAL_FACE;
-    private boolean neutralReady;
-    private int neutralSamples;
-    private float sumYaw;
-    private float sumPitch;
-    private float sumRoll;
-    private float sumCenterX;
-    private float sumCenterY;
-    private float sumFace;
-    private static final int NEUTRAL_SAMPLES = 24;
-    /**
-     * Автосъём нейтрали включён в приложении (человек садится как ему удобно, а персонаж смотрит
-     * прямо). Тесты отключают его, когда проверяют само отображение углов.
-     */
-    private boolean autoCalibrate = true;
     private volatile boolean mirrored = true;
     private float lostFor = 10.0f;
     private float demoBlend = 1.0f;
@@ -126,76 +91,9 @@ public final class TrackingMapper {
         centerX.reset(0.0f);
         centerY.reset(0.0f);
         faceSize.reset(NEUTRAL_FACE);
-        bodyYaw.reset(0.0f);
-        bodyRoll.reset(0.0f);
-        bodyLift.reset(0.0f);
-        bodyShift.reset(0.0f);
-        handUp.reset(0.0f);
         lostFor = 10.0f;
         demoBlend = 1.0f;
         clock = 0.0f;
-        forgetNeutral();
-    }
-
-    /** Автоматический съём нейтрали при первом уверенном трекинге. */
-    public void setAutoCalibration(boolean value) {
-        autoCalibrate = value;
-        if (value) {
-            forgetNeutral();
-        }
-    }
-
-    /** Включает автоматический съём нейтрали: следующая уверенная секунда трекинга задаст её. */
-    public void calibrate() {
-        forgetNeutral();
-    }
-
-    private void forgetNeutral() {
-        neutralReady = false;
-        neutralSamples = 0;
-        sumYaw = 0.0f;
-        sumPitch = 0.0f;
-        sumRoll = 0.0f;
-        sumCenterX = 0.0f;
-        sumCenterY = 0.0f;
-        sumFace = 0.0f;
-    }
-
-    /** True when the neutral pose of the user has been measured. */
-    public boolean isCalibrated() {
-        return neutralReady;
-    }
-
-    /** Сколько кадров уже собрано для нейтрали: для подписи в интерфейсе. */
-    public int neutralProgress() {
-        return neutralSamples;
-    }
-
-    private void measureNeutral(FaceSignals s) {
-        if (!autoCalibrate) {
-            return;
-        }
-        if (neutralReady) {
-            return;
-        }
-        sumYaw += s.yaw;
-        sumPitch += s.pitch;
-        sumRoll += s.roll;
-        sumCenterX += s.centerX;
-        sumCenterY += s.centerY;
-        sumFace += s.scale > 0.05f ? s.scale : NEUTRAL_FACE;
-        neutralSamples++;
-        if (neutralSamples >= NEUTRAL_SAMPLES) {
-            neutralYaw = sumYaw / neutralSamples;
-            neutralPitch = sumPitch / neutralSamples;
-            neutralRoll = sumRoll / neutralSamples;
-            neutralCenterX = sumCenterX / neutralSamples;
-            neutralCenterY = sumCenterY / neutralSamples;
-            neutralFace = sumFace / neutralSamples;
-            neutralReady = true;
-            EchidnaLog.i("TRACK", String.format(java.util.Locale.ROOT,
-                    "нейтраль снята: yaw %.1f, pitch %.1f, roll %.1f", neutralYaw, neutralPitch, neutralRoll));
-        }
     }
 
     /** Feeds one analysed frame. */
@@ -214,34 +112,16 @@ public final class TrackingMapper {
             return;
         }
         lastSignalMs = s.timeMs;
-        if (!s.poseOnly) {
-            measureNeutral(s);
-        }
 
-        final float yawTarget = (mirrored ? -1.0f : 1.0f) * (s.yaw - neutralYaw);
-        final float rollTarget = (mirrored ? -1.0f : 1.0f) * (s.roll - neutralRoll);
+        final float yawTarget = (mirrored ? -1.0f : 1.0f) * s.yaw;
+        final float rollTarget = (mirrored ? -1.0f : 1.0f) * s.roll;
         yaw.update(yawTarget, dt);
-        pitch.update(s.pitch - neutralPitch, dt);
+        pitch.update(s.pitch, dt);
         roll.update(rollTarget, dt);
-
-        // Тело: плечи поворачиваются вместе с корпусом, наклон и руки добавляют живости.
-        if (s.body) {
-            bodyYaw.update((mirrored ? -1.0f : 1.0f) * (s.bodyYaw - (s.poseOnly ? 0.0f : 0.0f)), dt);
-            bodyRoll.update((mirrored ? -1.0f : 1.0f) * s.bodyRoll, dt);
-            bodyLift.update(s.bodyLift, dt);
-            bodyShift.update((mirrored ? -1.0f : 1.0f) * s.bodyShift, dt);
-            handUp.update(s.handUp, dt);
-        } else {
-            bodyYaw.update(0.0f, dt);
-            bodyRoll.update(0.0f, dt);
-            bodyLift.update(0.0f, dt);
-            bodyShift.update(0.0f, dt);
-            handUp.update(0.0f, dt);
-        }
         smile.update(s.smile, dt);
         mouth.update(s.mouthOpen, dt);
-        centerX.update(s.centerX - neutralCenterX, dt);
-        centerY.update(s.centerY - neutralCenterY, dt);
+        centerX.update(s.centerX, dt);
+        centerY.update(s.centerY, dt);
         // Only a sensible face size feeds the zoom; a half closed frame would jump otherwise.
         if (s.scale > 0.05f) {
             faceSize.update(s.scale, dt);
@@ -338,28 +218,6 @@ public final class TrackingMapper {
         return out;
     }
 
-    /**
-     * Extra channels of the MediaPipe blendshapes that the raw signals do not carry: the puckered
-     * lips, the pressed lips and the squint of the eyes change the mouth and the eyes of the model in
-     * a way the plain smile/mouth pair cannot express.
-     */
-    private float extraMouthForm;
-    private float extraEyeSquint;
-
-    /** Feeds the blendshape channels that only the MediaPipe tracker fills in. */
-    public void onBlendshapes(FaceSignals s) {
-        if (!s.blendshapes) {
-            extraMouthForm = 0.0f;
-            extraEyeSquint = 0.0f;
-            return;
-        }
-        final float pucker = (s.blendMouthPucker - s.blendMouthSmileLeft * 0.5f);
-        final float frown = (s.blendMouthFrownLeft + s.blendMouthFrownRight) * 0.5f;
-        final float dimple = 0.0f;
-        extraMouthForm = Pose.clamp(-pucker * 1.2f - frown * 0.8f + dimple, -1.0f, 1.0f);
-        extraEyeSquint = Pose.clamp((s.blendEyeSquintLeft + s.blendEyeSquintRight) * 0.5f, 0.0f, 1.0f);
-    }
-
     private void buildTracked() {
         final float yawValue = Pose.clamp(yaw.value(), -26.0f, 26.0f);
         final float pitchValue = Pose.clamp(pitch.value(), -26.0f, 26.0f);
@@ -369,13 +227,10 @@ public final class TrackingMapper {
         tracked.angleX = ParamLimits.angleX(-pitchValue * PITCH_GAIN);
         tracked.angleZ = ParamLimits.angleZ(rollValue * ROLL_GAIN);
 
-        // The body follows the shoulders when the pose tracker sees them (a real turn of the body),
-        // and the head otherwise. This is the part that makes the whole character turn with the user
-        // instead of only the neck.
-        final float bodyTurn = bodyYaw.value() * 0.85f;
-        tracked.bodyX = ParamLimits.bodyX(bodyTurn + yawValue * 0.18f + bodyShift.value() * 4.0f);
-        tracked.bodyZ = ParamLimits.bodyZ(bodyRoll.value() * 0.9f + rollValue * 0.16f);
-        tracked.bodyY = ParamLimits.bodyY(-pitchValue * 0.12f + bodyLift.value() * 3.0f);
+        // The body follows the head with a delay and only a third of the amplitude.
+        tracked.bodyX = ParamLimits.bodyX(yawValue * 0.28f);
+        tracked.bodyZ = ParamLimits.bodyZ(rollValue * 0.22f);
+        tracked.bodyY = ParamLimits.bodyY(-pitchValue * 0.12f);
 
         // The whole model follows the user sideways as well, exactly like a mirror image of the
         // head position: this is the part that makes the avatar feel like it stands next to you
@@ -385,23 +240,16 @@ public final class TrackingMapper {
         tracked.offsetY = ParamLimits.offset(centerY.value() * -LIFT_GAIN);
         tracked.zoom = ParamLimits.zoom(1.0f + (faceSize.value() - NEUTRAL_FACE) * ZOOM_GAIN);
 
-        // A raised hand turns into a cheerful face: the models of this app have no arms to move, so
-        // the hands drive the expression channels instead of nothing at all.
-        final float hands = ParamLimits.unit(handUp.value());
-
         // The gaze leads the head a little, which is what makes eye contact feel alive.
         tracked.eyeBallX = ParamLimits.eyeBallX(yawValue / 26.0f * 0.55f + centerX.value() * 0.35f);
         tracked.eyeBallY = ParamLimits.eyeBallY(pitchValue / 26.0f * 0.45f - centerY.value() * 0.25f);
 
-        final float smileValue = ParamLimits.unit(Math.max(smile.value(), hands * 0.55f));
+        final float smileValue = ParamLimits.unit(smile.value());
         tracked.mouthOpenY = ParamLimits.mouthOpen(smoothStep(0.02f, 0.34f, mouth.value()));
-        tracked.mouthForm = ParamLimits.mouthForm(-0.15f + smileValue * 1.0f + extraMouthForm * 0.6f);
-        tracked.cheek = ParamLimits.unit((smileValue - 0.45f) * 2.0f + hands * 0.4f);
-        // Squinting and smiling both raise the lower eyelid of the model, which is what the
-        // "smiling eyes" parameter does.
-        final float eyeSmile = ParamLimits.unit(Math.max(smileValue * 0.8f, extraEyeSquint * 0.9f));
-        tracked.eyeLSmile = eyeSmile;
-        tracked.eyeRSmile = eyeSmile;
+        tracked.mouthForm = ParamLimits.mouthForm(-0.15f + smileValue * 1.0f);
+        tracked.cheek = ParamLimits.unit((smileValue - 0.45f) * 2.0f);
+        tracked.eyeLSmile = ParamLimits.unit(smileValue * 0.8f);
+        tracked.eyeRSmile = ParamLimits.unit(smileValue * 0.8f);
 
         // No brow tracking in the SDK: looking up raises them slightly, which reads as surprise.
         final float brow = Pose.clamp(-pitchValue * 0.012f + (smileValue - 0.5f) * 0.2f, -0.3f, 0.6f);

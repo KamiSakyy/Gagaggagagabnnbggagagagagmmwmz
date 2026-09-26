@@ -54,39 +54,11 @@ public final class FaceSignals {
     public float blendMouthFrownRight;
     public float blendTongueOut;
 
-    /**
-     * Body data from the pose tracker (shoulders, hips, hands).
-     *
-     * <p>The face model alone cannot tell a tilt of the body from a tilt of the head, and it loses
-     * the user as soon as they turn away or step back. The pose model sees the whole person, which is
-     * what lets the character turn with the body and keep moving when the face is out of view.</p>
-     */
-    public boolean body;
-    /** Turn of the shoulders in degrees, positive when the right shoulder comes closer to the camera. */
-    public float bodyYaw;
-    /** Tilt of the shoulder line in degrees. */
-    public float bodyRoll;
-    /** Vertical movement of the body: -1 crouching, +1 standing tall. */
-    public float bodyLift;
-    /** Sideways lean of the body, -1 left, +1 right. */
-    public float bodyShift;
-    /** Highest hand above the shoulders, 0 (at the shoulder line) to 1 (raised high). */
-    public float handUp;
-    /** The pose source found a person (the avatar keeps working from it alone). */
-    public boolean poseOnly;
-
     /** Timestamp of the analysed frame, milliseconds. */
     public long timeMs;
 
     public void set(FaceSignals other) {
         found = other.found;
-        body = other.body;
-        bodyYaw = other.bodyYaw;
-        bodyRoll = other.bodyRoll;
-        bodyLift = other.bodyLift;
-        bodyShift = other.bodyShift;
-        handUp = other.handUp;
-        poseOnly = other.poseOnly;
         yaw = other.yaw;
         pitch = other.pitch;
         roll = other.roll;

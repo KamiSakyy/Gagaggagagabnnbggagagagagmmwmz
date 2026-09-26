@@ -103,8 +103,8 @@ app/src/main/java/com/echidna/studio/
 ├── SelfTest.java            встроенная самопроверка со скриншотным вердиктом в лог
 ├── AudioLevelMonitor.java   RMS-метр микрофона для липсинка
 ├── anim/                    Pose, Ease, Show, Segment, ShowPlayer, ShowLibrary, IdleDirector, Damp
-└── track/                   CameraController, TrackingHub, MediaPipeFaceTracker, MediaPipePoseTracker,
-                            MlKitFaceTracker, FaceSignals, FacePose, TrackingMapper, SyntheticFaceTracker
+└── track/                   CameraController, TrackingHub, MediaPipeFaceTracker, MlKitFaceTracker,
+                            FaceSignals, FacePose, TrackingMapper, SyntheticFaceTracker
 app/src/main/java/com/live2d/…   вендоренный Live2D Cubism Java Framework 4-r.1
 app/libs/Live2DCubismCore.aar    Cubism Core + JNI (arm64-v8a, x86, x86_64)
 app/src/main/assets/live2d/Echidna   модель: moc3, текстура 2048², 66 мошенов
@@ -119,13 +119,6 @@ app/src/main/assets/live2d/Echidna   модель: moc3, текстура 2048²
 * **MediaPipe Face Landmarker** — основной трекер: 52 коэффициента blendshape и матрица головы,
   те же данные, с которыми работает VTube Studio. Результаты читаются через рефлексию-шимы
   (`FacePose`), поэтому смена контейнеров между версиями SDK не ломает приложение.
-* **MediaPipe Pose Landmarker** — второй трекер: плечи, наклон корпуса и руки. Лицо видит мимику,
-  но теряет человека, стоит ему отвернуться или отойти; поза видит всё тело, поэтому персонаж
-  поворачивается вместе с корпусом и продолжает жить, даже когда лицо «не найдено». Модель позы
-  (полная и облегчённая) лежит в APK, работает офлайн.
-* **Автоматическая калибровка**: первые полторы секунды уверенного трекинга приложение запоминает
-  вашу позу как нейтральную, поэтому человек, сидящий боком, не получает вечно повёрнутого
-  персонажа. Кнопка «калибровка» снимает нейтраль заново.
 * **ML Kit** — фолбэк: если MediaPipe не поднимется на конкретном устройстве, камера продолжит
   работать, просто без blendshape.
 * **Сцена отделена от модели интерфейсом** `AvatarBridge`, поэтому вся логика поведения

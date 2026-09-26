@@ -77,8 +77,6 @@ public final class ModelStage implements Motions {
     private boolean autoBlink = true;
     private String manualMotion;
     private float manualTime;
-    /** Сколько ещё держится случайное выражение лица. */
-    private float expressionTime;
     private float time;
     private String lastStateKey = "";
 
@@ -93,10 +91,6 @@ public final class ModelStage implements Motions {
     public void attach(AvatarBridge model, Listener listener) {
         this.model = model;
         this.listener = listener;
-        // Every character has its own motions, so the idle behaviour is rebuilt for the one that was
-        // just loaded instead of playing names that only Echidna owns.
-        final List<String> motions = model == null ? null : model.motionNames();
-        idle.setPool(com.echidna.studio.anim.MotionPicker.idlePool(motions));
         idle.reset();
         showPlayer.stop();
         mode = Mode.IDLE;
@@ -122,12 +116,6 @@ public final class ModelStage implements Motions {
 
     public TrackingMapper mapper() {
         return tracker;
-    }
-
-    /** Снимает нейтраль пользователя заново: по кнопке в интерфейсе. */
-    public void calibrate() {
-        tracker.calibrate();
-        EchidnaLog.i("STAGE", "калибровка: нейтраль снимается заново");
     }
 
     public boolean isAutoBlink() {
@@ -233,7 +221,6 @@ public final class ModelStage implements Motions {
         final FaceSignals frame = pendingSignals;
         if (frame != null) {
             pendingSignals = null;
-            tracker.onBlendshapes(frame);
             tracker.onSignals(frame, dt);
             signalTimeout = 0.0f;
         } else {
@@ -275,19 +262,6 @@ public final class ModelStage implements Motions {
                 idle.update(dt, incoming, this, !motionRunning);
                 break;
             }
-        }
-
-        // A random facial expression now and then keeps a VTuber rig alive even though it has no
-        // motion files at all.
-        if (expressionTime > 0.0f) {
-            expressionTime -= dt;
-            if (expressionTime <= 0.0f && model != null) {
-                model.stopExpression();
-            }
-        } else if (model != null && mode != Mode.MANUAL && !model.expressionNames().isEmpty()
-                && Math.random() < dt / 14.0) {
-            final List<String> expressions = model.expressionNames();
-            playExpression(expressions.get(new Random().nextInt(expressions.size())));
         }
 
         // A breath of life on top of every mode.
@@ -385,32 +359,9 @@ public final class ModelStage implements Motions {
 
     @Override
     public void play(String name, float fadeIn, int priority) {
-        if (model == null) {
-            return;
+        if (model != null) {
+            model.playMotion(name, fadeIn, priority);
         }
-        // The show asks for the motion it was authored with; the character may know it under a
-        // different name (another game, another set of files) or not have it at all.
-        final String resolved = com.echidna.studio.anim.MotionPicker.resolve(model.motionNames(), name);
-        if (resolved != null) {
-            model.playMotion(resolved, fadeIn, priority);
-        }
-    }
-
-    /** Имена выражений лица текущей модели (у VTuber-ригов они есть вместо движений). */
-    public List<String> knownExpressions() {
-        return model == null ? new ArrayList<String>() : model.expressionNames();
-    }
-
-    /** Проигрывает выражение лица, если у модели такое есть. */
-    public boolean playExpression(String name) {
-        if (model == null) {
-            return false;
-        }
-        final boolean played = model.playExpression(name);
-        if (played) {
-            expressionTime = 2.5f;
-        }
-        return played;
     }
 
     public List<String> knownMotions() {

@@ -29,13 +29,4 @@ public interface AvatarBridge {
 
     /** True when a motion with this name exists. */
     boolean hasMotion(String name);
-
-    /** Facial expressions of the avatar: for a VTuber rig they replace the motion files. */
-    List<String> expressionNames();
-
-    /** Plays a facial expression; false when the avatar has none with that name. */
-    boolean playExpression(String name);
-
-    /** Fades the current facial expression out. */
-    void stopExpression();
 }

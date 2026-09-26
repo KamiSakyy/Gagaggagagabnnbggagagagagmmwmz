@@ -220,42 +220,6 @@ public final class FacePose {
         return new float[]{centerX, centerY, (maxX - minX) * 2.0f, (maxY - minY) * 2.0f};
     }
 
-    /** One landmark of a pose: its place in the frame and how sure the model is about it. */
-    public static final class Landmark {
-        public final float x;
-        public final float y;
-        public final float z;
-        public final float visibility;
-
-        Landmark(float x, float y, float z, float visibility) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            this.visibility = visibility;
-        }
-    }
-
-    /**
-     * Reads one landmark of a pose result by index.
-     *
-     * <p>Pose landmarks carry a visibility score that the face landmarks do not have; it is what the
-     * pose tracker uses to ignore the parts of the body that are behind something or out of frame.</p>
-     */
-    public static Landmark landmarkOf(List<?> landmarks, int index) {
-        if (landmarks == null || index < 0 || index >= landmarks.size()) {
-            return null;
-        }
-        final Object landmark = landmarks.get(index);
-        if (landmark == null) {
-            return null;
-        }
-        return new Landmark(
-                (float) component(landmark, "x"),
-                (float) component(landmark, "y"),
-                (float) component(landmark, "z"),
-                (float) component(landmark, "visibility"));
-    }
-
     private static float yOf(List<?> landmarks, int index) {
         if (index >= landmarks.size()) {
             return 0.0f;
@@ -268,19 +232,10 @@ public final class FacePose {
         if (landmark == null) {
             return 0.0;
         }
-        final Object raw = invokeNoArg(landmark, name);
-        if (raw instanceof Number) {
-            return ((Number) raw).doubleValue();
+        final Object value = invokeNoArg(landmark, name);
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
         }
-        // The pose landmarks carry the coordinates as plain floats but the extra scores (visibility,
-        // presence) as an Optional, so unwrap those before giving up.
-        if (raw != null) {
-            final Object unwrapped = invokeNoArg(raw, "get");
-            if (unwrapped instanceof Number) {
-                return ((Number) unwrapped).doubleValue();
-            }
-        }
-        final Object value = raw;
         try {
             final java.lang.reflect.Field field = landmark.getClass().getField(name);
             final Object fieldValue = field.get(landmark);
