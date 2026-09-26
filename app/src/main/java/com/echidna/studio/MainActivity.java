@@ -1256,6 +1256,44 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                     return hub.camera().lastError();
                 }
 
+                /**
+                 * Отчёт о возможностях на этом телефоне: какие модели упакованы, поднялся ли трекер
+                 * тела, есть ли 3D. Если у пользователя что-то не так — этот текст всё объясняет.
+                 */
+                @Override
+                public String capabilitiesReport() {
+                    final StringBuilder out = new StringBuilder();
+                    try {
+                        final List<ModelCatalog.ModelSpec> packed = ModelCatalog.available(getAssets());
+                        out.append("моделей ").append(packed.size()).append('(');
+                        for (int i = 0; i < packed.size(); i++) {
+                            if (i > 0) {
+                                out.append(", ");
+                            }
+                            out.append(packed.get(i).id);
+                        }
+                        out.append(")");
+                    } catch (Throwable error) {
+                        out.append("моделей ?");
+                    }
+                    boolean three = false;
+                    try {
+                        getAssets().open("three/character.vrm").close();
+                        three = true;
+                    } catch (Exception missing) {
+                        three = false;
+                    }
+                    out.append("; 3D: ").append(three ? "да" : "нет");
+                    out.append("; лицо: ").append(hub.trackerName());
+                    out.append("; тело: ").append(
+                            com.echidna.studio.track.MediaPipePoseTracker.assetAvailable(getBaseContext())
+                                    ? "есть" : "нет");
+                    out.append("; Android ").append(android.os.Build.VERSION.SDK_INT);
+                    out.append("; ").append(android.os.Build.SUPPORTED_ABIS.length > 0
+                            ? android.os.Build.SUPPORTED_ABIS[0] : "?");
+                    return out.toString();
+                }
+
                 @Override
                 public String parameterReport() {
                     return renderer.parameterSummary();

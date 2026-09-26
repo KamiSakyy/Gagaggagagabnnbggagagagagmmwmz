@@ -58,6 +58,13 @@ public final class SelfTest {
          * The check reads and parses all motions, which is why it happens in the background.
          */
         String motionsLoadReport();
+
+        /**
+         * What the app is capable of on this exact device: which models are packed, whether the body
+         * tracker is there, which face tracker started. This is the first thing to look at when a
+         * phone behaves differently from the others.
+         */
+        String capabilitiesReport();
     }
 
     private static final long STEP_DELAY_MS = 1400;
@@ -272,6 +279,15 @@ public final class SelfTest {
                     pass(report);
                 } else {
                     fail(report);
+                }
+                phase++;
+                break;
+            }
+            case 12: {
+                final String report = callbacks.capabilitiesReport();
+                pass("возможности: " + report);
+                if (report.contains("3D: нет") || report.contains("тело: нет")) {
+                    EchidnaLog.w("SELFTEST", "часть возможностей недоступна: " + report);
                 }
                 phase++;
                 break;

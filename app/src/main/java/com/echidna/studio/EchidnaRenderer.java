@@ -551,26 +551,13 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         final float[] bounds = fitBounds();
         projection.loadIdentity();
 
-        // Pixels per model unit: the character is fitted into the frame and both axes share it.
-        final float marginX = surfaceWidth * 0.94f;
-        final float marginY = surfaceHeight * 0.96f;
-        final float pixelsPerUnit = Math.min(marginX / bounds[2], marginY / bounds[3]);
-
+        // The arithmetic itself lives in ModelFraming, where it is covered by tests: one scale for
+        // both axes is what keeps the character from being squashed.
         final float zoom = ParamLimits.zoom(stage.viewZoom()) * Math.max(0.05f, modelScale);
-        final float scale = pixelsPerUnit * zoom;
-
-        // Model units -> NDC. One NDC unit is half of a screen, hence the factor two.
-        final float ndcX = 2.0f * scale / Math.max(1.0f, surfaceWidth);
-        final float ndcY = 2.0f * scale / Math.max(1.0f, surfaceHeight);
-        projection.scale(ndcX, ndcY);
-
-        // The centre of the character goes to the middle of the screen plus whatever the user and
-        // the camera mode asked for.
-        final float panX = (modelOffsetX + stage.viewOffsetX()) * surfaceWidth;
-        final float panY = (modelOffsetY + stage.viewOffsetY()) * surfaceHeight;
-        final float centerNdcX = 2.0f * (surfaceWidth * 0.5f + panX) / Math.max(1.0f, surfaceWidth) - 1.0f;
-        final float centerNdcY = 2.0f * (surfaceHeight * 0.5f + panY) / Math.max(1.0f, surfaceHeight) - 1.0f;
-        projection.translate(centerNdcX - bounds[0] * ndcX, centerNdcY - bounds[1] * ndcY);
+        final ModelFraming.Frame frame = ModelFraming.frame(bounds, surfaceWidth, surfaceHeight,
+                zoom, modelOffsetX + stage.viewOffsetX(), modelOffsetY + stage.viewOffsetY());
+        projection.scale(frame.scaleX, frame.scaleY);
+        projection.translate(frame.translateX, frame.translateY);
 
         model.draw(projection);
     }
