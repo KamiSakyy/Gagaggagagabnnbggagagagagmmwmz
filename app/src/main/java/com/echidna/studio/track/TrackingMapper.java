@@ -24,9 +24,18 @@ import com.echidna.studio.anim.Pose;
 public final class TrackingMapper {
 
     /** How far the head may turn for the model to follow one to one. */
-    private static final float YAW_GAIN = 1.15f;
-    private static final float PITCH_GAIN = 1.10f;
-    private static final float ROLL_GAIN = 1.20f;
+    /**
+     * Усиление поворота головы.
+     *
+     * <p>Человек поворачивает голову на 30-40 градусов, а угол модели ограничен: без усиления
+     * движение выглядело вялым. Значения подобраны так, чтобы поворот на 20 градусов уже упирался
+     * в предел модели - так её видно, а не угадывается.</p>
+     */
+    private static final float YAW_GAIN = 1.55f;
+    private static final float PITCH_GAIN = 1.45f;
+    private static final float ROLL_GAIN = 1.50f;
+    /** Предел угла головы по кадрам трекера: столько же, сколько принимает модель. */
+    private static final float HEAD_LIMIT = 30.0f;
 
     /** Height of the face in the frame when the user sits normally; the zoom reference point. */
     private static final float NEUTRAL_FACE = 0.34f;
@@ -41,30 +50,49 @@ public final class TrackingMapper {
      * переживают и потерю кадра, и то, что человек на секунду опустил глаза.</p>
      */
     private static final float FACE_LOST_GRACE = 1.5f;
-    private static final float DEMO_IN_TIME = 0.9f;
-    private static final float DEMO_OUT_TIME = 0.5f;
+    private static final float DEMO_IN_TIME = 1.2f;
+    /** Выход из демонстрационной позы: короткий, чтобы первое движение не ждало полсекунды. */
+    private static final float DEMO_OUT_TIME = 0.25f;
 
-    private final Damp yaw = new Damp(0.10f);
-    private final Damp pitch = new Damp(0.10f);
-    private final Damp roll = new Damp(0.12f);
-    private final Damp eyeL = new Damp(0.045f);
-    private final Damp eyeR = new Damp(0.045f);
-    private final Damp smile = new Damp(0.14f);
-    private final Damp mouth = new Damp(0.06f);
-    private final Damp centerX = new Damp(0.16f);
-    private final Damp centerY = new Damp(0.16f);
-    private final Damp faceSize = new Damp(0.30f);
+    /**
+     * Время сглаживания по каналам.
+     *
+     * <p>Это и есть та самая задержка, из-за которой модель двигалась «через полсекунды после
+     * меня»: чем больше число, тем плавнее и позже. Значения подобраны так, чтобы движение
+     * повторялось почти сразу, но дрожание трекера не проходило на модель.</p>
+     */
+    private final Damp yaw = new Damp(0.045f);
+    private final Damp pitch = new Damp(0.045f);
+    private final Damp roll = new Damp(0.055f);
+    private final Damp eyeL = new Damp(0.030f);
+    private final Damp eyeR = new Damp(0.030f);
+    private final Damp smile = new Damp(0.10f);
+    private final Damp mouth = new Damp(0.045f);
+    private final Damp centerX = new Damp(0.10f);
+    private final Damp centerY = new Damp(0.10f);
+    private final Damp faceSize = new Damp(0.22f);
     // Тело: плечи и наклон идут от трекера позы, поэтому сглаживаются отдельно.
-    private final Damp bodyYaw = new Damp(0.14f);
-    private final Damp bodyRoll = new Damp(0.16f);
-    private final Damp bodyLift = new Damp(0.20f);
-    private final Damp bodyShift = new Damp(0.18f);
-    private final Damp handUp = new Damp(0.22f);
+    private final Damp bodyYaw = new Damp(0.10f);
+    private final Damp bodyRoll = new Damp(0.12f);
+    private final Damp bodyLift = new Damp(0.16f);
+    private final Damp bodyShift = new Damp(0.14f);
+    private final Damp handUp = new Damp(0.10f);
     /** Кисть: свежая точка отсчёта для жестов, поэтому сглаживается отдельно и мягко. */
-    private final Damp chinTouch = new Damp(0.14f);
-    private final Damp handOpenDamp = new Damp(0.12f);
-    private final Damp handDx = new Damp(0.14f);
-    private final Damp handDy = new Damp(0.14f);
+    private final Damp chinTouch = new Damp(0.07f);
+    private final Damp handOpenDamp = new Damp(0.08f);
+    private final Damp handDx = new Damp(0.09f);
+    private final Damp handDy = new Damp(0.09f);
+    /** Видна ли каждая рука в последнем кадре: по этому руки модели и двигаются. */
+    private boolean handSeenLeft;
+    private boolean handSeenRight;
+
+    /** Каждая рука отдельно: подъём, ладонь и касание подбородка. */
+    private final Damp handUpLeft = new Damp(0.09f);
+    private final Damp handUpRight = new Damp(0.09f);
+    private final Damp handOpenLeft = new Damp(0.08f);
+    private final Damp handOpenRight = new Damp(0.08f);
+    private final Damp chinTouchLeft = new Damp(0.07f);
+    private final Damp chinTouchRight = new Damp(0.07f);
     /** Реакция на счёт пальцев: кивки. */
     private final GestureReaction gestures = new GestureReaction();
 
@@ -302,6 +330,22 @@ public final class TrackingMapper {
             handDx.update(0.0f, dt);
             handDy.update(0.0f, dt);
         }
+        // Каждая рука живёт своей жизнью: если человек поднял только правую, левая остаётся в позе
+        // модели. Значение -1 значит "руки не видно", и тогда сторона не трогается вовсе.
+        // Флаги видимости берутся как есть: рука ушла из кадра - её сторона отпускается, и модель
+        // возвращается к той позе, которую нарисовал художник.
+        handSeenLeft = s.handSeenLeft;
+        handSeenRight = s.handSeenRight;
+        if (s.handSeenLeft) {
+            handUpLeft.update(s.handUpLeft, dt);
+            handOpenLeft.update(s.handOpenLeft, dt);
+            chinTouchLeft.update(s.chinTouchLeft, dt);
+        }
+        if (s.handSeenRight) {
+            handUpRight.update(s.handUpRight, dt);
+            handOpenRight.update(s.handOpenRight, dt);
+            chinTouchRight.update(s.chinTouchRight, dt);
+        }
         gestures.update(s.handsSeen ? s.fingers : -1, dt);
         smile.update(s.smile, dt);
         mouth.update(s.mouthOpen, dt);
@@ -440,9 +484,9 @@ public final class TrackingMapper {
     }
 
     private void buildTracked() {
-        final float yawValue = Pose.clamp(yaw.value(), -26.0f, 26.0f);
-        final float pitchValue = Pose.clamp(pitch.value(), -26.0f, 26.0f);
-        final float rollValue = Pose.clamp(roll.value(), -26.0f, 26.0f);
+        final float yawValue = Pose.clamp(yaw.value(), -HEAD_LIMIT, HEAD_LIMIT);
+        final float pitchValue = Pose.clamp(pitch.value(), -HEAD_LIMIT, HEAD_LIMIT);
+        final float rollValue = Pose.clamp(roll.value(), -HEAD_LIMIT, HEAD_LIMIT);
 
         // У ригов Live2D поворот головы влево-вправо - это ParamAngleX, а кивок - ParamAngleY
         // (сама модель это подтверждает: в её анимациях кивок act_unazuku идёт по AngleY, а
@@ -475,6 +519,29 @@ public final class TrackingMapper {
         // кисти это настоящие движения рук, у остальных - наклон головы и взгляд на руку ниже.
         tracked.armY = hands;
         tracked.armInverted = armInverted;
+        // Сторона модели: она смотрит на зрителя, поэтому при зеркальной картинке правая рука
+        // человека двигает левую руку персонажа - как в зеркале.
+        final boolean seenLeft = handSeenLeft;
+        final boolean seenRight = handSeenRight;
+        final boolean modelLeftFromUserRight = mirrored;
+        final boolean leftSeen = modelLeftFromUserRight ? seenRight : seenLeft;
+        final boolean rightSeen = modelLeftFromUserRight ? seenLeft : seenRight;
+        tracked.armLeft = leftSeen
+                ? (modelLeftFromUserRight ? handUpRight.value() : handUpLeft.value()) : -1.0f;
+        tracked.armRight = rightSeen
+                ? (modelLeftFromUserRight ? handUpLeft.value() : handUpRight.value()) : -1.0f;
+        tracked.handOpenLeft = leftSeen
+                ? (modelLeftFromUserRight ? handOpenRight.value() : handOpenLeft.value()) : -1.0f;
+        tracked.handOpenRight = rightSeen
+                ? (modelLeftFromUserRight ? handOpenLeft.value() : handOpenRight.value()) : -1.0f;
+        tracked.chinTouchLeft = leftSeen
+                ? (modelLeftFromUserRight ? chinTouchRight.value() : chinTouchLeft.value()) : 0.0f;
+        tracked.chinTouchRight = rightSeen
+                ? (modelLeftFromUserRight ? chinTouchLeft.value() : chinTouchRight.value()) : 0.0f;
+        tracked.chinLeft = leftSeen;
+        tracked.chinRight = rightSeen;
+        tracked.handSeenLeft = leftSeen;
+        tracked.handSeenRight = rightSeen;
         final float chin = ParamLimits.unit(chinTouch.value());
         tracked.chinTouch = chin;
         tracked.handOpen = ParamLimits.unit(handOpenDamp.value());

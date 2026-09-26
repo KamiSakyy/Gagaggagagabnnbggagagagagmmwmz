@@ -42,6 +42,21 @@ public final class MediaPipeFaceTracker implements FaceTracker {
     private volatile long submitted;
     private volatile long results;
     private volatile long lastSubmitMs;
+    /**
+     * Сколько времени ждать ответа на только что отданный кадр.
+     *
+     * <p>В потоковом режиме {@code detectAsync} возвращается сразу, а результат приходит позже, и
+     * раньше трекер отдавал предыдущий результат: мимика отставала на кадр-два. Ожидание свежего
+     * ответа убирает эту задержку - на телефоне это заметно сразу.</p>
+     */
+    private static final long RESULT_WAIT_MS = 45;
+    /** Был ли последний отданный кадр перевёрнутым (проверка положения камеры). */
+    private volatile boolean lastSubmitFlipped;
+    /** Наблюдения за положением кадра: по ним решается, переворачивать ли камеру. */
+    private volatile int normalFrames;
+    private volatile int normalHits;
+    private volatile int flippedFrames;
+    private volatile int flippedHits;
 
     public MediaPipeFaceTracker(Context context) {
         this(context, MODEL_ASSET);
@@ -90,11 +105,12 @@ public final class MediaPipeFaceTracker implements FaceTracker {
                         .setBaseOptions(baseOptions)
                         .setRunningMode(RunningMode.LIVE_STREAM)
                         .setNumFaces(1)
-                        // The thresholds are deliberately forgiving: losing the face for a moment is
-                        // far more annoying on a phone than a rare false positive.
-                        .setMinFaceDetectionConfidence(0.25f)
-                        .setMinFacePresenceConfidence(0.25f)
-                        .setMinTrackingConfidence(0.25f)
+                        // Пороги чуть выше минимума: слишком мягкие дают дрожащие углы и мнимые
+                        // лица в тёмной комнате, слишком строгие - теряют лицо. Поза подхватывает
+                        // голову, если лицо всё-таки потерялось.
+                        .setMinFaceDetectionConfidence(0.35f)
+                        .setMinFacePresenceConfidence(0.35f)
+                        .setMinTrackingConfidence(0.30f)
                         .setOutputFaceBlendshapes(true)
                         .setOutputFacialTransformationMatrixes(true)
                         .setResultListener(this::onResult)
@@ -162,10 +178,21 @@ public final class MediaPipeFaceTracker implements FaceTracker {
         submitted = 0L;
         results = 0L;
         lastSubmitMs = 0L;
+        resetFlipStats();
     }
 
     @Override
     public FaceSignals analyze(Frame frame, long timestampMs) {
+        return submit(frame, timestampMs, false);
+    }
+
+    /**
+     * Отдаёт кадр графу и ждёт свежий ответ.
+     *
+     * @param flipped кадр перевёрнут на 180 градусов (проверка положения камеры)
+     */
+    @Override
+    public FaceSignals submit(Frame frame, long timestampMs, boolean flipped) {
         if (!running || landmarker == null || frame == null || frame.bitmap == null) {
             return null;
         }
@@ -174,12 +201,14 @@ public final class MediaPipeFaceTracker implements FaceTracker {
         }
         lastTimestampMs = timestampMs;
 
+        final long seenBefore = results;
         try {
             final MPImage image = new BitmapImageBuilder(frame.bitmap).build();
             final FaceLandmarker target = landmarker;
             if (target == null) {
                 return null;
             }
+            lastSubmitFlipped = flipped;
             target.detectAsync(image, timestampMs);
             submitted++;
             lastSubmitMs = SystemClock.elapsedRealtime();
@@ -188,8 +217,32 @@ public final class MediaPipeFaceTracker implements FaceTracker {
             fallBackToCpu(t);
             return null;
         }
-        // Results arrive on the MediaPipe thread: hand out the newest available one.
-        return latest;
+
+        // Ждём именно ответ на этот кадр: иначе мимика показывала бы то, что было полтора кадра
+        // назад, и модель двигалась бы с задержкой.
+        final long deadline = SystemClock.elapsedRealtime() + RESULT_WAIT_MS;
+        while (results == seenBefore && SystemClock.elapsedRealtime() < deadline) {
+            try {
+                Thread.sleep(1L);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return results != seenBefore ? latest : null;
+    }
+
+    /** Наблюдения по положению кадра: сколько кадров и на скольких найдено лицо. */
+    public int[] flipStats() {
+        return new int[]{normalFrames, normalHits, flippedFrames, flippedHits};
+    }
+
+    /** Начинает окно наблюдений заново. */
+    public void resetFlipStats() {
+        normalFrames = 0;
+        normalHits = 0;
+        flippedFrames = 0;
+        flippedHits = 0;
     }
 
     private void onResult(Object result, Object inputImage) {
@@ -203,9 +256,11 @@ public final class MediaPipeFaceTracker implements FaceTracker {
         final List<?> landmarks = FacePose.asList(invoke(result, "faceLandmarks"));
         if (landmarks.isEmpty()) {
             signals.found = false;
+            recordObservation(false);
             latest = signals;
             return;
         }
+        recordObservation(true);
         signals.found = true;
         final List<?> firstFace = FacePose.asList(landmarks.get(0));
 
@@ -264,6 +319,21 @@ public final class MediaPipeFaceTracker implements FaceTracker {
             signals.scale = Math.max(0.01f, box[3]);
         }
         latest = signals;
+    }
+
+    /** Записывает, нашлось ли лицо на кадре этого положения - для проверки переворота камеры. */
+    private void recordObservation(boolean found) {
+        if (lastSubmitFlipped) {
+            flippedFrames++;
+            if (found) {
+                flippedHits++;
+            }
+        } else {
+            normalFrames++;
+            if (found) {
+                normalHits++;
+            }
+        }
     }
 
     private static void applyBlendshape(FaceSignals s, String name, float score) {

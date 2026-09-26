@@ -61,6 +61,25 @@ public final class Pose {
     /** Without hands the arm channels stay still, however strong the rest of the pose is. */
     public boolean handsSeen;
 
+    /**
+     * Каждая рука отдельно: подъём, открытая ладонь и касание подбородка.
+     *
+     * <p>Сторона указана так, как её видят зрители модели: armLeft - левая рука персонажа, которая
+     * повторяет правую руку человека, когда картинка зеркальная. Если рука человека не видна, её
+     * сторона остаётся неизменной (-1), и модель держит ту позу, которую нарисовал художник.</p>
+     */
+    public float armLeft = -1.0f;
+    public float armRight = -1.0f;
+    public float handOpenLeft = -1.0f;
+    public float handOpenRight = -1.0f;
+    public float chinTouchLeft;
+    public float chinTouchRight;
+    public boolean chinLeft;
+    public boolean chinRight;
+    /** Видна ли каждая рука: невидимая сторона не трогается вовсе. */
+    public boolean handSeenLeft;
+    public boolean handSeenRight;
+
     /** Strength of the whole pose, 0..1. */
     /**
      * Shift of the whole model inside the frame, in projection units: 1.0 is the half width of the
@@ -105,6 +124,16 @@ public final class Pose {
         cheek = other.cheek;
         armY = other.armY;
         handOpen = other.handOpen;
+        armLeft = other.armLeft;
+        armRight = other.armRight;
+        handOpenLeft = other.handOpenLeft;
+        handOpenRight = other.handOpenRight;
+        chinTouchLeft = other.chinTouchLeft;
+        chinTouchRight = other.chinTouchRight;
+        chinLeft = other.chinLeft;
+        chinRight = other.chinRight;
+        handSeenLeft = other.handSeenLeft;
+        handSeenRight = other.handSeenRight;
         chinTouch = other.chinTouch;
         armInverted = other.armInverted;
         fingers = other.fingers;
@@ -137,6 +166,16 @@ public final class Pose {
         cheek = 0;
         armY = 0;
         handOpen = 0.0f;
+        armLeft = -1.0f;
+        armRight = -1.0f;
+        handOpenLeft = -1.0f;
+        handOpenRight = -1.0f;
+        chinTouchLeft = 0.0f;
+        chinTouchRight = 0.0f;
+        chinLeft = false;
+        chinRight = false;
+        handSeenLeft = false;
+        handSeenRight = false;
         chinTouch = 0.0f;
         armInverted = false;
         fingers = -1;
@@ -180,6 +219,16 @@ public final class Pose {
         out.cheek = mix(a.cheek, b.cheek, t);
         out.armY = mix(a.armY, b.armY, t);
         out.handOpen = mix(a.handOpen, b.handOpen, t);
+        out.armLeft = mix(a.armLeft, b.armLeft, t);
+        out.armRight = mix(a.armRight, b.armRight, t);
+        out.handOpenLeft = mix(a.handOpenLeft, b.handOpenLeft, t);
+        out.handOpenRight = mix(a.handOpenRight, b.handOpenRight, t);
+        out.chinTouchLeft = mix(a.chinTouchLeft, b.chinTouchLeft, t);
+        out.chinTouchRight = mix(a.chinTouchRight, b.chinTouchRight, t);
+        out.chinLeft = t < 1.0f ? a.chinLeft : b.chinLeft;
+        out.chinRight = t < 1.0f ? a.chinRight : b.chinRight;
+        out.handSeenLeft = t < 1.0f ? a.handSeenLeft : b.handSeenLeft;
+        out.handSeenRight = t < 1.0f ? a.handSeenRight : b.handSeenRight;
         out.chinTouch = mix(a.chinTouch, b.chinTouch, t);
         out.handsSeen = t < 1.0f ? a.handsSeen : b.handsSeen;
         out.armInverted = t < 1.0f ? a.armInverted : b.armInverted;

@@ -33,19 +33,20 @@ public final class TrackingHub {
         void onPreview(Bitmap frame, int serial);
     }
 
-    private static final long ANALYSIS_INTERVAL_MS = 33;
+    /** Каждый третий кадр уходит в разбор перевёрнутым, пока лицо не найдено. */
+    private static final int PROBE_EVERY = 3;
     /** Как часто (мс) пробовать перевёрнутый кадр, пока лицо не найдено. */
     private static final long FLIP_PROBE_INTERVAL_MS = 1500;
     /**
      * Тело считается реже лица: плечи и руки не мигают, а два графа MediaPipe на одном кадре
      * съедают телефон. Между замерами используется последний результат - он всё равно сглаживается.
      */
-    private static final long POSE_INTERVAL_MS = 80;
+    private static final long POSE_INTERVAL_MS = 66;
     /**
      * Кисть разбирается реже лица: 15 раз в секунду хватает, чтобы жест читался мгновенно, а
      * телефон при этом не греется.
      */
-    private static final long HAND_INTERVAL_MS = 66;
+    private static final long HAND_INTERVAL_MS = 50;
     /** Сколько ждём первых результатов трекера, прежде чем считать его зависшим. */
     private static final long TRACKER_START_GRACE_MS = 4000;
     /** Сколько ждём новых результатов, пока трекер молчит. */
@@ -93,9 +94,9 @@ public final class TrackingHub {
     private long startedAtMs;
     /** Когда последний раз проверяли, не приходит ли кадр вверх ногами. */
     private long lastFlipProbeMs;
-    /** Был ли последний отправленный в разбор кадр перевёрнут на 180 градусов. */
-    private boolean lastAttemptFlipped;
     private volatile FaceSignals lastSignals;
+    /** Последние сигналы лица и тела: кисть и поза обновляются реже, поэтому хранятся отдельно. */
+    private FaceSignals lastFaceSignals;
     private volatile int framesPerSecond;
     /** Готовые кадры для окошка предпросмотра: копии, а не буферы камеры. */
     private final Bitmap[] previewSlots = new Bitmap[PREVIEW_SLOTS];
@@ -103,11 +104,30 @@ public final class TrackingHub {
     /** Номер последнего отданного кадра: рендер по нему понимает, что картинка новая. */
     private volatile int previewSerial;
     private int previewInFlight = -1;
-    /** Копия кадра для разбора: живёт, пока трекеры с ней работают. */
-    private Bitmap analysisFrame;
+    /**
+     * Копии кадров для трекеров.
+     *
+     * <p>У лица и у пробы по два буфера: граф читает картинку в своём потоке, и если ответ не
+     * успел прийти за отведённое время, писать в тот же буфер нельзя - трекер прочитал бы
+     * наполовину новый кадр. Второй буфер гарантирует, что читающий всегда видит целую картинку.
+     * Тело и кисть делят один буфер, потому что кадр им не отдаётся, пока они заняты.</p>
+     */
+    private final Bitmap[] faceFrames = new Bitmap[2];
+    private final Bitmap[] probeFrames = new Bitmap[2];
+    private int faceCursor;
+    private int probeCursor;
+    private Bitmap bodyFrame;
+    /** Номер кадра: по нему видно, когда делать пробу переворота. */
+    private long frameCounter;
+    /** Что делали с последним кадром: 0 лицо, 1 тело, 2 кисть, 3 проверка переворота. */
+    private volatile int cameraPhase;
+    /** Наблюдения за положением кадра и решение о перевороте. */
+    private final FlipDecision flipDecision = new FlipDecision();
     private long trackerOpenedMs;
     private long lastResultsSeen;
     private long lastResultsChangeMs;
+    /** Ждали ли мы ответа лица на последнем такте: видно в отчёте. */
+    private volatile boolean waitingForFace;
 
     public TrackingHub(Context context) {
         this.context = context.getApplicationContext();
@@ -201,7 +221,8 @@ public final class TrackingHub {
                 + ", проанализировано=" + analyzedFrames
                 + ", без лица=" + analyzedEmpty
                 + ", камер " + camera.frameWidth() + "x" + camera.frameHeight()
-                + ", " + framesPerSecond + " анализ/с";
+                + ", " + framesPerSecond + " анализ/с"
+                + ", ожидание ответа лица: " + (waitingForFace ? "да" : "нет");
     }
 
     /**
@@ -408,6 +429,16 @@ public final class TrackingHub {
      * old picture and half of the new one and reported "лицо не найдено" every other frame. The copy
      * below is what makes the analysis see a complete, frozen frame.</p>
      */
+    /**
+     * A frame arrived from the camera.
+     *
+     * <p>Три вещи делаются по-разному, потому что у них разная цена. Лицо - самое важное: кадр ему
+     * отдаётся на каждом такте, и ответ ждётся, чтобы мимика не отставала. Тело и кисть - вспомога-
+     * тельные: они разбираются через свои промежутки и асинхронно, чтобы не задерживать лицо.</p>
+     *
+     * <p>Копии делаются потому, что камера переиспользует свои буферы: без копии трекер читал бы
+     * наполовину старый кадр, и лицо пропадало бы на ровном месте.</p>
+     */
     private void onCameraFrame(Bitmap frame, long timestampMs) {
         if (frame == null) {
             return;
@@ -419,30 +450,36 @@ public final class TrackingHub {
             camera.releaseFrame(frame);
             return;
         }
-        // Кадр нельзя отдавать трекеру, пока он работает над предыдущим: MediaPipe читает картинку
-        // асинхронно, в своём потоке. Раньше кадры уходили один за другим, и граф получал то
-        // половину старого кадра, то половину нового - лицо пропадало, хотя человек никуда не уходил.
-        final boolean trackersFree = !isBusy(tracker) && !isBusy(poseTracker) && !isBusy(handTracker);
-        // Пока лицо не найдено, кадры уходят в разбор без паузы: человек только что сел перед
-        // камерой или отвернулся, и ждать следующего такта незачем. Как только лицо найдено,
-        // включается обычный интервал, чтобы не жечь батарею.
-        final FaceSignals known = lastSignals;
-        final boolean searching = known == null || (!known.found && !known.poseOnly);
-        final boolean mayAnalyze = !analyzing && trackersFree
-                && (searching || now - lastAnalysisMs >= ANALYSIS_INTERVAL_MS);
-        if (!mayAnalyze) {
+        if (analyzing) {
+            // Разбор не успевает за камерой: кадр пропускаем, но окошко уже обновлено.
             camera.releaseFrame(frame);
             return;
         }
+
+        final FaceSignals known = lastSignals;
+        final boolean searching = known == null || (!known.found && !known.poseOnly);
+        final boolean poseDue = poseTracker != null && !isBusy(poseTracker)
+                && now - lastPoseMs >= POSE_INTERVAL_MS;
+        // Проба переворота: пока лицо не найдено, каждый третий кадр уходит в разбор перевёрнутым.
+        final boolean probeDue = searching && frameCounter % PROBE_EVERY == 0
+                && flipDecision.sinceLastFlip(now) > FlipDecision.QUIET_AFTER_FLIP_MS;
+        final boolean handsDue = handTracker != null && !isBusy(handTracker)
+                && now - lastHandMs >= HAND_INTERVAL_MS;
+        final boolean bodyFree = !isBusy(poseTracker) && !isBusy(handTracker);
+
+        frameCounter++;
         lastAnalysisMs = now;
         analyzing = true;
 
-        final Bitmap stable;
+        final Bitmap faceCopy;
+        final Bitmap bodyCopy;
         try {
-            // Копия делается в один и тот же буфер: раньше на каждый кадр выделялось 3.7 МБ, и на
-            // телефоне это превращалось в постоянную сборку мусора, из-за которой картинка рвалась.
-            analysisFrame = copyInto(analysisFrame, frame);
-            stable = analysisFrame;
+            // Лицо всегда получает свежий кадр: это самая важная и самая чувствительная к задержке
+            // часть. Перевёрнутый кадр для пробы делается из той же копии.
+            faceCursor = 1 - faceCursor;
+            faceCopy = copyInto(faceFrames[faceCursor], frame);
+            faceFrames[faceCursor] = faceCopy;
+            bodyCopy = (poseDue || handsDue) && bodyFree ? copyInto(bodyFrame, frame) : null;
         } catch (Throwable error) {
             EchidnaLog.w("TRACK", "не удалось скопировать кадр: " + error);
             analyzing = false;
@@ -452,103 +489,152 @@ public final class TrackingHub {
         // Буфер камеры больше не нужен: у разбора и у окошка свои копии.
         camera.releaseFrame(frame);
 
+        cameraPhase = probeDue ? 3 : (poseDue ? 1 : (handsDue ? 2 : 0));
         analysisHandler.post(() -> {
-            Bitmap probe = null;
             try {
                 checkTrackerHealth(now);
-                // Пока лицо не найдено, раз в полторы секунды кадр уходит в разбор перевёрнутым:
-                // часть телефонов отдаёт картинку вверх ногами, и тогда лицо не находится вовсе.
-                // Если на перевёрнутом кадре лицо есть - камера поворачивается сама.
-                final boolean flipProbe = searching && now - lastFlipProbeMs > FLIP_PROBE_INTERVAL_MS;
-                if (flipProbe) {
-                    lastFlipProbeMs = now;
-                    probe = rotate180(stable);
-                }
-                lastAttemptFlipped = probe != null;
-                final FaceSignals signals = analyzeFrame(probe != null ? probe : stable);
-                if (probe != null) {
-                    probe.recycle();
-                }
-                if (signals == null) {
-                    return;
-                }
-                if (signals.found && lastAttemptFlipped) {
-                    // Лицо нашлось только на перевёрнутом кадре: камера смотрит вверх ногами.
-                    final int rotation = (camera.extraRotation() + 180) % 360;
-                    camera.setExtraRotation(rotation);
-                    addDiagnostic("кадр камеры приходит перевёрнутым: доворот " + rotation + "°");
-                    EchidnaLog.i("TRACK", "лицо нашлось на перевёрнутом кадре, доворот " + rotation);
-                }
-                analyzedFrames++;
-                if (!signals.found) {
-                    analyzedEmpty++;
-                }
-                lastSignals = signals;
-                if (signalsListener != null) {
-                    signalsListener.onSignals(signals);
-                }
+                stepAnalysis(faceCopy, bodyCopy, now, probeDue, poseDue, handsDue);
             } catch (Throwable t) {
                 EchidnaLog.w("TRACK", "анализ кадра: " + t);
-                if (probe != null && !probe.isRecycled()) {
-                    probe.recycle();
-                }
             } finally {
                 analyzing = false;
             }
         });
     }
 
-    /** Поворот кадра на 180 градусов: проверка «а не вверх ли ногами камера». */
-    private static Bitmap rotate180(Bitmap source) {
-        final android.graphics.Matrix matrix = new android.graphics.Matrix();
-        matrix.postRotate(180f);
-        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, false);
-    }
-
-    /** Runs the three trackers on one frame and merges what they saw. */
-    private FaceSignals analyzeFrame(Bitmap frame) {
-        final long now = SystemClock.elapsedRealtime();
-        final FaceTracker.Frame wrapper = new FaceTracker.Frame(frame, 0, null);
+    /**
+     * Один такт разбора: сначала лицо (и ожидание его ответа), потом тело и кисть.
+     *
+     * @param probeDue кадр этого такта уходит в разбор перевёрнутым: проверяем положение камеры
+     */
+    private void stepAnalysis(Bitmap faceCopy, Bitmap bodyCopy, long now, boolean probeDue,
+                              boolean poseDue, boolean handsDue) {
         FaceSignals face = null;
-        if (tracker != null) {
-            face = tracker.analyze(wrapper, now);
+        if (tracker != null && faceCopy != null) {
+            Bitmap forFace = faceCopy;
+            if (probeDue) {
+                probeCursor = 1 - probeCursor;
+                forFace = rotate180Into(probeFrames[probeCursor], faceCopy);
+                probeFrames[probeCursor] = forFace;
+            }
+            final long submitStart = SystemClock.elapsedRealtime();
+            final FaceSignals fresh = tracker.submit(
+                    new FaceTracker.Frame(forFace, 0, null), now, probeDue);
+            // Ожидание ответа лица видно в отчёте: по нему понятно, успевает ли граф за камерой.
+            waitingForFace = SystemClock.elapsedRealtime() - submitStart > 8L;
+            if (fresh != null) {
+                lastFaceSignals = fresh;
+            }
+            face = lastFaceSignals;
+            if (probeDue) {
+                maybeFlipCamera(now);
+            }
         }
-        FaceSignals pose = null;
-        if (poseTracker != null) {
-            if (now - lastPoseMs >= POSE_INTERVAL_MS) {
+
+        if (bodyCopy != null) {
+            final FaceTracker.Frame body = new FaceTracker.Frame(bodyCopy, 0, null);
+            if (poseDue && poseTracker != null) {
                 lastPoseMs = now;
-                final FaceSignals fresh = poseTracker.analyze(wrapper, now);
+                final FaceSignals fresh = poseTracker.analyze(body, now);
                 if (fresh != null) {
                     lastPoseSignals = fresh;
                 }
             }
-            pose = lastPoseSignals;
-        }
-        FaceSignals hands = null;
-        if (handTracker != null) {
-            if (now - lastHandMs >= HAND_INTERVAL_MS) {
+            if (handsDue && handTracker != null) {
                 lastHandMs = now;
-                final FaceSignals fresh = handTracker.analyze(wrapper, now);
+                final FaceSignals fresh = handTracker.analyze(body, now);
                 if (fresh != null) {
                     lastHandSignals = fresh;
                 }
             }
-            hands = lastHandSignals;
         }
+
+        final FaceSignals pose = lastPoseSignals;
+        final FaceSignals hands = lastHandSignals;
         if (face == null && pose == null && hands == null) {
-            return null;
+            return;
         }
-        return merge(face, pose, hands);
+        final FaceSignals signals = merge(face, pose, hands);
+        if (signals == null) {
+            return;
+        }
+        analyzedFrames++;
+        if (!signals.found) {
+            analyzedEmpty++;
+        }
+        lastSignals = signals;
+        if (signalsListener != null) {
+            signalsListener.onSignals(signals);
+        }
     }
 
     /**
-     * Builds the frame the stage works with: the face supplies the eyes, the mouth and the smile,
-     * the body supplies the shoulders, the lean and the hands.
+     * По наблюдениям трекера решает, не приходит ли кадр вверх ногами.
      *
-     * <p>When the face is gone but the body is there, the head pose of the pose tracker is used -
-     * that is how the avatar keeps following the user instead of falling back to the demo sway the
-     * moment the face model loses track.</p>
+     * <p>Камера поворачивается только тогда, когда на обычных кадрах лицо не находилось ни разу, а
+     * на перевёрнутых нашлось несколько раз. Иначе одно ложное срабатывание переворачивало камеру
+     * на весь сеанс - именно это и видел пользователь.</p>
      */
+    private void maybeFlipCamera(long now) {
+        int[] stats = null;
+        if (tracker instanceof MediaPipeFaceTracker) {
+            stats = ((MediaPipeFaceTracker) tracker).flipStats();
+        } else if (tracker instanceof MlKitFaceTracker) {
+            stats = ((MlKitFaceTracker) tracker).flipStats();
+        }
+        if (stats == null) {
+            return;
+        }
+        final int normalFrames = stats[0];
+        final int normalHits = stats[1];
+        final int flippedFrames = stats[2];
+        final int flippedHits = stats[3];
+        final boolean enough = normalFrames + flippedFrames
+                >= FlipDecision.MIN_NORMAL_FRAMES + FlipDecision.MIN_FLIPPED_FRAMES;
+        if (enough && flipDecision.evaluate(normalFrames, normalHits, flippedFrames, flippedHits, now)) {
+            final int rotation = (camera.extraRotation() + 180) % 360;
+            camera.setExtraRotation(rotation);
+            flipDecision.onFlipped(now);
+            resetFlipStats();
+            addDiagnostic("кадр камеры приходит перевёрнутым: доворот " + rotation + "°");
+            EchidnaLog.i("TRACK", "камера перевёрнута: доворот " + rotation + "°");
+            return;
+        }
+        if (enough) {
+            // Окно закрыто и ничего не подтвердилось: начинаем новое, но не чаще раза в 10 секунд.
+            addDiagnostic("положение кадра проверено: доворот не нужен");
+            EchidnaLog.i("TRACK", "проверка положения кадра: переворот не нужен (обычных кадров "
+                    + normalFrames + ", с лицом " + normalHits + "; перевёрнутых " + flippedFrames
+                    + ", с лицом " + flippedHits + ")");
+            resetFlipStats();
+            flipDecision.onFlipped(now);
+        }
+    }
+
+    private void resetFlipStats() {
+        if (tracker instanceof MediaPipeFaceTracker) {
+            ((MediaPipeFaceTracker) tracker).resetFlipStats();
+        } else if (tracker instanceof MlKitFaceTracker) {
+            ((MlKitFaceTracker) tracker).resetFlipStats();
+        }
+    }
+
+    /** Поворот кадра на 180 градусов в переиспользуемый буфер: проверка положения камеры. */
+    private static Bitmap rotate180Into(Bitmap target, Bitmap source) {
+        Bitmap out = target;
+        if (out == null || out.getWidth() != source.getWidth()
+                || out.getHeight() != source.getHeight()) {
+            out = Bitmap.createBitmap(source.getWidth(), source.getHeight(),
+                    Bitmap.Config.ARGB_8888);
+        }
+        final android.graphics.Matrix matrix = new android.graphics.Matrix();
+        matrix.postRotate(180f);
+        final android.graphics.Canvas canvas = new android.graphics.Canvas(out);
+        canvas.drawBitmap(source, matrix, null);
+        return out;
+    }
+
+    /** Runs the trackers on one frame and merges what they saw. */
     private FaceSignals merge(FaceSignals face, FaceSignals pose, FaceSignals hands) {
         final boolean anyHands = hands != null && hands.handsSeen;
         if (face == null && pose == null) {
@@ -636,6 +722,8 @@ public final class TrackingHub {
         target.handSpan = hands.handSpan;
         target.handLeft = hands.handLeft;
 
+        // Высота лица нужна для жестов: "рука дошла до подбородка" измеряется в высотах лица и
+        // поэтому работает и вблизи телефона, и вдали от него.
         final float faceHeight;
         if (face != null && face.faceHeight > 0.02f) {
             faceHeight = face.faceHeight;
@@ -644,16 +732,35 @@ public final class TrackingHub {
         } else {
             faceHeight = 0.5f;
         }
-        // Подбородок - нижняя граница лица. Y растёт вниз, поэтому он ниже центра на полвысоты.
         final float chinX = face != null ? face.centerX : 0.0f;
         final float chinY = (face != null ? face.centerY : 0.0f) + faceHeight * 0.5f;
-        target.chinTouch = HandPose.reachOf(hands.indexX, hands.indexY, hands.middleX, hands.middleY,
-                hands.handX, hands.handY, chinX, chinY, faceHeight);
-        // Поднятая рука: считается от подбородка вверх, в высотах лица.
-        final float raise = clamp01((chinY - hands.handY) / (faceHeight * 1.2f));
-        if (raise > target.handUp) {
-            target.handUp = raise;
+
+        // Каждая рука считается своей: поднятая правая не должна тянуть за собой левую.
+        target.handSeenLeft = hands.handSeenLeft;
+        target.handSeenRight = hands.handSeenRight;
+        target.handOpenLeft = hands.handOpenLeft;
+        target.handOpenRight = hands.handOpenRight;
+        target.handXLeft = hands.handXLeft;
+        target.handYLeft = hands.handYLeft;
+        target.handXRight = hands.handXRight;
+        target.handYRight = hands.handYRight;
+        if (hands.handSeenLeft) {
+            target.chinTouchLeft = HandPose.reachOf(hands.indexXLeft, hands.indexYLeft,
+                    hands.middleXLeft, hands.middleYLeft, hands.palmXLeft, hands.palmYLeft,
+                    chinX, chinY, faceHeight);
+            target.handUpLeft = clamp01((chinY - hands.handYLeft) / (faceHeight * 1.2f));
         }
+        if (hands.handSeenRight) {
+            target.chinTouchRight = HandPose.reachOf(hands.indexXRight, hands.indexYRight,
+                    hands.middleXRight, hands.middleYRight, hands.palmXRight, hands.palmYRight,
+                    chinX, chinY, faceHeight);
+            target.handUpRight = clamp01((chinY - hands.handYRight) / (faceHeight * 1.2f));
+        }
+        // Ведущая рука: на неё смотрит модель, когда показывает жест или тянется к подбородку.
+        final boolean leadingLeft = hands.handLeft || !hands.handSeenRight;
+        target.chinTouch = leadingLeft ? target.chinTouchLeft : target.chinTouchRight;
+        // Высота руки от кисти участвует в подъёме руки модели наравне с плечами от трекера позы.
+        target.handUp = Math.max(target.handUpLeft, target.handUpRight);
     }
 
     private static float clamp01(float v) {

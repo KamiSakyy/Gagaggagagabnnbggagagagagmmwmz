@@ -31,6 +31,17 @@ public interface FaceTracker {
     FaceSignals analyze(Frame frame, long timestampMs);
 
     /**
+     * Отдаёт кадр трекеру и говорит, перевёрнут ли он.
+     *
+     * <p>Перевёрнутые кадры нужны только для проверки «а не вверх ли ногами камера»: трекер сам
+     * считает, на каких кадрах лицо находится, и хаб по этим числам решает, поворачивать ли камеру.
+     * Реализация по умолчанию просто разбирает кадр.</p>
+     */
+    default FaceSignals submit(Frame frame, long timestampMs, boolean flipped) {
+        return analyze(frame, timestampMs);
+    }
+
+    /**
      * True while the tracker still works on a frame that was handed to it.
      *
      * <p>The camera reuses its bitmaps, so handing a new frame to a tracker that is not finished

@@ -70,6 +70,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
 
     private TextView statusText;
     private TextView fpsText;
+    private TextView handText;
     private TextView hintText;
     private TextView permissionText;
     private LinearLayout bottomPanel;
@@ -281,6 +282,15 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         fpsText.setTextColor(0x88FFFFFF);
         fpsText.setTextSize(11);
         bar.addView(fpsText);
+
+        // Живая строка про руку: по ней сразу видно, видит ли камера кисть и насколько она поднята.
+        // Без неё невозможно понять, почему модель не двигает рукой - трекер её не видит или у
+        // модели нет каналов рук.
+        handText = new TextView(this);
+        handText.setTextColor(0x99FFFFFF);
+        handText.setTextSize(11);
+        handText.setText("рука: не видна");
+        bar.addView(handText);
 
         final FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -787,11 +797,11 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
      * {@code SENSOR_ORIENTATION} описывает не все телефоны. Выбор запоминается.</p>
      */
     private void flipCamera() {
-        final int next = (hub.camera().extraRotation() + 90) % 360;
+        final int next = (hub.camera().extraRotation() + 180) % 360;
         hub.camera().setExtraRotation(next);
         saveSetting("camera-rotation", next);
         updateFlipButtonText();
-        toast("Камера повёрнута на " + next + "\u00b0");
+        toast(next == 0 ? "Камера: обычное положение" : "Камера перевёрнута");
     }
 
     private void updateFlipButtonText() {
@@ -799,7 +809,8 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             return;
         }
         final int rotation = hub == null ? 0 : hub.camera().extraRotation();
-        flipCameraButton.setText("камера: " + rotation + "\u00b0");
+        flipCameraButton.setText(rotation == 0
+                ? "камера: перевернуть" : "камера: вернуть (" + rotation + "\u00b0)");
     }
 
     private void populateShows() {
@@ -1034,6 +1045,12 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         previewFullScreen = prefs.getBoolean("preview-fullscreen", false);
         turnInverted = prefs.getBoolean("turn-invert", false);
         stage.mapper().setTurnInverted(turnInverted);
+        // Автоматическая проверка положения кадра раньше могла сохранить лишний поворот на 180
+        // градусов, и камера оставалась перевёрнутой навсегда. Поэтому сохранённый поворот от
+        // прежних версий сбрасывается один раз, а дальше запоминается только явное нажатие кнопки.
+        if (!prefs.getBoolean("camera-rotation-v2", false)) {
+            prefs.edit().putBoolean("camera-rotation-v2", true).remove("camera-rotation").apply();
+        }
         hub.camera().setExtraRotation(prefs.getInt("camera-rotation", 0));
         renderer.setPreviewFullScreen(previewFullScreen);
         renderer.requestModel(modelId);
@@ -1744,6 +1761,11 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                                     ? (hub.handsAvailable() ? "есть" : "модель есть, трекер нет") : "нет");
                     out.append("; каналы рук у модели: ").append(renderer.armChannels());
                     out.append("; микрофон: не используется");
+                    out.append("; сенсор камеры ").append(hub.camera().sensorOrientation())
+                            .append("°");
+                    out.append("; поворот кадра ").append(hub.camera().frameRotation())
+                            .append("° (ручной доворот ").append(hub.camera().extraRotation())
+                            .append("°)");
                     out.append("; версия ").append(appVersion());
                     out.append("; Android ").append(android.os.Build.VERSION.SDK_INT);
                     out.append("; ").append(android.os.Build.SUPPORTED_ABIS.length > 0
@@ -1816,6 +1838,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
 
     private void onSignals(FaceSignals signals) {
         stage.setSignals(signals);
+        updateHandText(signals);
         final int gesture = signals.handsSeen ? signals.fingers : -1;
         if (gesture != shownGesture) {
             shownGesture = gesture;
@@ -1829,6 +1852,28 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             lastCameraRestartAt = android.os.SystemClock.elapsedRealtime();
             handler.post(this::restartCameraAfterStall);
         }
+    }
+
+    /**
+     * Показывает в шапке, что известно про руки.
+     *
+     * <p>Человек двигает рукой и ждёт, что модель повторит. Если этого не происходит, строка сразу
+     * объясняет причину: кисть не видно, рука слишком далеко или у модели нет каналов рук.</p>
+     */
+    private void updateHandText(FaceSignals signals) {
+        if (handText == null) {
+            return;
+        }
+        if (!signals.handsSeen) {
+            handText.setText(cameraMode
+                    ? "рука: не видна (подними ладонь в кадр, телефон держи дальше от лица)"
+                    : "рука: камера выключена");
+            return;
+        }
+        final int percent = Math.round(Math.max(signals.handUpLeft, signals.handUpRight) * 100.0f);
+        final int fingers = signals.fingers;
+        handText.setText("рука: видна, пальцев " + fingers + ", подъём " + percent + "%"
+                + (signals.chinTouch > 0.5f ? ", у подбородка" : ""));
     }
 
     private void showGesture(int fingers) {

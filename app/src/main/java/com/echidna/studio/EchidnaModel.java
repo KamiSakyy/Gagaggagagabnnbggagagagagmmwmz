@@ -489,53 +489,101 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             return;
         }
         armResolved = true;
+        // Важная тонкость: getParameterIndex() никогда не возвращает -1 - для несуществующего
+        // параметра движок заводит "мнимый" индекс за пределами настоящих параметров. Поэтому
+        // проверка именно такая: настоящий канал имеет индекс меньше числа параметров модели.
+        // Раньше считалось, что каналы рук есть у всех моделей, и у Ехидны с Нахидой запись шла в
+        // пустоту - руки не двигались.
+        final int count = model.getParameterCount();
         for (int i = 0; i < ARM_PARAMETER_NAMES.length; i++) {
             final CubismId candidate = id(ARM_PARAMETER_NAMES[i]);
-            if (model.getParameterIndex(candidate) >= 0) {
+            final int index = model.getParameterIndex(candidate);
+            if (index >= 0 && index < count) {
                 armIds.put(ARM_PARAMETER_NAMES[i], candidate);
             }
         }
         if (!armIds.isEmpty()) {
             com.echidna.studio.EchidnaLog.i("MODEL", "каналы рук: " + armIds.keySet());
+        } else {
+            com.echidna.studio.EchidnaLog.i("MODEL", "у модели нет каналов рук: жест показывается лицом");
         }
     }
 
     /**
-     * Poses the arms from the tracked hand.
+     * Двигает руками по тому, что делает человек.
      *
-     * <p>Three channels per arm are used: the shoulder, the elbow and the hand. The hand reaching the
-     * chin bends the elbow so the palm comes up to the face, a raised hand lifts the shoulder, and the
-     * hand itself opens and closes with the fingers. The direction of the shoulder channel is a guess
-     * on every rig, so the user can flip it in the settings; models without these channels keep the
-     * old behaviour and show the gesture on the face and the head instead.</p>
+     * <p>Каждая рука ведёт себя отдельно: поднял правую - двигается правая рука персонажа, левая
+     * остаётся в позе модели. Когда рука идёт к подбородку, сгибается локоть и кисть поднимается к
+     * лицу; когда человек раскрывает ладонь, кисть разворачивается. Каналы выбираются по названию:
+     * плечо, предплечье, кисть и «переключатель» руки (ноль - опущена, четыре - поднята), который
+     * есть у ригов Эмилии.</p>
      */
     private void applyArms(Pose pose, float weight) {
         if (pose == null || armIds.isEmpty()) {
             return;
         }
-        if (!pose.handsSeen && pose.chinTouch <= 0.001f && pose.armY <= 0.001f) {
+        final boolean anySide = pose.handSeenLeft || pose.handSeenRight || pose.handsSeen
+                || pose.chinTouch > 0.001f || pose.armY > 0.001f;
+        if (!anySide) {
             return;
         }
         final float direction = pose.armInverted ? -1.0f : 1.0f;
-        final float lift = ParamLimits.unit(pose.armY) * direction;
-        final float chin = ParamLimits.unit(pose.chinTouch) * direction;
-        final float open = ParamLimits.unit(pose.handOpen);
         for (Map.Entry<String, CubismId> entry : armIds.entrySet()) {
             final String name = entry.getKey();
-            final float target;
-            if (name.startsWith("ParamUpperArm")) {
-                // Плечо поднимается, когда рука идёт вверх: минус - потому что канал вращает кость.
-                target = -LIFT_DEGREES * lift;
-            } else if (name.startsWith("ParamForeArm")) {
-                // Локоть сгибается к подбородку; рука вверх добавляет немного сгиба.
-                target = CHIN_DEGREES * chin + FOREARM_LIFT_DEGREES * lift;
-            } else if (name.startsWith("ParamHand")) {
-                target = (open - 0.5f) * 2.0f * HAND_DEGREES - CHIN_DEGREES * 0.2f * chin;
-            } else {
+            final boolean right = isRightSide(name);
+            float arm = right ? pose.armRight : pose.armLeft;
+            float open = right ? pose.handOpenRight : pose.handOpenLeft;
+            float chin = right ? (pose.chinRight ? pose.chinTouchRight : 0.0f)
+                               : (pose.chinLeft ? pose.chinTouchLeft : 0.0f);
+            if (arm < 0.0f && pose.handsSeen) {
+                // Запасной путь: сторона не определена, но рука видна - ведём обе руки одинаково.
+                arm = ParamLimits.unit(pose.armY);
+                open = ParamLimits.unit(pose.handOpen);
+                chin = ParamLimits.unit(pose.chinTouch);
+            }
+            if (arm < 0.0f) {
                 continue;
             }
-            blend(entry.getValue(), target, weight);
+            final float lift = ParamLimits.unit(arm);
+            final float touch = ParamLimits.unit(chin);
+            final float openness = open < 0.0f ? 0.5f : ParamLimits.unit(open);
+            if (name.startsWith("ParamUpperArm")) {
+                blend(entry.getValue(), -LIFT_DEGREES * lift * direction, weight);
+            } else if (name.startsWith("ParamShoulder")) {
+                blend(entry.getValue(), SHOULDER_DEGREES * lift * direction, weight);
+            } else if (name.startsWith("ParamForeArm")) {
+                blend(entry.getValue(),
+                        (CHIN_DEGREES * touch + FOREARM_LIFT_DEGREES * lift) * direction, weight);
+            } else if (name.startsWith("ParamHand")) {
+                blend(entry.getValue(),
+                        (openness - 0.5f) * 2.0f * HAND_DEGREES - HAND_DEGREES * 0.3f * touch,
+                        weight);
+            } else if (name.startsWith("ParamArm")) {
+                // Переключатель позы руки: поднимаем только вверх и никогда не опускаем ниже того,
+                // что нарисовала анимация, иначе рука дёргалась бы в такт каждому кадру.
+                raiseOnly(entry.getValue(), SELECTOR_RANGE * lift, weight);
+            }
         }
+    }
+
+    /** Поднимает параметр, но не опускает его: анимация остаётся в силе, пока рука не поднята. */
+    private void raiseOnly(CubismId id, float target, float weight) {
+        final float current = model.getParameterValue(id);
+        if (target <= current) {
+            return;
+        }
+        blend(id, target, weight);
+    }
+
+    /** Сторона канала по его имени: L - левая рука, R - правая. */
+    static boolean isRightSide(String name) {
+        final int base = name.startsWith("ParamUpperArm") ? "ParamUpperArm".length()
+                : name.startsWith("ParamForeArm") ? "ParamForeArm".length()
+                : name.startsWith("ParamShoulder") ? "ParamShoulder".length()
+                : name.startsWith("ParamHand") ? "ParamHand".length()
+                : "ParamArm".length();
+        final String suffix = name.substring(base);
+        return !suffix.contains("L");
     }
 
     /** Blends the procedural pose on top of what the motions and the effects produced. */
@@ -570,7 +618,7 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         applyArms(pose, weight);
     }
 
-    /** Плечо, предплечье и кисть; у каждой руки и у её дополнительных слоёв. */
+    /** Плечо, предплечье, кисть и переключатель позы руки; у каждой руки и её слоёв. */
     private static final String[] ARM_PARAMETER_NAMES = {
             "ParamUpperArmL", "ParamUpperArmR",
             "ParamForeArmL", "ParamForeArmR",
@@ -578,16 +626,22 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             "ParamUpperArmBL", "ParamUpperArmBR",
             "ParamForeArmLB", "ParamForeArmRB",
             "ParamHandLB", "ParamHandRB",
+            "ParamShoulderL", "ParamShoulderR",
+            "ParamArmL", "ParamArmR",
     };
 
-    /** На сколько градусов поднимается плечо при поднятой руке. */
-    private static final float LIFT_DEGREES = 16.0f;
+    /** На сколько градусов поднимается плечо при поднятой руке: видно даже на маленьком экране. */
+    private static final float LIFT_DEGREES = 30.0f;
     /** На сколько сгибается локоть, когда рука тянется к подбородку. */
-    private static final float CHIN_DEGREES = 26.0f;
+    private static final float CHIN_DEGREES = 30.0f;
     /** Добавка к сгибу локтя при поднятой руке. */
-    private static final float FOREARM_LIFT_DEGREES = 8.0f;
+    private static final float FOREARM_LIFT_DEGREES = 12.0f;
     /** Размах поворота кисти между кулаком и открытой ладонью. */
-    private static final float HAND_DEGREES = 12.0f;
+    private static final float HAND_DEGREES = 18.0f;
+    /** Подъём плеча: ключица тоже участвует в движении руки. */
+    private static final float SHOULDER_DEGREES = 10.0f;
+    /** Верх «переключателя» позы руки: у ригов Эмилии он идёт от нуля до четырёх. */
+    private static final float SELECTOR_RANGE = 4.0f;
 
     private void blend(CubismId id, float target, float weight) {
         final float current = model.getParameterValue(id);

@@ -193,10 +193,10 @@ public final class MediaPipeHandTracker implements FaceTracker {
             return;
         }
 
+        int handsSeen = 0;
         int bestFingers = -1;
         float bestHeight = Float.MAX_VALUE;
         boolean bestIsLeft = false;
-        int handsSeen = 0;
         for (int h = 0; h < hands.size() && h < 2; h++) {
             final List<?> points = FacePose.asList(hands.get(h));
             if (points.size() < HandPose.POINTS) {
@@ -211,39 +211,57 @@ public final class MediaPipeHandTracker implements FaceTracker {
             }
             handsSeen++;
             final int fingers = HandPose.fingerCount(xs, ys);
+            final float palmX = HandPose.palmX(xs, ys);
             final float palmY = HandPose.palmY(ys);
-            boolean better;
-            if (h == 0) {
-                better = true;
-            } else if (fingers != bestFingers) {
-                better = fingers > bestFingers;
+            // Сторона: у зеркальной картинки модели считают руку наоборот, но здесь важна рука
+            // человека, поэтому значение берётся как есть: Left - его левая.
+            final int handedness = handednessOf(result, h);
+            final boolean isLeft = handedness <= 0;
+            if (isLeft) {
+                signals.handSeenLeft = true;
+                signals.fingersLeft = fingers;
+                signals.handOpenLeft = fingers / 5.0f;
+                signals.handXLeft = palmX * 2.0f - 1.0f;
+                signals.handYLeft = palmY * 2.0f - 1.0f;
+                signals.indexXLeft = xs[HandPose.INDEX_TIP] * 2.0f - 1.0f;
+                signals.indexYLeft = ys[HandPose.INDEX_TIP] * 2.0f - 1.0f;
+                signals.middleXLeft = xs[HandPose.MIDDLE_TIP] * 2.0f - 1.0f;
+                signals.middleYLeft = ys[HandPose.MIDDLE_TIP] * 2.0f - 1.0f;
+                signals.palmXLeft = palmX * 2.0f - 1.0f;
+                signals.palmYLeft = palmY * 2.0f - 1.0f;
             } else {
-                better = palmY < bestHeight;
+                signals.handSeenRight = true;
+                signals.fingersRight = fingers;
+                signals.handOpenRight = fingers / 5.0f;
+                signals.handXRight = palmX * 2.0f - 1.0f;
+                signals.handYRight = palmY * 2.0f - 1.0f;
+                signals.indexXRight = xs[HandPose.INDEX_TIP] * 2.0f - 1.0f;
+                signals.indexYRight = ys[HandPose.INDEX_TIP] * 2.0f - 1.0f;
+                signals.middleXRight = xs[HandPose.MIDDLE_TIP] * 2.0f - 1.0f;
+                signals.middleYRight = ys[HandPose.MIDDLE_TIP] * 2.0f - 1.0f;
+                signals.palmXRight = palmX * 2.0f - 1.0f;
+                signals.palmYRight = palmY * 2.0f - 1.0f;
             }
-            if (fingers > bestFingers) {
-                bestFingers = fingers;
-            }
-            if (better) {
+
+            // Ведущая рука - та, что показывает больше пальцев, а при равенстве - поднятая выше:
+            // именно на неё смотрит человек, когда показывает жест.
+            final boolean leading = h == 0
+                    || fingers > bestFingers
+                    || (fingers == bestFingers && palmY < bestHeight);
+            if (leading) {
+                bestFingers = Math.max(bestFingers, fingers);
                 bestHeight = palmY;
-                bestIsLeft = handednessOf(result, h) < 0;
+                bestIsLeft = isLeft;
                 signals.fingers = fingers;
                 signals.handOpen = fingers / 5.0f;
-                // Точки кадра (0..1, Y вниз) в тот же масштаб, что и лицо: -1..1.
-                signals.handX = HandPose.palmX(xs, ys) * 2.0f - 1.0f;
+                signals.handX = palmX * 2.0f - 1.0f;
                 signals.handY = palmY * 2.0f - 1.0f;
                 signals.indexX = xs[HandPose.INDEX_TIP] * 2.0f - 1.0f;
                 signals.indexY = ys[HandPose.INDEX_TIP] * 2.0f - 1.0f;
                 signals.middleX = xs[HandPose.MIDDLE_TIP] * 2.0f - 1.0f;
                 signals.middleY = ys[HandPose.MIDDLE_TIP] * 2.0f - 1.0f;
                 signals.handSpan = HandPose.span(xs, ys) * 2.0f;
-                signals.handLeft = bestIsLeft;
-            }
-            if (fingers >= 0) {
-                if (handednessOf(result, h) < 0) {
-                    signals.fingersLeft = fingers;
-                } else {
-                    signals.fingersRight = fingers;
-                }
+                signals.handLeft = isLeft;
             }
         }
         if (handsSeen == 0) {

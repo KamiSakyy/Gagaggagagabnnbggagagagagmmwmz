@@ -39,7 +39,13 @@ public final class ModelStage implements Motions {
         void onStageState(String modeTitle, String detail, String currentMotion);
     }
 
-    private static final float TRANSITION = 0.45f;
+    /**
+     * Сколько длится переход между режимами.
+     *
+     * <p>Было 0,45 с: при включении камеры модель почти полсекунды выезжала из прошлой позы, и это
+     * читалось как задержка. Теперь переход короткий и резкий, как переключение сцены.</p>
+     */
+    private static final float TRANSITION = 0.18f;
     private static final float FACE_LOST_TIMEOUT = 0.5f;
 
     private final ShowPlayer showPlayer = new ShowPlayer();

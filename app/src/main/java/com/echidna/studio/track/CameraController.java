@@ -164,6 +164,16 @@ public final class CameraController {
         return extraRotation;
     }
 
+    /** Ориентация сенсора камеры из характеристик: видно в отчёте самопроверки. */
+    public int sensorOrientation() {
+        return sensorOrientation;
+    }
+
+    /** Итоговый поворот кадра с учётом сенсора, телефона и ручного доворота. */
+    public int frameRotation() {
+        return rotationDegrees();
+    }
+
     /** Поворот кадра в градусах, который сейчас применяется (для логов и самопроверки). */
     public int currentRotation() {
         return rotationDegrees();

@@ -26,9 +26,18 @@ import java.util.concurrent.TimeUnit;
  * dying.</p>
  */
 public final class MlKitFaceTracker implements FaceTracker {
+    /** Сколько ждём результат разбора, миллисекунды. */
+    private static final long RESULT_WAIT_MS = 70;
+
     private final Context context;
     private FaceDetector detector;
     private volatile FaceSignals latest;
+    /** Наблюдения за положением кадра: по ним решается, переворачивать ли камеру. */
+    private boolean lastSubmitFlipped;
+    private int normalFrames;
+    private int normalHits;
+    private int flippedFrames;
+    private int flippedHits;
 
     public MlKitFaceTracker(Context context) {
         this.context = context.getApplicationContext();
@@ -59,27 +68,36 @@ public final class MlKitFaceTracker implements FaceTracker {
             detector = null;
         }
         latest = null;
+        resetFlipStats();
     }
 
     @Override
     public FaceSignals analyze(Frame frame, long timestampMs) {
+        return submit(frame, timestampMs, false);
+    }
+
+    @Override
+    public FaceSignals submit(Frame frame, long timestampMs, boolean flipped) {
         if (detector == null || frame == null || frame.bitmap == null) {
             return null;
         }
+        lastSubmitFlipped = flipped;
         final Bitmap bitmap = frame.bitmap;
         final CountDownLatch latch = new CountDownLatch(1);
         final InputImage image = InputImage.fromBitmap(bitmap, 0);
         try {
             final Task<List<Face>> task = detector.process(image);
             task.addOnSuccessListener(faces -> {
-                latest = toSignals(faces, bitmap);
+                final FaceSignals signals = toSignals(faces, bitmap);
+                recordObservation(signals.found);
+                latest = signals;
                 latch.countDown();
             }).addOnFailureListener(error -> {
                 EchidnaLog.w("TRACK", "ML Kit: " + error.getMessage());
                 latch.countDown();
             });
-            // The analysis thread waits for the result: ML Kit pipelines internally.
-            if (!latch.await(180, TimeUnit.MILLISECONDS)) {
+            // Ждём результат, но недолго: долгое ожидание - это задержка движения на экране.
+            if (!latch.await(RESULT_WAIT_MS, TimeUnit.MILLISECONDS)) {
                 return latest;
             }
         } catch (Throwable t) {
@@ -87,6 +105,32 @@ public final class MlKitFaceTracker implements FaceTracker {
             return null;
         }
         return latest;
+    }
+
+    private void recordObservation(boolean found) {
+        if (lastSubmitFlipped) {
+            flippedFrames++;
+            if (found) {
+                flippedHits++;
+            }
+        } else {
+            normalFrames++;
+            if (found) {
+                normalHits++;
+            }
+        }
+    }
+
+    /** Наблюдения по положению кадра: сколько кадров и на скольких найдено лицо. */
+    public int[] flipStats() {
+        return new int[]{normalFrames, normalHits, flippedFrames, flippedHits};
+    }
+
+    public void resetFlipStats() {
+        normalFrames = 0;
+        normalHits = 0;
+        flippedFrames = 0;
+        flippedHits = 0;
     }
 
     private static FaceSignals toSignals(List<Face> faces, Bitmap bitmap) {

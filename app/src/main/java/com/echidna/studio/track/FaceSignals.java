@@ -115,6 +115,44 @@ public final class FaceSignals {
     /** How much the leading hand reaches the chin: 0 far, 1 touching. */
     public float chinTouch;
 
+    /**
+     * Каждая рука отдельно.
+     *
+     * <p>Одной руки мало: если человек поднял правую, левая должна остаться там, где её поставила
+     * модель. Поэтому трекер кисти заполняет данные по сторонам, а хаб считает высоту и касание
+     * подбородка для каждой руки своей. Сторона указана с точки зрения человека: left - его левая
+     * рука, right - его правая.</p>
+     */
+    public boolean handSeenLeft;
+    public boolean handSeenRight;
+    /** Подъём ладони над подбородком, 0..1, по сторонам. */
+    public float handUpLeft;
+    public float handUpRight;
+    /** Касание подбородка, 0..1, по сторонам. */
+    public float chinTouchLeft;
+    public float chinTouchRight;
+    /** Открытая ладонь, 0..1, по сторонам. */
+    public float handOpenLeft;
+    public float handOpenRight;
+    /** Ладонь в кадре, -1..1, по сторонам. */
+    public float handXLeft;
+    public float handYLeft;
+    public float handXRight;
+    public float handYRight;
+    /** Точки кисти для расчёта касания подбородка: указательный, средний, ладонь. */
+    public float indexXLeft;
+    public float indexYLeft;
+    public float middleXLeft;
+    public float middleYLeft;
+    public float palmXLeft;
+    public float palmYLeft;
+    public float indexXRight;
+    public float indexYRight;
+    public float middleXRight;
+    public float middleYRight;
+    public float palmXRight;
+    public float palmYRight;
+
     /** Timestamp of the analysed frame, milliseconds. */
     public long timeMs;
 
@@ -143,6 +181,30 @@ public final class FaceSignals {
         handLeft = other.handLeft;
         faceHeight = other.faceHeight;
         chinTouch = other.chinTouch;
+        handSeenLeft = other.handSeenLeft;
+        handSeenRight = other.handSeenRight;
+        handUpLeft = other.handUpLeft;
+        handUpRight = other.handUpRight;
+        chinTouchLeft = other.chinTouchLeft;
+        chinTouchRight = other.chinTouchRight;
+        handOpenLeft = other.handOpenLeft;
+        handOpenRight = other.handOpenRight;
+        handXLeft = other.handXLeft;
+        handYLeft = other.handYLeft;
+        handXRight = other.handXRight;
+        handYRight = other.handYRight;
+        indexXLeft = other.indexXLeft;
+        indexYLeft = other.indexYLeft;
+        middleXLeft = other.middleXLeft;
+        middleYLeft = other.middleYLeft;
+        palmXLeft = other.palmXLeft;
+        palmYLeft = other.palmYLeft;
+        indexXRight = other.indexXRight;
+        indexYRight = other.indexYRight;
+        middleXRight = other.middleXRight;
+        middleYRight = other.middleYRight;
+        palmXRight = other.palmXRight;
+        palmYRight = other.palmYRight;
         yaw = other.yaw;
         pitch = other.pitch;
         roll = other.roll;
