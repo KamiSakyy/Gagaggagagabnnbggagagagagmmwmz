@@ -26,10 +26,28 @@ import java.util.List;
  * points (17-22).</p>
  */
 public final class MediaPipePoseTracker implements FaceTracker {
-    /** The full model first: it is the most accurate one, and the CPU keeps up on a phone. */
+    /**
+     * Самая мощная модель позы: 33 точки тела, точнее всех читает плечи, наклон корпуса и кисти.
+     *
+     * <p>Она вдвое тяжелее полной, поэтому выбирается по скорости: приложение пробует её первой и
+     * само переходит на полную, если телефон не успевает считать кадры. Так «мощность» не
+     * превращается в лаги.</p>
+     */
+    public static final String MODEL_HEAVY = "models/pose_landmarker_heavy.task";
+    /** Полная модель: точная и успевает почти на любом телефоне. */
     public static final String MODEL_FULL = "models/pose_landmarker_full.task";
-    /** The lightweight model is the fallback for slower devices. */
+    /** Облегчённая модель: запасной вариант для слабых телефонов. */
     public static final String MODEL_LITE = "models/pose_landmarker_lite.task";
+    /** Все варианты по убыванию мощности. */
+    public static final String[] MODELS = {MODEL_HEAVY, MODEL_FULL, MODEL_LITE};
+    /**
+     * Сколько может занимать один разбор позы, миллисекунды.
+     *
+     * <p>Поза считается реже лица (пятнадцать раз в секунду), поэтому порог с запасом: если разбор
+     * стал дольше, телефон не успевает за камерой и модель начинает отставать - тогда приложение
+     * берёт модель попроще.</p>
+     */
+    public static final long MAX_INFERENCE_MS = 90L;
     /** Сколько ждём ответа графа, прежде чем считать кадр потерянным. */
     private static final long BUSY_TIMEOUT_MS = 500;
 
@@ -59,6 +77,9 @@ public final class MediaPipePoseTracker implements FaceTracker {
     private volatile long submitted;
     private volatile long results;
     private volatile long lastSubmitMs;
+    /** Сколько занял последний ответ модели: по нему выбирается модель позы. */
+    private volatile long lastInferenceMs;
+    private volatile long submittedAtMs;
 
     public MediaPipePoseTracker(Context context) {
         this(context, assetPathFor(context));
@@ -69,9 +90,9 @@ public final class MediaPipePoseTracker implements FaceTracker {
         this.assetPath = assetPath;
     }
 
-    /** The best pose model that is really inside the APK, or null when there is none. */
+    /** Самая мощная модель позы, которая есть в сборке, или null, если моделей нет. */
     public static String assetPathFor(Context context) {
-        for (String candidate : new String[]{MODEL_FULL, MODEL_LITE}) {
+        for (String candidate : MODELS) {
             try {
                 context.getAssets().open(candidate).close();
                 return candidate;
@@ -88,9 +109,35 @@ public final class MediaPipePoseTracker implements FaceTracker {
 
     @Override
     public String name() {
-        return assetPath != null && assetPath.contains("lite")
-                ? "MediaPipe Pose (lite)"
-                : "MediaPipe Pose (full)";
+        if (assetPath == null) {
+            return "MediaPipe Pose";
+        }
+        if (assetPath.contains("heavy")) {
+            return "MediaPipe Pose (самая мощная)";
+        }
+        return assetPath.contains("lite") ? "MediaPipe Pose (лёгкая)" : "MediaPipe Pose (полная)";
+    }
+
+    /**
+     * Сколько занял последний разбор кадра, миллисекунды.
+     *
+     * <p>По этому числу приложение понимает, успевает ли телефон за самой мощной моделью.</p>
+     */
+    public long lastInferenceMs() {
+        return lastInferenceMs;
+    }
+
+    /** Следующая модель попроще, или null, если проще уже некуда. */
+    public String simplerModel() {
+        if (assetPath == null) {
+            return null;
+        }
+        for (int i = 0; i < MODELS.length - 1; i++) {
+            if (MODELS[i].equals(assetPath)) {
+                return MODELS[i + 1];
+            }
+        }
+        return null;
     }
 
     @Override
@@ -188,6 +235,7 @@ public final class MediaPipePoseTracker implements FaceTracker {
             landmarker.detectAsync(image, timestampMs);
             submitted++;
             lastSubmitMs = android.os.SystemClock.elapsedRealtime();
+            submittedAtMs = lastSubmitMs;
         } catch (Throwable error) {
             EchidnaLog.w("POSE", "кадр не принят: " + error);
             return null;
@@ -197,6 +245,10 @@ public final class MediaPipePoseTracker implements FaceTracker {
 
     private void onResult(Object result, Object inputImage) {
         results++;
+        final long now = android.os.SystemClock.elapsedRealtime();
+        if (submittedAtMs > 0L) {
+            lastInferenceMs = now - submittedAtMs;
+        }
         if (result == null) {
             return;
         }

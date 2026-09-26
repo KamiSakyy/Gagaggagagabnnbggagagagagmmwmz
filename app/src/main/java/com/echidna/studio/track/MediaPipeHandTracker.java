@@ -78,9 +78,12 @@ public final class MediaPipeHandTracker implements FaceTracker {
                         // Две руки: жест показывают одной, но вторая не должна ломать детекцию.
                         .setNumHands(2)
                         // Пороги мягкие: потерять руку на мгновение хуже, чем редко ошибиться.
-                        .setMinHandDetectionConfidence(0.3f)
-                        .setMinHandPresenceConfidence(0.3f)
-                        .setMinTrackingConfidence(0.3f)
+                        // Пороги подняты: с мягкими настройками трекер находил «кисть» на локте и
+                        // на фоне, и модель дёргала рукой. 0,5 всё ещё принимает настоящую руку,
+                        // но мнимые кисти отсекает.
+                        .setMinHandDetectionConfidence(0.5f)
+                        .setMinHandPresenceConfidence(0.5f)
+                        .setMinTrackingConfidence(0.5f)
                         .setResultListener(this::onResult)
                         .setErrorListener(error -> EchidnaLog.w("TRACK", "руки: "
                                 + (error == null ? "неизвестная ошибка" : error.getMessage())))

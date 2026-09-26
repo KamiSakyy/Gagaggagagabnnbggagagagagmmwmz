@@ -62,19 +62,19 @@ public final class TrackingMapper {
      * меня»: чем больше число, тем плавнее и позже. Значения подобраны так, чтобы движение
      * повторялось почти сразу, но дрожание трекера не проходило на модель.</p>
      */
-    private final Damp yaw = new Damp(0.045f);
-    private final Damp pitch = new Damp(0.045f);
-    private final Damp roll = new Damp(0.055f);
-    private final Damp eyeL = new Damp(0.030f);
-    private final Damp eyeR = new Damp(0.030f);
-    private final Damp smile = new Damp(0.10f);
-    private final Damp mouth = new Damp(0.045f);
-    private final Damp centerX = new Damp(0.10f);
-    private final Damp centerY = new Damp(0.10f);
+    private final Damp yaw = new Damp(0.045f, 0.20f, 5.0f);
+    private final Damp pitch = new Damp(0.045f, 0.20f, 5.0f);
+    private final Damp roll = new Damp(0.055f, 0.20f, 5.0f);
+    private final Damp eyeL = new Damp(0.030f, 0.02f, 0.35f);
+    private final Damp eyeR = new Damp(0.030f, 0.02f, 0.35f);
+    private final Damp smile = new Damp(0.10f, 0.03f, 0.4f);
+    private final Damp mouth = new Damp(0.045f, 0.03f, 0.4f);
+    private final Damp centerX = new Damp(0.10f, 0.01f, 0.25f);
+    private final Damp centerY = new Damp(0.10f, 0.01f, 0.25f);
     private final Damp faceSize = new Damp(0.22f);
     // Тело: плечи и наклон идут от трекера позы, поэтому сглаживаются отдельно.
-    private final Damp bodyYaw = new Damp(0.10f);
-    private final Damp bodyRoll = new Damp(0.12f);
+    private final Damp bodyYaw = new Damp(0.10f, 0.4f, 8.0f);
+    private final Damp bodyRoll = new Damp(0.12f, 0.4f, 8.0f);
     private final Damp bodyLift = new Damp(0.16f);
     private final Damp bodyShift = new Damp(0.14f);
     private final Damp handUp = new Damp(0.10f);
@@ -88,8 +88,8 @@ public final class TrackingMapper {
     private boolean handSeenRight;
 
     /** Каждая рука отдельно: подъём, ладонь и касание подбородка. */
-    private final Damp handUpLeft = new Damp(0.09f);
-    private final Damp handUpRight = new Damp(0.09f);
+    private final Damp handUpLeft = new Damp(0.09f, 0.04f, 0.5f);
+    private final Damp handUpRight = new Damp(0.09f, 0.04f, 0.5f);
     private final Damp handOpenLeft = new Damp(0.08f);
     private final Damp handOpenRight = new Damp(0.08f);
     private final Damp chinTouchLeft = new Damp(0.07f);
@@ -104,9 +104,9 @@ public final class TrackingMapper {
      */
     private final EmotionDetector emotions = new EmotionDetector();
     /** Сглаживание каналов мимики: без него шум трекера дёргал бы брови по десять раз в секунду. */
-    private final Damp browAngle = new Damp(0.05f);
+    private final Damp browAngle = new Damp(0.05f, 0.04f, 0.5f);
     private final Damp browForm = new Damp(0.05f);
-    private final Damp browHeight = new Damp(0.05f);
+    private final Damp browHeight = new Damp(0.05f, 0.04f, 0.5f);
     private final Damp eyeWide = new Damp(0.04f);
     private final Damp glare = new Damp(0.06f);
     private final Damp tears = new Damp(0.35f);

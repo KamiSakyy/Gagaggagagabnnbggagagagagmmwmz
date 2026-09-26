@@ -58,8 +58,41 @@ public final class MediaPipeFaceTracker implements FaceTracker {
     private volatile int flippedFrames;
     private volatile int flippedHits;
 
+    /**
+     * Берёт самую свежую модель лица, которая есть в сборке.
+     *
+     * <p>MediaPipe отдаёт два бандла: обычный и второй выпуск (v2) с более устойчивым чтением
+     * мимики. Второй точнее, поэтому он выбирается первым; если его нет - работает обычный, и
+     * приложение ведёт себя точно так же.</p>
+     */
     public MediaPipeFaceTracker(Context context) {
-        this(context, MODEL_ASSET);
+        this(context, assetPathFor(context));
+    }
+
+    /** Лучшая модель лица, которая лежит в APK. */
+    public static String assetPathFor(Context context) {
+        for (String candidate : new String[]{MODEL_ASSET_ALTERNATIVE, MODEL_ASSET}) {
+            try {
+                context.getAssets().open(candidate).close();
+                return candidate;
+            } catch (Exception missing) {
+                // пробуем следующую
+            }
+        }
+        return MODEL_ASSET;
+    }
+
+    /** Есть ли в сборке хоть одна модель лица. */
+    public static boolean anyAssetAvailable(Context context) {
+        for (String candidate : new String[]{MODEL_ASSET_ALTERNATIVE, MODEL_ASSET}) {
+            try {
+                context.getAssets().open(candidate).close();
+                return true;
+            } catch (Exception missing) {
+                // пробуем следующую
+            }
+        }
+        return false;
     }
 
     public MediaPipeFaceTracker(Context context, String assetPath) {
@@ -531,11 +564,6 @@ public final class MediaPipeFaceTracker implements FaceTracker {
 
     /** True when the model asset is present in the APK. */
     public static boolean assetAvailable(Context context) {
-        try {
-            context.getAssets().open(MODEL_ASSET).close();
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        return anyAssetAvailable(context);
     }
 }

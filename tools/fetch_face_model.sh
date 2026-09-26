@@ -85,6 +85,13 @@ if [ -f "$DEST" ] && verify "$DEST"; then
 fi
 
 GCS="https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16"
+# Сначала пробуем вторую версию бандла: она устойчивее читает мимику. Приложение выбирает её
+# автоматически, если она лежит в сборке.
+try_url "официальный Google Storage (вторая версия, через mediapipe-assets)" \
+    "https://storage.googleapis.com/mediapipe-assets/face_landmarker_v2_with_blendshapes.task" \
+  && cp "$DEST" "$(dirname "$DEST")/face_landmarker_v2.task" \
+  && echo "вторая версия лица сохранена отдельно: face_landmarker_v2.task" \
+  && exit 0
 try_url "официальный Google Storage (релиз 1)" "$GCS/1/face_landmarker.task" \
   || try_url "официальный Google Storage (последний)" "$GCS/latest/face_landmarker.task" \
   || try_url "официальный Google Storage (blendshapes v2)" \

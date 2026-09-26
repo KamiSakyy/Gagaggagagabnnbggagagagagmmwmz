@@ -1804,6 +1804,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                                     ? (hub.handsAvailable() ? "есть" : "модель есть, трекер нет") : "нет");
                     out.append("; каналы рук у модели: ").append(renderer.armChannels());
                     out.append("; каналы мимики: ").append(renderer.emotionChannels());
+                    out.append("; границы позы: ").append(renderer.poseRanges());
                     out.append("; распознавание: ").append(hub.trackersReady() ? "готово" : "загружается");
                     // Сколько раз кадр доворачивался сам: по этому видно, врал ли производитель с
                     // углом сенсора.

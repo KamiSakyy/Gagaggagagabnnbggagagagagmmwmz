@@ -38,4 +38,12 @@ public interface AvatarBridge {
 
     /** Fades the current facial expression out. */
     void stopExpression();
+
+    /**
+     * Останавливает движение, которое сейчас играет.
+     *
+     * <p>Нужно при входе в режим камеры: недокрученное движение шоу продолжало бы двигать модель,
+     * и человек видел бы движения, которых не делал.</p>
+     */
+    void stopMotions();
 }

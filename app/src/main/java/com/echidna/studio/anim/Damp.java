@@ -9,11 +9,25 @@ package com.echidna.studio.anim;
  */
 public final class Damp {
     private final float tau;
+    /** Мёртвая зона: дрожание меньше неё не двигает модель вовсе. */
+    private final float deadband;
+    /** Скачок больше этой доли диапазона отрабатывается почти сразу: это настоящее движение. */
+    private final float jumpAt;
     private float value;
     private boolean primed;
 
     public Damp(float tauSeconds) {
+        this(tauSeconds, 0.0f, Float.MAX_VALUE);
+    }
+
+    /**
+     * @param deadband дрожание меньше этого значения игнорируется (мёртвая зона)
+     * @param jumpAt   движение больше этого значения считается настоящим и отрабатывается сразу
+     */
+    public Damp(float tauSeconds, float deadband, float jumpAt) {
         this.tau = Math.max(0.001f, tauSeconds);
+        this.deadband = Math.max(0.0f, deadband);
+        this.jumpAt = jumpAt;
     }
 
     public void reset() {
@@ -52,8 +66,19 @@ public final class Damp {
         if (dt <= 0.0f) {
             return value;
         }
+        final float diff = target - value;
+        // Мёртвая зона: трекер всегда немного шумит, и без неё модель дрожит на месте. Зато
+        // настоящее движение (оно больше скачка) отрабатывается почти мгновенно - так отклик
+        // остаётся живым, а покой - покоем.
+        if (Math.abs(diff) <= deadband) {
+            return value;
+        }
+        if (Math.abs(diff) >= jumpAt) {
+            value += diff * 0.75f;
+            return value;
+        }
         final float k = 1.0f - (float) Math.exp(-dt / tau);
-        value += (target - value) * k;
+        value += diff * k;
         return value;
     }
 

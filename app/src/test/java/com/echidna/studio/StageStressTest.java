@@ -65,6 +65,9 @@ public class StageStressTest {
         }
 
         @Override
+        public void stopMotions() {
+        }
+
         public void stopExpression() {
             lastExpression = null;
         }
@@ -241,15 +244,17 @@ public class StageStressTest {
         stage.attach(avatar, null);
         stage.toCamera();
 
-        // A device where the tracker never reports anything: the model still has to breathe.
+        // Прибор, который вообще ничего не сообщает: сцена не падает, не выдаёт NaN и не начинает
+        // играть за человека. Модель при этом спокойна - вес позы уходит в ноль.
         final Pose first = stage.tick(1.0f / 60.0f);
         final float firstAngle = first.angleY;
         for (int frame = 0; frame < 1200; frame++) {
             checkPose(stage.tick(1.0f / 60.0f), "тишина, кадр " + frame);
         }
         final Pose later = stage.tick(1.0f / 60.0f);
-        assertTrue("без сигналов модель застыла", Math.abs(later.angleY - firstAngle) > 0.05f
-                || Math.abs(later.bodyZ) > 0.05f);
+        assertTrue("без сигналов модель должна успокоиться: " + later.weight, later.weight < 0.2f);
+        assertTrue("поза не должна уезжать сама: " + Math.abs(later.angleY - firstAngle),
+                Math.abs(later.angleY - firstAngle) < 2.0f);
     }
 
     @Test

@@ -339,6 +339,7 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         textureIds.clear();
         emotionIds.clear();
         emotionResolved = false;
+        poseRanges.clear();
         motionCache.clear();
         motionIndex.clear();
         try {
@@ -476,9 +477,72 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         model.update();
     }
 
+    /**
+     * Настоящие диапазоны параметров позы у этой модели.
+     *
+     * <p>Ключ - идентификатор параметра, значения: минимум, максимум. Приложение считает позу в
+     * условных единицах (±30 градусов у головы), а у рига они могут быть другими: у Эмилии-кролика
+     * свои границы у каждого канала. Здесь эти границы читаются у самой модели и поза пересчитывается
+     * в них, поэтому движения доходят до краёв ровно так, как задумал автор рига, и ничего не
+     * обрезается посередине.</p>
+     */
+    private final Map<CubismId, float[]> poseRanges = new HashMap<CubismId, float[]>();
+    /** Имена параметров позы, для которых берутся границы модели. */
+    private static final String[] POSE_RANGE_NAMES = {
+            "ParamAngleX", "ParamAngleY", "ParamAngleZ",
+            "ParamBodyAngleX", "ParamBodyAngleY", "ParamBodyAngleZ",
+            "ParamEyeBallX", "ParamEyeBallY",
+            "ParamMouthOpenY", "ParamMouthForm", "ParamEyeLOpen", "ParamEyeROpen", "ParamCheek",
+    };
+    /** Сколько каналов позы получили границы модели: видно в отчёте. */
+    public int poseRangeCount() {
+        return poseRanges.size();
+    }
+
+    /** Собирает границы параметров позы у загруженной модели. */
+    private void resolvePoseRanges() {
+        if (!poseRanges.isEmpty() || model == null) {
+            return;
+        }
+        final int count = model.getParameterCount();
+        for (int i = 0; i < POSE_RANGE_NAMES.length; i++) {
+            final CubismId candidate = id(POSE_RANGE_NAMES[i]);
+            final int index = model.getParameterIndex(candidate);
+            if (index >= 0 && index < count) {
+                poseRanges.put(candidate, new float[]{
+                        model.getParameterMinimumValue(index),
+                        model.getParameterMaximumValue(index)});
+            }
+        }
+        EchidnaLog.i("MODEL", "границы позы у модели: " + poseRanges.size() + " каналов");
+    }
+
+    /**
+     * Пересчитывает значение позы в границы канала модели.
+     *
+     * <p>Приложение считает позу в своих единицах (угол головы ±30 градусов, раскрытие глаза 0..1).
+     * Здесь значение переносится в диапазон модели: середина остаётся серединой, край - краем.</p>
+     */
+    private float mapped(CubismId idParam, float value, float sourceMin, float sourceMax) {
+        final float[] range = poseRanges.get(idParam);
+        if (range == null || sourceMax <= sourceMin) {
+            return value;
+        }
+        final float min = range[0];
+        final float max = range[1];
+        final float t = (value - sourceMin) / (sourceMax - sourceMin);
+        final float out = min + t * (max - min);
+        return out < min ? min : (out > max ? max : out);
+    }
+
     /** Найденные у модели каналы мимики: брови, глаза, слёзы, бледность. */
     private final Map<String, Channel> emotionIds = new HashMap<String, Channel>();
     private boolean emotionResolved;
+
+    /** Сколько каналов позы настроено по границам самой модели (для отчёта). */
+    public String poseRangeReport() {
+        return poseRanges.isEmpty() ? "нет" : poseRanges.size() + " каналов по границам модели";
+    }
 
     /** Список каналов мимики этой модели: видно в отчёте самопроверки. */
     public String emotionChannels() {
@@ -604,18 +668,29 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         }
         final float weight = ParamLimits.unit(pose.weight);
         if (weight > 0.0001f) {
-            blend(idAngleX, ParamLimits.angleX(pose.angleX), weight);
-            blend(idAngleY, ParamLimits.angleY(pose.angleY), weight);
-            blend(idAngleZ, ParamLimits.angleZ(pose.angleZ), weight);
-            blend(idBodyX, ParamLimits.bodyX(pose.bodyX), weight);
-            blend(idBodyY, ParamLimits.bodyY(pose.bodyY), weight);
-            blend(idBodyZ, ParamLimits.bodyZ(pose.bodyZ), weight);
-            blend(idEyeBallX, ParamLimits.eyeBallX(pose.eyeBallX), weight);
-            blend(idEyeBallY, ParamLimits.eyeBallY(pose.eyeBallY), weight);
+            resolvePoseRanges();
+            // Значения пересчитываются в границы самой модели: если у неё угол головы доходит до
+            // 45 градусов, движение будет таким же, как в её собственных анимациях.
+            blend(idAngleX, mapped(idAngleX, pose.angleX,
+                    ParamLimits.ANGLE_X_MIN, ParamLimits.ANGLE_X_MAX), weight);
+            blend(idAngleY, mapped(idAngleY, pose.angleY,
+                    ParamLimits.ANGLE_Y_MIN, ParamLimits.ANGLE_Y_MAX), weight);
+            blend(idAngleZ, mapped(idAngleZ, pose.angleZ,
+                    ParamLimits.ANGLE_Z_MIN, ParamLimits.ANGLE_Z_MAX), weight);
+            blend(idBodyX, mapped(idBodyX, pose.bodyX,
+                    ParamLimits.BODY_X_MIN, ParamLimits.BODY_X_MAX), weight);
+            blend(idBodyY, mapped(idBodyY, pose.bodyY,
+                    ParamLimits.BODY_Y_MIN, ParamLimits.BODY_Y_MAX), weight);
+            blend(idBodyZ, mapped(idBodyZ, pose.bodyZ,
+                    ParamLimits.BODY_Z_MIN, ParamLimits.BODY_Z_MAX), weight);
+            blend(idEyeBallX, mapped(idEyeBallX, pose.eyeBallX,
+                    ParamLimits.EYE_BALL_X_MIN, ParamLimits.EYE_BALL_X_MAX), weight);
+            blend(idEyeBallY, mapped(idEyeBallY, pose.eyeBallY,
+                    ParamLimits.EYE_BALL_Y_MIN, ParamLimits.EYE_BALL_Y_MAX), weight);
             blend(idEyeLSmile, ParamLimits.unit(pose.eyeLSmile), weight);
             blend(idEyeRSmile, ParamLimits.unit(pose.eyeRSmile), weight);
-            blend(idMouthOpenY, ParamLimits.mouthOpen(pose.mouthOpenY), weight);
-            blend(idMouthForm, ParamLimits.mouthForm(pose.mouthForm), weight);
+            blend(idMouthOpenY, mapped(idMouthOpenY, pose.mouthOpenY, 0.0f, 1.0f), weight);
+            blend(idMouthForm, mapped(idMouthForm, pose.mouthForm, -1.0f, 1.0f), weight);
             blend(idBrowLY, pose.browLY, weight);
             blend(idBrowRY, pose.browRY, weight);
             blend(idCheek, ParamLimits.unit(pose.cheek), weight);
@@ -877,6 +952,16 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         expressionManager.stopAllMotions();
         expressionManager.startMotion(expression, 0.0f);
         return true;
+    }
+
+    /** Останавливает текущее движение: при входе в режим камеры ничего не должно доигрывать. */
+    @Override
+    public void stopMotions() {
+        if (model == null) {
+            return;
+        }
+        motionManager.stopAllMotions();
+        currentMotionName = null;
     }
 
     /** Fades the current expression out. */

@@ -286,6 +286,16 @@ public final class ModelStage implements Motions {
 
     public void toCamera() {
         tracker.reset();
+        // Ничего из прошлой сцены не должно доигрывать: движение шоу, авторское выражение или
+        // случайная сцена продолжали бы двигать модель в камере - то есть модель делала бы то,
+        // чего человек не делал. Режим камеры начинается с чистой модели.
+        if (model != null) {
+            model.stopMotions();
+            model.stopExpression();
+        }
+        expressionTime = 0.0f;
+        moodShown = MOOD_NONE;
+        moodHold = 0.0f;
         switchTo(Mode.CAMERA);
         EchidnaLog.i("STAGE", "режим камеры");
     }
@@ -380,9 +390,13 @@ public final class ModelStage implements Motions {
             playExpression(expressions.get(new Random().nextInt(expressions.size())));
         }
 
-        // A breath of life on top of every mode.
-        incoming.bodyY = ParamLimits.bodyY(incoming.bodyY + 0.6f * (float) Math.sin(time * 0.21f));
-        incoming.bodyZ = ParamLimits.bodyZ(incoming.bodyZ + 0.5f * (float) Math.sin(time * 0.27f + 1.0f));
+        // Раньше здесь приложение добавляло персонажу собственное покачивание корпуса («дыхание»).
+        // В режиме камеры это ровно то, чего человек не делал: модель шевелилась сама по себе.
+        // Дыхание у рига своё, внутри движка (параметр ParamBreath), и оно никуда не делось.
+        if (mode != Mode.CAMERA) {
+            incoming.bodyY = ParamLimits.bodyY(incoming.bodyY + 0.6f * (float) Math.sin(time * 0.21f));
+            incoming.bodyZ = ParamLimits.bodyZ(incoming.bodyZ + 0.5f * (float) Math.sin(time * 0.27f + 1.0f));
+        }
 
         if (transition < 1.0f) {
             transition = Math.min(1.0f, transition + dt / TRANSITION);

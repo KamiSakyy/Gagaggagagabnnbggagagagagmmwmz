@@ -78,6 +78,10 @@ public final class TrackingHub {
     /** Трекер тела и рук: работает вместе с лицом и подстраховывает его. */
     private volatile FaceTracker poseTracker;
     private long lastPoseMs;
+    /** Сколько раз подряд разбор позы оказался слишком долгим: по этому берём модель попроще. */
+    private int slowPoseFrames;
+    /** Сколько раз модель позы уже упрощалась: видно в отчёте. */
+    private volatile int poseDowngrades;
     private FaceSignals lastPoseSignals;
     /**
      * Трекер кисти: 21 точка на руку, счёт пальцев и жест «рука у подбородка».
@@ -89,6 +93,12 @@ public final class TrackingHub {
     private volatile FaceTracker handTracker;
     private long lastHandMs;
     private FaceSignals lastHandSignals;
+    /**
+     * Подтверждение рук: одиночный кадр с мнимой кистью не должен поднимать руку модели.
+     * Каждая рука проверяется отдельно.
+     */
+    private final HandGate handGateLeft = new HandGate();
+    private final HandGate handGateRight = new HandGate();
     private final FaceSignals merged = new FaceSignals();
     private SignalsListener signalsListener;
     private CameraPreviewListener previewListener;
@@ -98,6 +108,8 @@ public final class TrackingHub {
     private volatile boolean syntheticOnly;
     private long lastAnalysisMs;
     private long analyzedFrames;
+    /** Время прошлого разбора: по нему сторож рук считает, сколько прошло между кадрами. */
+    private long previousAnalysisMs;
     private long analyzedEmpty;
     private long startedAtMs;
     /** Когда последний раз проверяли, не приходит ли кадр вверх ногами. */
@@ -300,6 +312,9 @@ public final class TrackingHub {
         // загрузка моделей больше не держит нажатие кнопки.
         running = true;
         trackersReady = false;
+        handGateLeft.reset();
+        handGateRight.reset();
+        previousAnalysisMs = SystemClock.elapsedRealtime();
         // Выученный доворот сохраняется между включениями камеры: лицо в кадре не должно
         // переворачиваться на каждой остановке. Сбрасываются только наблюдения - решение будет
         // принято заново по свежим кадрам.
@@ -760,6 +775,7 @@ public final class TrackingHub {
                 if (fresh != null) {
                     lastPoseSignals = fresh;
                 }
+                watchPoseSpeed(now);
             }
             if (handsDue && handTracker != null) {
                 lastHandMs = now;
@@ -779,6 +795,9 @@ public final class TrackingHub {
         if (signals == null) {
             return;
         }
+        // Сторож рук работает на уже собранном кадре: он либо подтверждает руку, либо гасит её.
+        gateHands(signals, Math.max(0.02f, Math.min(0.2f, (now - previousAnalysisMs) / 1000.0f)));
+        previousAnalysisMs = now;
         analyzedFrames++;
         if (!signals.found) {
             analyzedEmpty++;
@@ -787,6 +806,76 @@ public final class TrackingHub {
         if (signalsListener != null) {
             signalsListener.onSignals(signals);
         }
+    }
+
+    /**
+     * Следит за тем, успевает ли телефон считать самую мощную модель позы.
+     *
+     * <p>Мощная модель точнее, но если разбор кадра стал дольше порога, кадры начинают копиться в
+     * очереди и модель отстаёт от человека - это и есть «лаги». Тогда приложение само берёт модель
+     * попроще: мощность остаётся настолько большой, насколько телефон может её нести.</p>
+     */
+    private void watchPoseSpeed(long now) {
+        final FaceTracker pose = poseTracker;
+        if (!(pose instanceof MediaPipePoseTracker)) {
+            return;
+        }
+        final MediaPipePoseTracker tracker = (MediaPipePoseTracker) pose;
+        final long inference = tracker.lastInferenceMs();
+        if (inference <= 0L) {
+            return;
+        }
+        if (inference <= MediaPipePoseTracker.MAX_INFERENCE_MS) {
+            slowPoseFrames = 0;
+            return;
+        }
+        slowPoseFrames++;
+        // Десять медленных разборов подряд - это уже не случайность, а нехватка мощности.
+        if (slowPoseFrames < 10) {
+            return;
+        }
+        slowPoseFrames = 0;
+        final String simpler = tracker.simplerModel();
+        if (simpler == null || !assetExists(simpler)) {
+            return;
+        }
+        poseDowngrades++;
+        addDiagnostic("поза: разбор " + inference + " мс, беру модель попроще - " + simpler);
+        EchidnaLog.i("TRACK", "поза: " + inference + " мс, перехожу на " + simpler);
+        rebuildPoseTracker(simpler);
+    }
+
+    /** Пересобирает трекер позы на указанной модели. */
+    private void rebuildPoseTracker(String asset) {
+        final FaceTracker previous = poseTracker;
+        poseTracker = null;
+        if (previous != null) {
+            previous.stop();
+        }
+        try {
+            final MediaPipePoseTracker pose = new MediaPipePoseTracker(context, asset);
+            pose.start();
+            poseTracker = pose;
+            lastPoseSignals = null;
+            addDiagnostic("трекер тела: " + pose.name());
+        } catch (Throwable error) {
+            EchidnaLog.w("TRACK", "не удалось пересобрать трекер позы: " + error);
+            addDiagnostic("трекер тела не поднялся на " + asset);
+        }
+    }
+
+    private boolean assetExists(String asset) {
+        try {
+            context.getAssets().open(asset).close();
+            return true;
+        } catch (Exception missing) {
+            return false;
+        }
+    }
+
+    /** Сколько раз модель позы упрощалась из-за скорости: видно в отчёте. */
+    public int poseDowngrades() {
+        return poseDowngrades;
     }
 
     /**
@@ -951,6 +1040,44 @@ public final class TrackingHub {
         }
         copyHands(hands, merged, face);
         return merged;
+    }
+
+    /**
+     * Пропускает наблюдения за руками через сторож.
+     *
+     * <p>Трекеры ошибаются: кисть находится на секунду, принимается за руку локоть или край стола.
+     * Сторож требует, чтобы рука была видна несколько кадров подряд, а подъём - чтобы он держался.
+     * Так модель поднимает руку только тогда, когда человек действительно её поднял.</p>
+     *
+     * @param frame интервал между кадрами анализа, секунды
+     */
+    private void gateHands(FaceSignals target, float frameSeconds) {
+        final HandGate.State left = handGateLeft.update(
+                target.handSeenLeft, target.handUpLeft, target.handOpenLeft >= 0.0f
+                        ? target.fingersLeft : target.fingers, frameSeconds);
+        final HandGate.State right = handGateRight.update(
+                target.handSeenRight, target.handUpRight, target.handOpenRight >= 0.0f
+                        ? target.fingersRight : target.fingers, frameSeconds);
+        // Неподтверждённая рука просто не существует: модель её не тронет.
+        target.handSeenLeft = left.visible;
+        target.handUpLeft = left.lift;
+        target.handSeenRight = right.visible;
+        target.handUpRight = right.lift;
+        if (left.visible && right.visible) {
+            target.fingers = Math.max(left.fingers, right.fingers);
+            target.handsSeen = true;
+        } else if (left.visible) {
+            target.fingers = left.fingers;
+            target.handsSeen = true;
+        } else if (right.visible) {
+            target.fingers = right.fingers;
+            target.handsSeen = true;
+        } else {
+            target.fingers = -1;
+            target.handsSeen = false;
+            target.chinTouchLeft = 0.0f;
+            target.chinTouchRight = 0.0f;
+        }
     }
 
     /**

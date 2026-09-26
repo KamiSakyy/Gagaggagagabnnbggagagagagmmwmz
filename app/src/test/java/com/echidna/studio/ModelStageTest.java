@@ -82,6 +82,9 @@ public class ModelStageTest {
         }
 
         @Override
+        public void stopMotions() {
+        }
+
         public void stopExpression() {
             lastExpression = null;
         }

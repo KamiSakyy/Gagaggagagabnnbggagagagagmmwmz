@@ -331,6 +331,11 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         return model == null ? "модель не загружена" : model.emotionChannels();
     }
 
+    /** Настроены ли каналы позы по границам самой модели: видно в отчёте. */
+    public String poseRanges() {
+        return model == null ? "модель не загружена" : model.poseRangeReport();
+    }
+
     public String armChannels() {
         final EchidnaModel current = model;
         return current == null ? "модель не загружена" : current.armChannels();

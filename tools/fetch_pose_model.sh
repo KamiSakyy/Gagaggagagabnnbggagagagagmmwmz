@@ -16,12 +16,18 @@ mkdir -p "$DIR"
 
 FULL="$DIR/pose_landmarker_full.task"
 LITE="$DIR/pose_landmarker_lite.task"
+# Самая мощная модель позы: точнее всех читает плечи, наклон корпуса и кисти. Она вдвое тяжелее
+# полной, поэтому приложение включает её только тогда, когда телефон успевает её считать, и
+# само переходит на полную, если кадры начинают отставать.
+HEAVY="$DIR/pose_landmarker_heavy.task"
 
 # The official float16 bundles of the MediaPipe 1.0.0 model collection.
 FULL_SHA="4eaa5eb7a98365221087693fcc286334cf0858e2eb6e15b506aa4a7ecdcec4ad"
 LITE_SHA="59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a"
+HEAVY_SHA="64437af838a65d18e5ba7a0d39b465540069bc8aae8308de3e318aad31fcbc7b"
 FULL_SIZE=9398198
 LITE_SIZE=5777746
+HEAVY_SIZE=30664242
 
 verify() {
   local file="$1" expected_sha="$2" expected_size="$3"
@@ -127,10 +133,12 @@ fetch_one() {
 echo "=== загрузка моделей позы (тело, наклон, руки) ==="
 ok_full=0
 ok_lite=0
+ok_heavy=0
+fetch_one heavy "$HEAVY" "$HEAVY_SHA" "$HEAVY_SIZE" && ok_heavy=1
 fetch_one full "$FULL" "$FULL_SHA" "$FULL_SIZE" && ok_full=1
 fetch_one lite "$LITE" "$LITE_SHA" "$LITE_SIZE" && ok_lite=1
 
-if [ "$ok_full" = "1" ] || [ "$ok_lite" = "1" ]; then
+if [ "$ok_full" = "1" ] || [ "$ok_lite" = "1" ] || [ "$ok_heavy" = "1" ]; then
   ls -la "$DIR"/pose_landmarker_*.task 2>/dev/null
   echo "МОДЕЛИ ПОЗЫ ГОТОВЫ"
   exit 0
