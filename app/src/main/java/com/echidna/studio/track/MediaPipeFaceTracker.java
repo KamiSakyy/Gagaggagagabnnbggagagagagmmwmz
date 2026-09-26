@@ -30,6 +30,8 @@ public final class MediaPipeFaceTracker implements FaceTracker {
     private final Context context;
     private final String assetPath;
     private FaceLandmarker landmarker;
+    /** Считает ли модель сейчас на GPU: упавший драйвер уводит её на CPU. */
+    private volatile boolean usingGpu;
     private volatile FaceSignals latest;
     private long lastTimestampMs = -1;
     private boolean running;
@@ -45,7 +47,7 @@ public final class MediaPipeFaceTracker implements FaceTracker {
 
     @Override
     public String name() {
-        return "MediaPipe Face Landmarker";
+        return usingGpu ? "MediaPipe Face Landmarker (GPU)" : "MediaPipe Face Landmarker";
     }
 
     @Override
@@ -53,19 +55,28 @@ public final class MediaPipeFaceTracker implements FaceTracker {
         // The GPU delegate is an order of magnitude faster where it is available, which is what
         // turns a laggy avatar into a mirror. It is missing on some devices, so the CPU stays as the
         // safety net and the app never loses the camera mode because of a driver.
-        BaseOptions baseOptions;
+        // Сборка с GPU может не только не собраться, но и упасть уже в первом кадре (драйвер
+        // телефона), поэтому на первую же ошибку трекер сам пересобирается на CPU и говорит об этом
+        // в логе: молча уходить на слабый ML Kit нельзя.
         try {
-            baseOptions = BaseOptions.builder()
-                    .setModelAssetPath(assetPath)
-                    .setDelegate(Delegate.GPU)
-                    .build();
+            landmarker = create(Delegate.GPU);
+            usingGpu = true;
+            EchidnaLog.i("TRACK", "MediaPipe поднят на GPU, модель " + assetPath);
         } catch (Throwable noGpu) {
-            EchidnaLog.i("TRACK", "GPU недоступен для лица, считаю на CPU");
-            baseOptions = BaseOptions.builder()
-                    .setModelAssetPath(assetPath)
-                    .setDelegate(Delegate.CPU)
-                    .build();
+            EchidnaLog.w("TRACK", "GPU для лица не завёлся (" + noGpu + "), считаю на CPU");
+            landmarker = create(Delegate.CPU);
+            usingGpu = false;
+            EchidnaLog.i("TRACK", "MediaPipe поднят на CPU, модель " + assetPath);
         }
+        running = true;
+    }
+
+    /** Собирает Face Landmarker на указанном ускорителе. */
+    private FaceLandmarker create(Delegate delegate) {
+        final BaseOptions baseOptions = BaseOptions.builder()
+                .setModelAssetPath(assetPath)
+                .setDelegate(delegate)
+                .build();
 
         final FaceLandmarker.FaceLandmarkerOptions options =
                 FaceLandmarker.FaceLandmarkerOptions.builder()
@@ -83,10 +94,29 @@ public final class MediaPipeFaceTracker implements FaceTracker {
                         .setErrorListener(error -> EchidnaLog.w("TRACK",
                                 "MediaPipe: " + (error == null ? "unknown error" : error.getMessage())))
                         .build();
+        return FaceLandmarker.createFromOptions(context, options);
+    }
 
-        landmarker = FaceLandmarker.createFromOptions(context, options);
-        running = true;
-        EchidnaLog.i("TRACK", "MediaPipe поднят, модель " + assetPath);
+    /** Драйвер GPU может отвалиться посреди работы: тогда трекер один раз уходит на CPU. */
+    private void fallBackToCpu(Throwable reason) {
+        if (!usingGpu || landmarker == null) {
+            return;
+        }
+        EchidnaLog.w("TRACK", "GPU отказал на кадре (" + reason + "), перехожу на CPU");
+        try {
+            landmarker.close();
+        } catch (RuntimeException ignored) {
+            // ничего страшного: сборку всё равно выбрасываем
+        }
+        landmarker = null;
+        try {
+            landmarker = create(Delegate.CPU);
+            usingGpu = false;
+            EchidnaLog.i("TRACK", "MediaPipe пересобран на CPU");
+        } catch (Throwable fatal) {
+            EchidnaLog.e("TRACK", "MediaPipe не собрался и на CPU", fatal);
+            running = false;
+        }
     }
 
     @Override
@@ -116,9 +146,14 @@ public final class MediaPipeFaceTracker implements FaceTracker {
 
         try {
             final MPImage image = new BitmapImageBuilder(frame.bitmap).build();
-            landmarker.detectAsync(image, timestampMs);
+            final FaceLandmarker target = landmarker;
+            if (target == null) {
+                return null;
+            }
+            target.detectAsync(image, timestampMs);
         } catch (Throwable t) {
             EchidnaLog.w("TRACK", "MediaPipe не принял кадр: " + t);
+            fallBackToCpu(t);
             return null;
         }
         // Results arrive on the MediaPipe thread: hand out the newest available one.

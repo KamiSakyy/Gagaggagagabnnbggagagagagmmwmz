@@ -30,6 +30,8 @@ public final class TrackingHub {
     }
 
     private static final long ANALYSIS_INTERVAL_MS = 33;
+    /** Как часто (мс) пробовать перевёрнутый кадр, пока лицо не найдено. */
+    private static final long FLIP_PROBE_INTERVAL_MS = 1500;
     /**
      * Тело считается реже лица: плечи и руки не мигают, а два графа MediaPipe на одном кадре
      * съедают телефон. Между замерами используется последний результат - он всё равно сглаживается.
@@ -58,6 +60,10 @@ public final class TrackingHub {
     private long analyzedFrames;
     private long analyzedEmpty;
     private long startedAtMs;
+    /** Когда последний раз проверяли, не приходит ли кадр вверх ногами. */
+    private long lastFlipProbeMs;
+    /** Был ли последний отправленный в разбор кадр перевёрнут на 180 градусов. */
+    private boolean lastAttemptFlipped;
     private volatile FaceSignals lastSignals;
     private volatile int framesPerSecond;
 
@@ -313,7 +319,13 @@ public final class TrackingHub {
             return;
         }
         final long now = SystemClock.elapsedRealtime();
-        final boolean mayAnalyze = !analyzing && now - lastAnalysisMs >= ANALYSIS_INTERVAL_MS;
+        // Пока лицо не найдено, кадры уходят в разбор без паузы: человек только что сел перед
+        // камерой или отвернулся, и ждать следующего такта незачем. Как только лицо найдено,
+        // включается обычный интервал, чтобы не жечь батарею.
+        final FaceSignals known = lastSignals;
+        final boolean searching = known == null || (!known.found && !known.poseOnly);
+        final boolean mayAnalyze = !analyzing
+                && (searching || now - lastAnalysisMs >= ANALYSIS_INTERVAL_MS);
         if (previewListener != null) {
             previewListener.onPreview(frame);
         }
@@ -333,10 +345,30 @@ public final class TrackingHub {
         }
 
         analysisHandler.post(() -> {
+            Bitmap probe = null;
             try {
-                final FaceSignals signals = analyzeFrame(stable);
+                // Пока лицо не найдено, раз в полторы секунды кадр уходит в разбор перевёрнутым:
+                // часть телефонов отдаёт картинку вверх ногами, и тогда лицо не находится вовсе.
+                // Если на перевёрнутом кадре лицо есть - камера поворачивается сама.
+                final boolean flipProbe = searching && now - lastFlipProbeMs > FLIP_PROBE_INTERVAL_MS;
+                if (flipProbe) {
+                    lastFlipProbeMs = now;
+                    probe = rotate180(stable);
+                }
+                lastAttemptFlipped = probe != null;
+                final FaceSignals signals = analyzeFrame(probe != null ? probe : stable);
+                if (probe != null) {
+                    probe.recycle();
+                }
                 if (signals == null) {
                     return;
+                }
+                if (signals.found && lastAttemptFlipped) {
+                    // Лицо нашлось только на перевёрнутом кадре: камера смотрит вверх ногами.
+                    final int rotation = (camera.extraRotation() + 180) % 360;
+                    camera.setExtraRotation(rotation);
+                    addDiagnostic("кадр камеры приходит перевёрнутым: доворот " + rotation + "°");
+                    EchidnaLog.i("TRACK", "лицо нашлось на перевёрнутом кадре, доворот " + rotation);
                 }
                 analyzedFrames++;
                 if (!signals.found) {
@@ -348,10 +380,20 @@ public final class TrackingHub {
                 }
             } catch (Throwable t) {
                 EchidnaLog.w("TRACK", "анализ кадра: " + t);
+                if (probe != null && !probe.isRecycled()) {
+                    probe.recycle();
+                }
             } finally {
                 analyzing = false;
             }
         });
+    }
+
+    /** Поворот кадра на 180 градусов: проверка «а не вверх ли ногами камера». */
+    private static Bitmap rotate180(Bitmap source) {
+        final android.graphics.Matrix matrix = new android.graphics.Matrix();
+        matrix.postRotate(180f);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, false);
     }
 
     /** Runs both trackers on one frame and merges what they saw. */

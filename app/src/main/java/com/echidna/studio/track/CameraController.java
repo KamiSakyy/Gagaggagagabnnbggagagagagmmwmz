@@ -47,8 +47,14 @@ public final class CameraController {
         void onCameraState(boolean running, String message);
     }
 
-    private static final Size PREFERRED = new Size(640, 480);
-    private static final int MAX_PIXELS = 1280 * 960;
+    /**
+     * Размер кадра для разбора. Модель лица внутри MediaPipe всё равно приводит картинку к
+     * 256x256, но чем крупнее исходный кадр, тем больше пикселей остаётся на само лицо: сидя в
+     * полутора метрах от телефона, лицо в кадре 640x480 занимает около 90 пикселей, а в кадре
+     * 1280x720 - уже 180. Это и есть разница между «лицо найдено» и «ищу лицо».
+     */
+    private static final Size PREFERRED = new Size(1280, 720);
+    private static final int MAX_PIXELS = 1920 * 1080;
 
     private final Context context;
     private HandlerThread thread;
@@ -67,6 +73,8 @@ public final class CameraController {
     private volatile long frames;
     private volatile int frameWidth;
     private volatile int frameHeight;
+    /** Доворот кадра, который пользователь выставил кнопкой: 0, 90, 180 или 270 градусов. */
+    private volatile int extraRotation;
     private final BitmapPool pool = new BitmapPool();
     private long lastFrameLog;
 
@@ -112,6 +120,31 @@ public final class CameraController {
 
     public void setTargetRotation(int rotation) {
         targetRotation = rotation;
+    }
+
+    /**
+     * Доворот камеры вручную.
+     *
+     * <p>Каждый производитель по-своему вешает фронтальный сенсор, и правило
+     * {@code SENSOR_ORIENTATION} не всегда описывает, где у картинки верх: на телефонах, где
+     * картинка приходит вверх ногами, помогает поворот на 180 градусов. Кнопка «повернуть камеру»
+     * в приложении перебирает 0, 90, 180 и 270 градусов, а выбранное значение запоминается.</p>
+     */
+    public void setExtraRotation(int degrees) {
+        final int normalized = ((degrees % 360) + 360) % 360;
+        if (normalized != extraRotation) {
+            extraRotation = normalized;
+            EchidnaLog.i("CAMERA", "доворот камеры: " + normalized + "°");
+        }
+    }
+
+    public int extraRotation() {
+        return extraRotation;
+    }
+
+    /** Поворот кадра в градусах, который сейчас применяется (для логов и самопроверки). */
+    public int currentRotation() {
+        return rotationDegrees();
     }
 
     /** Opens the camera. Returns false when it is not available or not permitted. */
@@ -379,24 +412,20 @@ public final class CameraController {
     }
 
     private int rotationDegrees() {
-        final int deviceRotation;
+        return CameraRotation.upright(frontFacing, sensorOrientation, deviceRotation(), extraRotation);
+    }
+
+    private int deviceRotation() {
         switch (targetRotation) {
             case Surface.ROTATION_90:
-                deviceRotation = 90;
-                break;
+                return 90;
             case Surface.ROTATION_180:
-                deviceRotation = 180;
-                break;
+                return 180;
             case Surface.ROTATION_270:
-                deviceRotation = 270;
-                break;
+                return 270;
             default:
-                deviceRotation = 0;
-                break;
+                return 0;
         }
-        return frontFacing
-                ? (sensorOrientation + deviceRotation) % 360
-                : (sensorOrientation - deviceRotation + 360) % 360;
     }
 
     /**

@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -99,5 +100,43 @@ public class ModelCatalogTest {
             }
             assertTrue("персонаж " + promised[i] + " потерялся", found);
         }
+    }
+
+    /**
+     * Каждый персонаж каталога обязан лежать в дереве проекта.
+     *
+     * <p>Это проверка на «в списке одна модель»: если файлы модели не упакованы, приложение честно
+     * покажет только тех, кто есть, и человек решит, что моделей вообще нет. Тест проходит по
+     * дереву assets и убеждается, что для каждой из шести моделей есть её файл-описание.</p>
+     */
+    @Test
+    public void everyCharacterOfTheCatalogIsInTheTree() {
+        final List<ModelCatalog.ModelSpec> all = ModelCatalog.all();
+        for (int i = 0; i < all.size(); i++) {
+            final ModelCatalog.ModelSpec spec = all.get(i);
+            final File file = findAsset(spec.assetDir + spec.modelJson);
+            if (spec.threeD && !file.isFile()) {
+                // Объёмная модель качается из интернета (tools/fetch_vrm_model.sh) и в репозиторий
+                // не попадает: локально её может не быть. В CI её отсутствие ловит
+                // tools/check_tree.py отдельным шагом.
+                System.out.println("тест пропущен для " + spec.id
+                        + ": файл не скачан (" + file + ")");
+                continue;
+            }
+            assertTrue("нет файла модели " + spec.id + ": " + file, file.isFile());
+            assertTrue("пустой файл модели " + spec.id, file.length() > 1024);
+        }
+    }
+
+    /** Файл из assets ищется и при запуске из корня проекта, и из каталога модуля. */
+    private static File findAsset(String path) {
+        final String[] roots = {"app/src/main/assets", "src/main/assets", "../app/src/main/assets"};
+        for (int i = 0; i < roots.length; i++) {
+            final File file = new File(roots[i], path);
+            if (file.isFile()) {
+                return file;
+            }
+        }
+        return new File(roots[0], path);
     }
 }

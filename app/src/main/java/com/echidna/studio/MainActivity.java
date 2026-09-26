@@ -23,6 +23,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+import android.widget.ScrollView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -72,6 +73,15 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private Button micButton;
     private Button galleryButton;
     private Button mirrorButton;
+    private Button moreButton;
+    private Button flipCameraButton;
+    private FrameLayout overlayPanel;
+    private ScrollView overlayScroll;
+    private TextView modelSummary;
+    private LinearLayout actionBar;
+
+    /** Цвет подписей на тёмной панели. */
+    private static final int COLOR_TEXT = 0xFFF3ECFF;
 
     private static final String PREFS = "echidna-studio";
     private static final long HIDE_UI_DELAY_MS = 6000;
@@ -80,7 +90,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private SelfTest selfTest;
 
     /** Каталог движений внутри assets и результат их фонового разбора. */
-    private static final String MOTION_DIR = "live2d/Echidna/motions";
+    private static final String MOTION_DIR = "live2d/echidna/motions";
 
     private volatile String motionsLoadReport;
     private volatile boolean motionsCheckStarted;
@@ -91,7 +101,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private String lastFps = "";
     private BackgroundStyle backgroundCursor = BackgroundStyle.NIGHT;
     private SharedPreferences prefs;
-    /** Панель персонажей: 5 моделей приложения плюс переключатели окна камеры. */
+    /** Окно персонажей: список всех моделей, настройки камеры, выражения и ползунки. */
     private LinearLayout modelPanel;
     private LinearLayout modelRow;
     private Button modelsButton;
@@ -106,7 +116,6 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private boolean expressionsVisible;
     private boolean modelsPanelVisible;
     private LinearLayout topBar;
-    private LinearLayout sideBar;
     private View hintView;
     private View errorPanel;
     private TextView errorText;
@@ -193,8 +202,10 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         glView.setOnTouchListener(this::onSurfaceTouch);
 
         root.addView(buildTopBar());
-        root.addView(buildSideBar());
         root.addView(buildBottomPanel());
+        // Окно персонажей лежит под панелью действий, чтобы нижние кнопки остались доступными.
+        root.addView(buildOverlay());
+        root.addView(buildActionBar());
         root.addView(buildHint());
         root.addView(buildPermissionBanner());
         root.addView(buildErrorPanel());
@@ -217,7 +228,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         bar.addView(title);
 
         statusText = new TextView(this);
-        statusText.setText("загрузка модели…");
+        statusText.setText("Загружаю " + ModelCatalog.byId(modelId).title + "…");
         statusText.setTextColor(0xFFB388FF);
         statusText.setTextSize(12);
         bar.addView(statusText);
@@ -235,111 +246,100 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         return bar;
     }
 
-    private View buildSideBar() {
+    /**
+     * Нижняя панель действий: иконки из набора Material и подписи под ними.
+     *
+     * <p>Раньше управление висело сбоку рядом эмодзи без подписей, и человек не понимал, где выбрать
+     * персонажа: кнопки были одинаковыми, а список моделей прятался внутри одной из них. Теперь
+     * четыре подписанные кнопки внизу — «Персонажи», «Камера», «Анимации», «Ещё».</p>
+     */
+    private View buildActionBar() {
         final LinearLayout bar = new LinearLayout(this);
-        sideBar = bar;
-        bar.setOrientation(LinearLayout.VERTICAL);
+        actionBar = bar;
+        bar.setOrientation(LinearLayout.HORIZONTAL);
+        bar.setPadding(dp(4), dp(2), dp(4), dp(2));
+        bar.setBackgroundColor(0xF2100C1C);
         bar.setLayoutParams(new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.END | Gravity.CENTER_VERTICAL));
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM));
 
-        bar.addView(sideButton("\uD83C\uDFB2", "случайная анимация", v -> renderer.requestRandomMotion()));
-        modelsButton = sideButton("\uD83D\uDC83", "персонажи и камера", v -> toggleModelPanel());
+        modelsButton = navItem(R.drawable.ic_models, "Персонажи", v -> showOverlay(true));
         bar.addView(modelsButton);
-        cameraButton = sideButton("\uD83C\uDFA5", "режим камеры", v -> toggleCameraMode());
+        cameraButton = navItem(R.drawable.ic_camera, "Камера", v -> toggleCameraMode());
         bar.addView(cameraButton);
-        galleryButton = sideButton("\uD83C\uDFAC", "все анимации", v -> toggleGallery());
+        galleryButton = navItem(R.drawable.ic_motions, "Анимации", v -> toggleGallery());
         bar.addView(galleryButton);
-        bar.addView(sideButton("\uD83C\uDFA8", "фон для OBS", v -> cycleBackground()));
-        mirrorButton = sideButton("\uD83E\uDE9E", "зеркалить", v -> toggleMirror());
-        bar.addView(mirrorButton);
-        micButton = sideButton("\uD83C\uDFA4", "микрофон", v -> toggleMic());
-        bar.addView(micButton);
-        bar.addView(sideButton("\uD83E\uDDEA", "самопроверка", v -> runSelfTest()));
-        hideButton = sideButton("\uD83D\uDC41", "спрятать интерфейс", v -> toggleUi());
-        bar.addView(hideButton);
+        moreButton = navItem(R.drawable.ic_more, "Ещё", v -> showOverlay(false));
+        bar.addView(moreButton);
         return bar;
     }
 
-    private Button sideButton(String glyph, String description, View.OnClickListener listener) {
+    /** Одна кнопка нижней панели: иконка сверху, подпись снизу. */
+    private Button navItem(int iconRes, String label, View.OnClickListener listener) {
         final Button button = new Button(this);
-        button.setText(glyph);
-        button.setTextSize(20);
-        button.setContentDescription(description);
-        button.setPadding(0, 0, 0, 0);
-        button.setBackground(rounded(0x99140F22, 24));
+        button.setText(label);
+        button.setTextSize(10);
+        button.setAllCaps(false);
+        button.setTextColor(COLOR_TEXT);
+        button.setGravity(Gravity.CENTER);
+        button.setPadding(dp(2), dp(8), dp(2), dp(8));
+        button.setBackground(rounded(0x00000000, 14));
+        button.setCompoundDrawablesWithIntrinsicBounds(0, iconRes, 0, 0);
+        button.setCompoundDrawablePadding(dp(3));
         button.setOnClickListener(listener);
-        final LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(52), dp(52));
-        params.setMargins(0, dp(5), dp(10), dp(5));
+        button.setLayoutParams(new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        return button;
+    }
+
+    /** Подсветка выбранной кнопки: сразу видно, какой режим включён. */
+    private void highlight(View item, boolean on) {
+        if (item != null) {
+            item.setBackground(rounded(on ? 0xCC5E35B1 : 0x00000000, 14));
+        }
+    }
+
+    /** Кнопка с иконкой Material и подписью — для настроек внутри окна персонажей. */
+    private Button labeledButton(int iconRes, String label, View.OnClickListener listener) {
+        final Button button = new Button(this);
+        button.setText(label);
+        button.setTextSize(12);
+        button.setAllCaps(false);
+        button.setTextColor(0xFFD8CCFF);
+        button.setBackground(rounded(0x99140F22, 16));
+        button.setCompoundDrawablesWithIntrinsicBounds(iconRes, 0, 0, 0);
+        button.setCompoundDrawablePadding(dp(6));
+        button.setOnClickListener(listener);
+        final LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, dp(44));
+        params.setMargins(dp(3), dp(3), dp(3), dp(3));
         button.setLayoutParams(params);
+        return button;
+    }
+
+    /** Круглая кнопка с одной иконкой: закрыть окно и подобное. */
+    private Button iconButton(int iconRes, String description, View.OnClickListener listener) {
+        final Button button = new Button(this);
+        button.setText("");
+        button.setContentDescription(description);
+        button.setPadding(dp(10), dp(10), dp(10), dp(10));
+        button.setBackground(rounded(0x99140F22, 22));
+        button.setCompoundDrawablesWithIntrinsicBounds(0, 0, iconRes, 0);
+        button.setOnClickListener(listener);
         return button;
     }
 
     private View buildBottomPanel() {
         bottomPanel = new LinearLayout(this);
         bottomPanel.setOrientation(LinearLayout.VERTICAL);
-        bottomPanel.setPadding(dp(10), dp(10), dp(10), dp(10));
+        bottomPanel.setPadding(dp(10), dp(8), dp(10), dp(8));
         bottomPanel.setBackground(rounded(0xB3140F22, 18));
         final FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.gravity = Gravity.BOTTOM;
-        params.setMargins(dp(10), 0, dp(10), dp(10));
+        // Панель шоу стоит над нижней панелью действий, чтобы они не закрывали друг друга.
+        params.setMargins(dp(10), 0, dp(10), dp(66));
         bottomPanel.setLayoutParams(params);
-
-        // Персонажи и настройки камеры: то же окно, что и у шоу, только выше.
-        modelPanel = new LinearLayout(this);
-        modelPanel.setOrientation(LinearLayout.VERTICAL);
-        modelPanel.setVisibility(View.GONE);
-        modelPanel.setPadding(0, dp(2), 0, dp(4));
-        bottomPanel.addView(modelPanel);
-
-        expressionRow = new LinearLayout(this);
-        expressionRow.setOrientation(LinearLayout.HORIZONTAL);
-        expressionRow.setVisibility(View.GONE);
-        final HorizontalScrollView expressionScroller = new HorizontalScrollView(this);
-        expressionScroller.setHorizontalScrollBarEnabled(false);
-        expressionScroller.addView(expressionRow);
-        modelPanel.addView(expressionScroller);
-
-        final LinearLayout cameraRow = new LinearLayout(this);
-        cameraRow.setOrientation(LinearLayout.HORIZONTAL);
-        previewWindowButton = new Button(this);
-        previewWindowButton.setText("\uD83D\uDD0E камера: окошко в углу");
-        previewWindowButton.setTextSize(12);
-        previewWindowButton.setAllCaps(false);
-        previewWindowButton.setBackground(rounded(0x99140F22, 16));
-        previewWindowButton.setTextColor(0xFFD8CCFF);
-        previewWindowButton.setOnClickListener(v -> togglePreviewWindow());
-        previewWindowButton.setVisibility(View.GONE);
-        calibrateButton = new Button(this);
-        calibrateButton.setText("\uD83C\uDFAF калибровка");
-        calibrateButton.setTextSize(12);
-        calibrateButton.setAllCaps(false);
-        calibrateButton.setBackground(rounded(0x99140F22, 16));
-        calibrateButton.setTextColor(0xFFD8CCFF);
-        calibrateButton.setOnClickListener(v -> calibrate());
-        calibrateButton.setVisibility(View.GONE);
-        turnButton = new Button(this);
-        turnButton.setTextSize(12);
-        turnButton.setAllCaps(false);
-        turnButton.setBackground(rounded(0x99140F22, 16));
-        turnButton.setTextColor(0xFFD8CCFF);
-        turnButton.setVisibility(View.GONE);
-        turnButton.setOnClickListener(v -> toggleTurnDirection());
-        cameraRow.addView(previewWindowButton, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)));
-        cameraRow.addView(calibrateButton, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)));
-        cameraRow.addView(turnButton, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)));
-        modelPanel.addView(cameraRow);
-
-        modelRow = new LinearLayout(this);
-        modelRow.setOrientation(LinearLayout.HORIZONTAL);
-        final HorizontalScrollView modelScroller = new HorizontalScrollView(this);
-        modelScroller.setHorizontalScrollBarEnabled(false);
-        modelScroller.addView(modelRow);
-        modelPanel.addView(modelScroller);
 
         showRow = new LinearLayout(this);
         showRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -349,9 +349,128 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         bottomPanel.addView(scroller);
         populateShows();
 
+        galleryPanel = new LinearLayout(this);
+        galleryPanel.setOrientation(LinearLayout.VERTICAL);
+        galleryPanel.setVisibility(View.GONE);
+        galleryPanel.setPadding(0, dp(6), 0, 0);
+        bottomPanel.addView(galleryPanel);
+
+        return bottomPanel;
+    }
+
+
+    // ------------------------------------------------------- окно персонажей
+
+    /** Перед построением окна обновляет и список моделей, и выражения лица. */
+    private void buildModelPanel() {
+        populateModels();
+        populateExpressions();
+    }
+
+    /**
+     * Окно персонажей: полный список моделей, настройки камеры, выражения и ползунки.
+     *
+     * <p>Это главное окно приложения, поэтому оно прокручивается целиком и лежит поверх модели:
+     * список моделей больше не спрятан в горизонтальную ленту, где видно только первую.</p>
+     */
+    private View buildOverlay() {
+        overlayPanel = new FrameLayout(this);
+        overlayPanel.setBackgroundColor(0xF2100C1C);
+        overlayPanel.setLayoutParams(new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        overlayPanel.setVisibility(View.GONE);
+        overlayPanel.setClickable(true);
+
+        overlayScroll = new ScrollView(this);
+        overlayScroll.setPadding(dp(12), dp(12), dp(12), dp(74));
+        overlayPanel.addView(overlayScroll, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        modelPanel = new LinearLayout(this);
+        modelPanel.setOrientation(LinearLayout.VERTICAL);
+        overlayScroll.addView(modelPanel);
+
+        final LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        final TextView title = new TextView(this);
+        title.setText("Персонажи");
+        title.setTextColor(COLOR_TEXT);
+        title.setTextSize(20);
+        title.setTypeface(title.getTypeface(), android.graphics.Typeface.BOLD);
+        title.setLayoutParams(new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        header.addView(title);
+        header.addView(iconButton(R.drawable.ic_close, "закрыть", v -> hideOverlay()));
+        modelPanel.addView(header);
+
+        modelSummary = new TextView(this);
+        modelSummary.setTextColor(0xFFB388FF);
+        modelSummary.setTextSize(12);
+        modelSummary.setPadding(0, dp(2), 0, dp(8));
+        modelPanel.addView(modelSummary);
+
+        modelPanel.addView(sectionTitle("Выбери персонажа"));
+        modelRow = new LinearLayout(this);
+        modelRow.setOrientation(LinearLayout.VERTICAL);
+        modelPanel.addView(modelRow);
+
+        modelPanel.addView(sectionTitle("Камера"));
+        previewWindowButton = labeledButton(R.drawable.ic_eye, "камера: окошко в углу",
+                v -> togglePreviewWindow());
+        previewWindowButton.setVisibility(View.GONE);
+        calibrateButton = labeledButton(R.drawable.ic_check, "калибровка", v -> calibrate());
+        calibrateButton.setVisibility(View.GONE);
+        turnButton = labeledButton(R.drawable.ic_flip, "поворот: обычно",
+                v -> toggleTurnDirection());
+        turnButton.setVisibility(View.GONE);
+        flipCameraButton = labeledButton(R.drawable.ic_camera, "камера: 0\u00b0",
+                v -> flipCamera());
+        flipCameraButton.setVisibility(View.GONE);
+        final LinearLayout cameraRow = new LinearLayout(this);
+        cameraRow.setOrientation(LinearLayout.HORIZONTAL);
+        cameraRow.addView(previewWindowButton);
+        cameraRow.addView(calibrateButton);
+        cameraRow.addView(turnButton);
+        cameraRow.addView(flipCameraButton);
+        final HorizontalScrollView cameraScroller = new HorizontalScrollView(this);
+        cameraScroller.setHorizontalScrollBarEnabled(false);
+        cameraScroller.addView(cameraRow);
+        modelPanel.addView(cameraScroller);
+
+        modelPanel.addView(sectionTitle("Выражения лица"));
+        expressionRow = new LinearLayout(this);
+        expressionRow.setOrientation(LinearLayout.HORIZONTAL);
+        final HorizontalScrollView expressionScroller = new HorizontalScrollView(this);
+        expressionScroller.setHorizontalScrollBarEnabled(false);
+        expressionScroller.addView(expressionRow);
+        modelPanel.addView(expressionScroller);
+
+        modelPanel.addView(sectionTitle("Ещё"));
+        final LinearLayout settingsRow = new LinearLayout(this);
+        settingsRow.setOrientation(LinearLayout.VERTICAL);
+        final LinearLayout settingsLine1 = new LinearLayout(this);
+        settingsLine1.setOrientation(LinearLayout.HORIZONTAL);
+        final LinearLayout settingsLine2 = new LinearLayout(this);
+        settingsLine2.setOrientation(LinearLayout.HORIZONTAL);
+        settingsLine1.addView(labeledButton(R.drawable.ic_palette, "фон", v -> cycleBackground()));
+        settingsLine1.addView(labeledButton(R.drawable.ic_flip, "случайная анимация",
+                v -> renderer.requestRandomMotion()));
+        mirrorButton = labeledButton(R.drawable.ic_flip, "зеркалить", v -> toggleMirror());
+        settingsLine1.addView(mirrorButton);
+        settingsLine2.addView(labeledButton(R.drawable.ic_check, "самопроверка",
+                v -> runSelfTest()));
+        micButton = labeledButton(R.drawable.ic_mic, "микрофон", v -> toggleMic());
+        settingsLine2.addView(micButton);
+        hideButton = labeledButton(R.drawable.ic_eye, "спрятать интерфейс", v -> toggleUi());
+        settingsLine2.addView(hideButton);
+        settingsRow.addView(settingsLine1);
+        settingsRow.addView(settingsLine2);
+        modelPanel.addView(settingsRow);
+
         sliderRow = new LinearLayout(this);
         sliderRow.setOrientation(LinearLayout.VERTICAL);
-        sliderRow.setVisibility(View.GONE);
+        sliderRow.setPadding(0, dp(8), 0, 0);
         sliderRow.addView(slider("Размер модели", 40, 240, 100, value -> {
             renderer.setModelScale(value / 100.0f);
             saveSetting("scale", value);
@@ -366,53 +485,117 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             stage.setMicGain(gain);
             saveSetting("gain", value);
         }));
-        bottomPanel.addView(sliderRow);
+        modelPanel.addView(sliderRow);
 
-        galleryPanel = new LinearLayout(this);
-        galleryPanel.setOrientation(LinearLayout.VERTICAL);
-        galleryPanel.setVisibility(View.GONE);
-        galleryPanel.setPadding(0, dp(6), 0, 0);
-        bottomPanel.addView(galleryPanel);
-
-        return bottomPanel;
+        return overlayPanel;
     }
 
-    /** Кнопка сбоку: список моделей, выражений и настроек камеры. */
-    private void buildModelPanel() {
-        populateModels();
-        populateExpressions();
+    private TextView sectionTitle(String text) {
+        final TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextColor(0xFFB388FF);
+        view.setTextSize(13);
+        view.setPadding(0, dp(12), 0, dp(4));
+        return view;
     }
 
+    /**
+     * Открывает окно персонажей.
+     *
+     * @param modelsFirst true — показать список моделей сверху; false — прокрутить к настройкам
+     *                    (на это ведёт кнопка «Ещё»)
+     */
+    private void showOverlay(boolean modelsFirst) {
+        modelsPanelVisible = true;
+        buildModelPanel();
+        if (overlayPanel != null) {
+            overlayPanel.setVisibility(View.VISIBLE);
+        }
+        highlight(modelsButton, modelsFirst);
+        highlight(moreButton, !modelsFirst);
+        if (overlayScroll != null) {
+            overlayScroll.post(() -> overlayScroll.fullScroll(
+                    modelsFirst ? ScrollView.FOCUS_UP : ScrollView.FOCUS_DOWN));
+        }
+    }
+
+    private void hideOverlay() {
+        modelsPanelVisible = false;
+        if (overlayPanel != null) {
+            overlayPanel.setVisibility(View.GONE);
+        }
+        highlight(modelsButton, false);
+        highlight(moreButton, false);
+    }
+
+    /** Список всех моделей сборки: строки, а не лента, где видно только первую кнопку. */
     private void populateModels() {
-        if (modelRow == null) {
-            return;
+        final List<ModelCatalog.ModelSpec> all = ModelCatalog.available(getAssets());
+        if (modelRow != null) {
+            modelRow.removeAllViews();
+            for (int i = 0; i < all.size(); i++) {
+                final ModelCatalog.ModelSpec spec = all.get(i);
+                final boolean active = spec.id.equals(modelId);
+                final LinearLayout row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.setPadding(dp(10), dp(8), dp(10), dp(8));
+                row.setBackground(rounded(active ? 0xCC5E35B1 : 0x33FFFFFF, 14));
+                row.setOnClickListener(v -> selectModel(spec.id));
+
+                final TextView emoji = new TextView(this);
+                emoji.setText(spec.emoji);
+                emoji.setTextSize(24);
+                emoji.setPadding(0, 0, dp(10), 0);
+                row.addView(emoji);
+
+                final LinearLayout texts = new LinearLayout(this);
+                texts.setOrientation(LinearLayout.VERTICAL);
+                texts.setLayoutParams(new LinearLayout.LayoutParams(0,
+                        ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                final TextView name = new TextView(this);
+                name.setText(spec.title);
+                name.setTextColor(COLOR_TEXT);
+                name.setTextSize(15);
+                texts.addView(name);
+                final TextView blurb = new TextView(this);
+                blurb.setText(spec.blurb);
+                blurb.setTextColor(0xFFB9AED6);
+                blurb.setTextSize(11);
+                texts.addView(blurb);
+                row.addView(texts);
+
+                if (active) {
+                    final TextView mark = new TextView(this);
+                    mark.setText("\u2713 выбрано");
+                    mark.setTextColor(COLOR_TEXT);
+                    mark.setTextSize(11);
+                    row.addView(mark);
+                }
+
+                final LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                params.setMargins(0, dp(3), 0, dp(3));
+                row.setLayoutParams(params);
+                modelRow.addView(row);
+            }
         }
-        modelRow.removeAllViews();
-        // В списке только те персонажи, чьи файлы действительно есть в сборке.
-        List<ModelCatalog.ModelSpec> all = ModelCatalog.available(getAssets());
-        if (all.isEmpty()) {
-            all = ModelCatalog.all();
+
+        final ModelCatalog.ModelSpec current = ModelCatalog.byId(modelId);
+        if (modelSummary != null) {
+            modelSummary.setText("На экране: " + current.emoji + " " + current.title
+                    + " \u00b7 в APK " + all.size() + " из " + ModelCatalog.all().size()
+                    + " моделей");
         }
-        for (int i = 0; i < all.size(); i++) {
-            final ModelCatalog.ModelSpec spec = all.get(i);
-            final Button button = new Button(this);
-            button.setText(spec.emoji + " " + spec.title);
-            button.setTextSize(12);
-            button.setAllCaps(false);
-            button.setContentDescription(spec.blurb);
-            final boolean active = spec.id.equals(modelId);
-            button.setBackground(rounded(active ? 0xCC5E35B1 : 0x99140F22, 16));
-            button.setTextColor(active ? 0xFFFFFFFF : 0xFFD8CCFF);
-            button.setOnClickListener(v -> selectModel(spec.id));
-            final LinearLayout.LayoutParams params =
-                    new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(40));
-            params.setMargins(dp(4), dp(2), dp(4), dp(2));
-            button.setLayoutParams(params);
-            modelRow.addView(button);
+        if (previewWindowButton != null) {
+            previewWindowButton.setText(previewFullScreen
+                    ? "камера: во весь экран" : "камера: окошко в углу");
         }
-        previewWindowButton.setText(previewFullScreen ? "\uD83D\uDD0D камера: во весь экран"
-                : "\uD83D\uDD0E камера: окошко в углу");
-        calibrateButton.setText("\uD83C\uDFAF калибровка");
+        if (calibrateButton != null) {
+            calibrateButton.setText("калибровка");
+        }
+        updateTurnButtonText();
+        updateFlipButtonText();
     }
 
     private void selectModel(String id) {
@@ -423,9 +606,10 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         populateExpressions();
         toast(ModelCatalog.byId(id).title + ": " + ModelCatalog.byId(id).blurb);
         EchidnaLog.i("APP", "выбрана модель " + id);
+        // Окно остаётся открытым: видно, что модель сменилась и какая теперь выбрана.
     }
 
-    /** Выражения текущей модели: у Нахиды их тринадцать, у Ехидны ни одного. */
+    /** Выражения текущей модели: у Нахиды их тринадцать, у объёмного персонажа восемнадцать. */
     private void populateExpressions() {
         if (expressionRow == null) {
             return;
@@ -435,31 +619,23 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         expressionRow.setVisibility(names.isEmpty() ? View.GONE : View.VISIBLE);
         for (int i = 0; i < names.size(); i++) {
             final String name = names.get(i);
-            final Button button = new Button(this);
-            button.setText(name);
-            button.setTextSize(11);
-            button.setAllCaps(false);
-            button.setBackground(rounded(0x99140F22, 14));
-            button.setTextColor(0xFFD8CCFF);
-            button.setOnClickListener(v -> {
+            expressionRow.addView(labeledButton(0, name, v -> {
                 stage.playExpression(name);
                 toast("Выражение: " + name);
-            });
-            final LinearLayout.LayoutParams params =
-                    new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(36));
-            params.setMargins(dp(4), dp(2), dp(4), dp(2));
-            button.setLayoutParams(params);
-            expressionRow.addView(button);
+            }));
         }
     }
 
-    private void toggleModelPanel() {
-        modelsPanelVisible = !modelsPanelVisible;
-        if (modelsPanelVisible) {
-            buildModelPanel();
-        }
-        modelPanel.setVisibility(modelsPanelVisible ? View.VISIBLE : View.GONE);
-        modelsButton.setText(modelsPanelVisible ? "\u2716" : "\uD83D\uDC83");
+    // ------------------------------------------------------- камера
+
+    /** Переключает окно камеры между углом и полным экраном. */
+    private void togglePreviewWindow() {
+        previewFullScreen = !previewFullScreen;
+        renderer.setPreviewFullScreen(previewFullScreen);
+        saveSetting("preview-fullscreen", previewFullScreen);
+        previewWindowButton.setText(previewFullScreen
+                ? "камера: во весь экран" : "камера: окошко в углу");
+        toast(previewFullScreen ? "Камера на весь экран" : "Камера окошком в углу");
     }
 
     /**
@@ -468,26 +644,27 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
      */
     private void calibrate() {
         if (!cameraMode) {
-            toast("Калибровка работает в режиме камеры");
+            toast("Сначала включи режим камеры");
             return;
         }
-        stage.calibrate();
-        toast("Смотри прямо в камеру пару секунд — снимаю нейтраль");
+        stage.mapper().calibrate();
+        toast("Нейтраль снята: теперь это твоё «прямо»");
+        EchidnaLog.i("APP", "калибровка: нейтраль снята кнопкой");
     }
 
     private void updateTurnButtonText() {
         if (turnButton == null) {
             return;
         }
-        turnButton.setText(turnInverted ? "↔ поворот: наоборот" : "↔ поворот: обычно");
+        turnButton.setText(turnInverted ? "поворот: наоборот" : "поворот: обычно");
     }
 
     /**
      * Направление поворота головы.
      *
-     * <p>Кто-то сидит перед камерой так, что поворот головы уходит в другую сторону: у камер
-     * телефонов и у разных версий трекера знак поворота отличается. Кнопка меняет направление, не
-     * трогая зеркалирование превью, и запоминается.</p>
+     * <p>У камер телефонов и у разных версий трекера знак поворота отличается: кто-то сидит перед
+     * камерой так, что поворот головы уходит в другую сторону. Кнопка меняет направление, не трогая
+     * зеркалирование превью, и запоминается.</p>
      */
     private void toggleTurnDirection() {
         turnInverted = !turnInverted;
@@ -497,13 +674,27 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         toast(turnInverted ? "Поворот головы: в другую сторону" : "Поворот головы: как обычно");
     }
 
-    private void togglePreviewWindow() {
-        previewFullScreen = !previewFullScreen;
-        renderer.setPreviewFullScreen(previewFullScreen);
-        saveSetting("preview-fullscreen", previewFullScreen);
-        populateModels();
-        toast(previewFullScreen ? "Камера во весь экран, модель поверх"
-                : "Камера в углу, модель во весь экран");
+    /**
+     * Поворот самой картинки камеры.
+     *
+     * <p>Если превью и распознавание видят человека вверх ногами, кнопка перебирает 0, 90, 180 и 270
+     * градусов: производители по-разному вешают фронтальный сенсор, и правило
+     * {@code SENSOR_ORIENTATION} описывает не все телефоны. Выбор запоминается.</p>
+     */
+    private void flipCamera() {
+        final int next = (hub.camera().extraRotation() + 90) % 360;
+        hub.camera().setExtraRotation(next);
+        saveSetting("camera-rotation", next);
+        updateFlipButtonText();
+        toast("Камера повёрнута на " + next + "\u00b0");
+    }
+
+    private void updateFlipButtonText() {
+        if (flipCameraButton == null) {
+            return;
+        }
+        final int rotation = hub == null ? 0 : hub.camera().extraRotation();
+        flipCameraButton.setText("камера: " + rotation + "\u00b0");
     }
 
     private void populateShows() {
@@ -566,7 +757,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
 
     private View buildHint() {
         hintText = new TextView(this);
-        hintText.setText("Тяни по экрану — Ехидна смотрит за пальцем");
+        hintText.setText("Тяни по экрану — модель смотрит за пальцем");
         hintText.setTextColor(0x77FFFFFF);
         hintText.setTextSize(11);
         hintText.setGravity(Gravity.CENTER);
@@ -711,8 +902,11 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         uiHidden = !uiHidden;
         final int visibility = uiHidden ? View.GONE : View.VISIBLE;
         topBar.setVisibility(visibility);
-        sideBar.setVisibility(visibility);
+        actionBar.setVisibility(visibility);
         bottomPanel.setVisibility(visibility);
+        if (uiHidden) {
+            hideOverlay();
+        }
         if (hintView != null) {
             hintView.setVisibility(View.GONE);
         }
@@ -735,6 +929,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         previewFullScreen = prefs.getBoolean("preview-fullscreen", false);
         turnInverted = prefs.getBoolean("turn-invert", false);
         stage.mapper().setTurnInverted(turnInverted);
+        hub.camera().setExtraRotation(prefs.getInt("camera-rotation", 0));
         renderer.setPreviewFullScreen(previewFullScreen);
         renderer.requestModel(modelId);
         final int scale = prefs.getInt("scale", 100);
@@ -997,6 +1192,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     }
 
     private void toggleCameraMode() {
+        hideOverlay();
         if (cameraMode) {
             disableCameraMode();
         } else {
@@ -1027,8 +1223,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             micEnabled = audio.start();
             stage.setMicEnabled(micEnabled);
         }
-        cameraButton.setText("\u23F9");
-        sliderRow.setVisibility(View.VISIBLE);
+        highlight(cameraButton, true);
         if (previewWindowButton != null) {
             previewWindowButton.setVisibility(View.VISIBLE);
         }
@@ -1039,7 +1234,11 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             turnButton.setVisibility(View.VISIBLE);
             updateTurnButtonText();
         }
-        micButton.setText(micEnabled ? "\uD83D\uDD34" : "\uD83C\uDFA4");
+        if (flipCameraButton != null) {
+            flipCameraButton.setVisibility(View.VISIBLE);
+            updateFlipButtonText();
+        }
+        updateMicButtonText();
         toast(ModelCatalog.byId(modelId).title + " повторяет твою мимику и повороты тела");
         EchidnaLog.i("APP", "режим камеры включён, трекер " + hub.trackerName());
     }
@@ -1049,8 +1248,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         hub.stop();
         renderer.setPreviewEnabled(false);
         renderer.requestIdle();
-        cameraButton.setText("\uD83C\uDFA5");
-        sliderRow.setVisibility(View.GONE);
+        highlight(cameraButton, false);
         if (previewWindowButton != null) {
             previewWindowButton.setVisibility(View.GONE);
         }
@@ -1059,6 +1257,9 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         }
         if (turnButton != null) {
             turnButton.setVisibility(View.GONE);
+        }
+        if (flipCameraButton != null) {
+            flipCameraButton.setVisibility(View.GONE);
         }
         toast("Режим камеры выключен");
     }
@@ -1080,7 +1281,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             audio.stop();
             stage.setMicEnabled(false);
             stage.setMicLevel(0.0f);
-            micButton.setText("\uD83C\uDFA4");
+            updateMicButtonText();
             toast("Липсинк по микрофону выключен");
             return;
         }
@@ -1091,8 +1292,14 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         }
         micEnabled = audio.start();
         stage.setMicEnabled(micEnabled);
-        micButton.setText(micEnabled ? "\uD83D\uDD34" : "\uD83C\uDFA4");
+        updateMicButtonText();
         toast(micEnabled ? "Липсинк по микрофону включён" : "Микрофон недоступен");
+    }
+
+    private void updateMicButtonText() {
+        if (micButton != null) {
+            micButton.setText(micEnabled ? "микрофон: да" : "микрофон: нет");
+        }
     }
 
     private void cycleBackground() {
@@ -1110,14 +1317,17 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         renderer.setPreviewMirror(previewMirror);
         stage.mapper().setMirrored(previewMirror);
         saveSetting("mirror", previewMirror);
-        mirrorButton.setText(previewMirror ? "\uD83E\uDE9E" : "\uD83D\uDD04");
+        if (mirrorButton != null) {
+            mirrorButton.setText(previewMirror ? "зеркалить: да" : "зеркалить: нет");
+        }
         toast(previewMirror ? "Зеркально, как в зеркале" : "Без зеркала");
     }
 
     private void toggleGallery() {
+        hideOverlay();
         if (galleryPanel.getVisibility() == View.VISIBLE) {
             galleryPanel.setVisibility(View.GONE);
-            galleryButton.setText("\uD83C\uDFAC");
+            highlight(galleryButton, false);
         } else {
             showGallery();
         }
@@ -1128,7 +1338,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             populateGallery();
         }
         galleryPanel.setVisibility(View.VISIBLE);
-        galleryButton.setText("\u2716");
+        highlight(galleryButton, true);
     }
 
     private void populateGallery() {
@@ -1319,7 +1529,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                     renderer.setPreviewEnabled(false);
                     renderer.requestIdle();
                     cameraMode = false;
-                    cameraButton.setText("\uD83C\uDFA5");
+                    highlight(cameraButton, false);
                 }
 
                 @Override
@@ -1418,7 +1628,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         renderer.requestCamera();
         renderer.setPreviewEnabled(true);
         startCamera();
-        cameraButton.setText("\u23F9");
+        highlight(cameraButton, true);
     }
 
     private void requestPermissions() {
@@ -1502,7 +1712,8 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     @Override
     public void onFps(float fps) {
         lastFps = String.format(Locale.US, "%.1f fps", fps);
-        runOnUiThread(() -> fpsText.setText(lastFps + " · " + hub.trackerName()
+        runOnUiThread(() -> fpsText.setText(lastFps + " · " + ModelCatalog.byId(modelId).title
+                + " · " + hub.trackerName()
                 + (cameraMode ? " · кадров " + hub.camera().frameCount() : "")));
     }
 

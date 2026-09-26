@@ -46,7 +46,11 @@ def count_motions(directory):
 
 
 def main(argv):
-    root = argv[1] if len(argv) > 1 else "."
+    allow_missing_vrm = "--allow-missing-vrm" in argv
+    root = "."
+    for argument in argv[1:]:
+        if not argument.startswith("--"):
+            root = argument
     problems = []
     warnings = []
 
@@ -77,9 +81,13 @@ def main(argv):
         print("объёмная модель: {0} байт".format(size))
         if size < 1024 * 1024:
             problems.append("файл объёмной модели подозрительно мал: {0} байт".format(size))
-    else:
+    elif allow_missing_vrm:
         warnings.append("нет app/src/main/assets/three/character.vrm "
                         "(качается: tools/fetch_vrm_model.sh)")
+    else:
+        # В сборке файл обязателен: без него шестого персонажа в APK не будет.
+        problems.append("нет app/src/main/assets/three/character.vrm - "
+                        "объёмной модели не будет в сборке (tools/fetch_vrm_model.sh)")
 
     catalog = os.path.join(root, "app/src/main/java/com/echidna/studio/ModelCatalog.java")
     if os.path.isfile(catalog):

@@ -88,6 +88,7 @@ jobs:
         run: |
           {
             python3 tools/check_resources.py .
+            python3 tools/check_ui.py .
             python3 tools/check_startup_order.py .
             python3 tools/fix_motion_meta.py --check app/src/main/assets/live2d
             python3 tools/fix_native_alignment.py --check app/libs/Live2DCubismCore.aar
@@ -211,7 +212,7 @@ jobs:
             echo "нативных библиотек: $(unzip -l "$APK" | grep -cE '[.]so$' || true)"
             echo "архитектуры: $(unzip -l "$APK" | grep -o 'lib/[a-z0-9_-]*/' | sort -u | tr '\\n' ' ')"
             echo "модель трекера внутри: $(unzip -l "$APK" | grep -c 'face_landmarker.task' || true)"
-            echo "модель Ехидны внутри: $(unzip -l "$APK" | grep -c 'Echidna' || true)"
+            echo "модели-каталоги в APK: $(unzip -l "$APK" | grep -oE 'assets/live2d/[a-z_]+/model3.json' | sort -u | tr '\n' ' ')"
             echo "модели тела внутри: $(unzip -l "$APK" | grep -c 'pose_landmarker' || true)"
             echo "файлы моделей в APK: $(unzip -l "$APK" | grep -oE 'assets/models/[a-z_]*\.task' | sort -u | tr '\n' ' ')"
             echo "3D модель внутри: $(unzip -l "$APK" | grep -c 'three/character.vrm' || true)"

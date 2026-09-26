@@ -29,8 +29,10 @@ compile() {          # compile <output dir> <sources file> <classpath>
 
 echo "=== 0/6 содержимое дерева, ресурсы, порядок запуска, счётчики движений, выравнивание ==="
 # Первым делом: не откатилось ли дерево к версии без движка 3D и четырёх моделей.
-python3 "$ROOT/tools/check_tree.py" "$ROOT"
+# Локально объёмной модели может не быть: она качается из интернета.
+python3 "$ROOT/tools/check_tree.py" --allow-missing-vrm "$ROOT"
 python3 "$ROOT/tools/check_resources.py" "$ROOT"
+python3 "$ROOT/tools/check_ui.py" "$ROOT"
 python3 "$ROOT/tools/check_startup_order.py" "$ROOT"
 # Счётчики движения обязаны совпадать с данными кривых, иначе разбор падает с IndexOutOfBounds.
 python3 "$ROOT/tools/fix_motion_meta.py" --check "$ROOT/app/src/main/assets/live2d"
@@ -53,8 +55,10 @@ echo "=== 3/6 фреймворк Live2D ==="
 find "$ROOT/app/src/main/java/com/live2d" -name '*.java' > "$OUT/framework.txt"
 compile "$OUT/framework" "$OUT/framework.txt" "$OUT/aar/classes.jar"
 
-echo "=== 4/6 код приложения ==="
+echo "=== 4/6 код приложения (с классом R по ресурсам) ==="
+python3 "$ROOT/tools/gen_r_java.py" "$ROOT" "$OUT/gen/com/echidna/studio/R.java"
 find "$ROOT/app/src/main/java/com/echidna" -name '*.java' > "$OUT/app.txt"
+echo "$OUT/gen/com/echidna/studio/R.java" >> "$OUT/app.txt"
 compile "$OUT/app" "$OUT/app.txt" "$OUT/framework:$OUT/aar/classes.jar:$OUT/stubs"
 
 echo "=== 5/6 юнит-тесты ==="
