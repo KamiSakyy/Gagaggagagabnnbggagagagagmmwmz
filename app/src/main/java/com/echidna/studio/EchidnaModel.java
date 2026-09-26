@@ -86,6 +86,13 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
     private final CubismId idBrowLY;
     private final CubismId idBrowRY;
     private final CubismId idCheek;
+    /**
+     * Каналы рук: у ригов, где руки нарисованы отдельными слоями, есть плечо, предплечье и кисть.
+     * Список заполняется один раз после загрузки, у моделей без рук он остаётся пустым, и тогда
+     * жест ничего не ломает.
+     */
+    private final Map<String, CubismId> armIds = new java.util.LinkedHashMap<String, CubismId>();
+    private boolean armResolved;
 
     private ICubismModelSetting modelSetting;
     private CubismPose poseEffect;
@@ -467,6 +474,70 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         model.update();
     }
 
+    /** Какие каналы рук существуют у этой модели: видно в отчёте и в самопроверке. */
+    public int armChannelCount() {
+        return armIds.size();
+    }
+
+    public String armChannels() {
+        return armIds.isEmpty() ? "нет" : armIds.keySet().toString();
+    }
+
+    /** Ищет каналы рук у загруженной модели: у каждой модели свой набор, чего-то может не быть. */
+    private void resolveArmChannels() {
+        if (armResolved || model == null) {
+            return;
+        }
+        armResolved = true;
+        for (int i = 0; i < ARM_PARAMETER_NAMES.length; i++) {
+            final CubismId candidate = id(ARM_PARAMETER_NAMES[i]);
+            if (model.getParameterIndex(candidate) >= 0) {
+                armIds.put(ARM_PARAMETER_NAMES[i], candidate);
+            }
+        }
+        if (!armIds.isEmpty()) {
+            com.echidna.studio.EchidnaLog.i("MODEL", "каналы рук: " + armIds.keySet());
+        }
+    }
+
+    /**
+     * Poses the arms from the tracked hand.
+     *
+     * <p>Three channels per arm are used: the shoulder, the elbow and the hand. The hand reaching the
+     * chin bends the elbow so the palm comes up to the face, a raised hand lifts the shoulder, and the
+     * hand itself opens and closes with the fingers. The direction of the shoulder channel is a guess
+     * on every rig, so the user can flip it in the settings; models without these channels keep the
+     * old behaviour and show the gesture on the face and the head instead.</p>
+     */
+    private void applyArms(Pose pose, float weight) {
+        if (pose == null || armIds.isEmpty()) {
+            return;
+        }
+        if (!pose.handsSeen && pose.chinTouch <= 0.001f && pose.armY <= 0.001f) {
+            return;
+        }
+        final float direction = pose.armInverted ? -1.0f : 1.0f;
+        final float lift = ParamLimits.unit(pose.armY) * direction;
+        final float chin = ParamLimits.unit(pose.chinTouch) * direction;
+        final float open = ParamLimits.unit(pose.handOpen);
+        for (Map.Entry<String, CubismId> entry : armIds.entrySet()) {
+            final String name = entry.getKey();
+            final float target;
+            if (name.startsWith("ParamUpperArm")) {
+                // Плечо поднимается, когда рука идёт вверх: минус - потому что канал вращает кость.
+                target = -LIFT_DEGREES * lift;
+            } else if (name.startsWith("ParamForeArm")) {
+                // Локоть сгибается к подбородку; рука вверх добавляет немного сгиба.
+                target = CHIN_DEGREES * chin + FOREARM_LIFT_DEGREES * lift;
+            } else if (name.startsWith("ParamHand")) {
+                target = (open - 0.5f) * 2.0f * HAND_DEGREES - CHIN_DEGREES * 0.2f * chin;
+            } else {
+                continue;
+            }
+            blend(entry.getValue(), target, weight);
+        }
+    }
+
     /** Blends the procedural pose on top of what the motions and the effects produced. */
     private void applyPose(Pose pose) {
         if (pose == null) {
@@ -495,7 +566,28 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             blend(idEyeLOpen, ParamLimits.eyeOpen(pose.eyeLOpen), eyeWeight);
             blend(idEyeROpen, ParamLimits.eyeOpen(pose.eyeROpen), eyeWeight);
         }
+        resolveArmChannels();
+        applyArms(pose, weight);
     }
+
+    /** Плечо, предплечье и кисть; у каждой руки и у её дополнительных слоёв. */
+    private static final String[] ARM_PARAMETER_NAMES = {
+            "ParamUpperArmL", "ParamUpperArmR",
+            "ParamForeArmL", "ParamForeArmR",
+            "ParamHandL", "ParamHandR",
+            "ParamUpperArmBL", "ParamUpperArmBR",
+            "ParamForeArmLB", "ParamForeArmRB",
+            "ParamHandLB", "ParamHandRB",
+    };
+
+    /** На сколько градусов поднимается плечо при поднятой руке. */
+    private static final float LIFT_DEGREES = 16.0f;
+    /** На сколько сгибается локоть, когда рука тянется к подбородку. */
+    private static final float CHIN_DEGREES = 26.0f;
+    /** Добавка к сгибу локтя при поднятой руке. */
+    private static final float FOREARM_LIFT_DEGREES = 8.0f;
+    /** Размах поворота кисти между кулаком и открытой ладонью. */
+    private static final float HAND_DEGREES = 12.0f;
 
     private void blend(CubismId id, float target, float weight) {
         final float current = model.getParameterValue(id);

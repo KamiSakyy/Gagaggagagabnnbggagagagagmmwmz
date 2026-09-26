@@ -37,6 +37,23 @@ public final class TrackingHub {
      * съедают телефон. Между замерами используется последний результат - он всё равно сглаживается.
      */
     private static final long POSE_INTERVAL_MS = 80;
+    /**
+     * Кисть разбирается реже лица: 15 раз в секунду хватает, чтобы жест читался мгновенно, а
+     * телефон при этом не греется.
+     */
+    private static final long HAND_INTERVAL_MS = 66;
+    /** Сколько ждём первых результатов трекера, прежде чем считать его зависшим. */
+    private static final long TRACKER_START_GRACE_MS = 4000;
+    /** Сколько ждём новых результатов, пока трекер молчит. */
+    private static final long TRACKER_SILENCE_MS = 6000;
+    /**
+     * Кадров предпросмотра в обороте.
+     *
+     * <p>Камера переиспользует свои буферы, поэтому картинку для окошка надо снять с них: иначе
+     * рендер читает буфер, в который камера уже пишет следующий кадр, и окошко дёргается. Три
+     * копии - это заведомо больше, чем нужно GL-потоку, чтобы успеть загрузить текстуру.</p>
+     */
+    private static final int PREVIEW_SLOTS = 3;
 
     private final Context context;
     private final CameraController camera;
@@ -49,6 +66,16 @@ public final class TrackingHub {
     private FaceTracker poseTracker;
     private long lastPoseMs;
     private FaceSignals lastPoseSignals;
+    /**
+     * Трекер кисти: 21 точка на руку, счёт пальцев и жест «рука у подбородка».
+     *
+     * <p>Он третий в цепочке, потому что отвечает на другой вопрос: лицо даёт мимику, поза - тело,
+     * а кисть - то, что человек показывает рукой. Работает реже остальных: пальцевый граф тяжелее
+     * и не нужен на каждом кадре.</p>
+     */
+    private FaceTracker handTracker;
+    private long lastHandMs;
+    private FaceSignals lastHandSignals;
     private final FaceSignals merged = new FaceSignals();
     private SignalsListener signalsListener;
     private CameraPreviewListener previewListener;
@@ -66,6 +93,17 @@ public final class TrackingHub {
     private boolean lastAttemptFlipped;
     private volatile FaceSignals lastSignals;
     private volatile int framesPerSecond;
+    /** Готовые кадры для окошка предпросмотра: копии, а не буферы камеры. */
+    private final Bitmap[] previewSlots = new Bitmap[PREVIEW_SLOTS];
+    private int previewCursor;
+    /** Номер последнего отданного кадра: рендер по нему понимает, что картинка новая. */
+    private volatile int previewSerial;
+    private int previewInFlight = -1;
+    /** Копия кадра для разбора: живёт, пока трекеры с ней работают. */
+    private Bitmap analysisFrame;
+    private long trackerOpenedMs;
+    private long lastResultsSeen;
+    private long lastResultsChangeMs;
 
     public TrackingHub(Context context) {
         this.context = context.getApplicationContext();
@@ -98,7 +136,24 @@ public final class TrackingHub {
         if (tracker == null) {
             return "нет";
         }
-        return poseTracker == null ? tracker.name() : tracker.name() + " + " + poseTracker.name();
+        final StringBuilder builder = new StringBuilder(tracker.name());
+        if (poseTracker != null) {
+            builder.append(" + ").append(poseTracker.name());
+        }
+        if (handTracker != null) {
+            builder.append(" + ").append(handTracker.name());
+        }
+        return builder.toString();
+    }
+
+    /** Есть ли трекер кисти: от него зависят жесты рукой. */
+    public boolean handsAvailable() {
+        return handTracker != null;
+    }
+
+    /** Номер последнего кадра предпросмотра: растёт, когда картинка обновилась. */
+    public int previewSerial() {
+        return previewSerial;
     }
 
     public long analyzedFrames() {
@@ -137,6 +192,7 @@ public final class TrackingHub {
     /** Diagnostic report, also used by the self test. */
     public String report() {
         return "трекер=" + trackerName()
+                + ", руки=" + (handsAvailable() ? "да" : "нет")
                 + ", кадров камеры=" + camera.frameCount()
                 + ", проанализировано=" + analyzedFrames
                 + ", без лица=" + analyzedEmpty
@@ -217,6 +273,33 @@ public final class TrackingHub {
         }
     }
 
+    /**
+     * Starts the hand tracker: the third pair of eyes of the app.
+     *
+     * <p>Without it the camera still works - the face and the body are enough - but there are no
+     * gestures: no finger count, no hand following the user's hand, no "touching the chin".</p>
+     */
+    private void openHandTracker() {
+        if (handTracker != null) {
+            handTracker.stop();
+            handTracker = null;
+        }
+        if (!MediaPipeHandTracker.assetAvailable(context)) {
+            addDiagnostic("модель кисти отсутствует в APK, жесты рукой недоступны");
+            return;
+        }
+        try {
+            final MediaPipeHandTracker hands = new MediaPipeHandTracker(context);
+            hands.start();
+            handTracker = hands;
+            addDiagnostic("трекер кисти: " + hands.name() + " (пальцы, ладонь, подбородок)");
+            EchidnaLog.i("TRACK", "поднят трекер кисти " + hands.name());
+        } catch (Throwable error) {
+            EchidnaLog.w("TRACK", "трекер кисти не поднялся: " + error);
+            addDiagnostic("трекер кисти не поднялся: " + error.getClass().getSimpleName());
+        }
+    }
+
     /** Picks the best tracker that actually starts on this device. */
     private boolean openTracker() {
         if (tracker != null) {
@@ -231,6 +314,8 @@ public final class TrackingHub {
                 addDiagnostic("трекер: MediaPipe Face Landmarker (52 blendshape)");
                 EchidnaLog.i("TRACK", "выбран MediaPipe Face Landmarker");
                 openPoseTracker();
+                openHandTracker();
+                trackerOpenedMs = SystemClock.elapsedRealtime();
                 return true;
             } catch (Throwable t) {
                 EchidnaLog.w("TRACK", "MediaPipe не поднялся (" + t + "), пробуем ML Kit");
@@ -246,6 +331,8 @@ public final class TrackingHub {
             addDiagnostic("трекер: ML Kit Face Detection");
             EchidnaLog.i("TRACK", "выбран ML Kit Face Detection");
             openPoseTracker();
+            openHandTracker();
+            trackerOpenedMs = SystemClock.elapsedRealtime();
             return true;
         } catch (Throwable t) {
             EchidnaLog.w("TRACK", "ни один трекер не запустился: " + t);
@@ -276,8 +363,14 @@ public final class TrackingHub {
             poseTracker.stop();
             poseTracker = null;
         }
+        if (handTracker != null) {
+            handTracker.stop();
+            handTracker = null;
+        }
         lastPoseSignals = null;
         lastPoseMs = 0L;
+        lastHandSignals = null;
+        lastHandMs = 0L;
         camera.stop();
     }
 
@@ -312,24 +405,29 @@ public final class TrackingHub {
      * below is what makes the analysis see a complete, frozen frame.</p>
      */
     private void onCameraFrame(Bitmap frame, long timestampMs) {
-        if (!running) {
-            if (previewListener != null) {
-                previewListener.onPreview(frame);
-            }
+        if (frame == null) {
             return;
         }
+        // Сначала окошко: пользователь должен видеть себя даже тогда, когда разбор кадра занят.
+        publishPreview(frame);
         final long now = SystemClock.elapsedRealtime();
+        if (!running) {
+            camera.releaseFrame(frame);
+            return;
+        }
+        // Кадр нельзя отдавать трекеру, пока он работает над предыдущим: MediaPipe читает картинку
+        // асинхронно, в своём потоке. Раньше кадры уходили один за другим, и граф получал то
+        // половину старого кадра, то половину нового - лицо пропадало, хотя человек никуда не уходил.
+        final boolean trackersFree = !isBusy(tracker) && !isBusy(poseTracker) && !isBusy(handTracker);
         // Пока лицо не найдено, кадры уходят в разбор без паузы: человек только что сел перед
         // камерой или отвернулся, и ждать следующего такта незачем. Как только лицо найдено,
         // включается обычный интервал, чтобы не жечь батарею.
         final FaceSignals known = lastSignals;
         final boolean searching = known == null || (!known.found && !known.poseOnly);
-        final boolean mayAnalyze = !analyzing
+        final boolean mayAnalyze = !analyzing && trackersFree
                 && (searching || now - lastAnalysisMs >= ANALYSIS_INTERVAL_MS);
-        if (previewListener != null) {
-            previewListener.onPreview(frame);
-        }
         if (!mayAnalyze) {
+            camera.releaseFrame(frame);
             return;
         }
         lastAnalysisMs = now;
@@ -337,16 +435,23 @@ public final class TrackingHub {
 
         final Bitmap stable;
         try {
-            stable = frame.copy(Bitmap.Config.ARGB_8888, false);
+            // Копия делается в один и тот же буфер: раньше на каждый кадр выделялось 3.7 МБ, и на
+            // телефоне это превращалось в постоянную сборку мусора, из-за которой картинка рвалась.
+            analysisFrame = copyInto(analysisFrame, frame);
+            stable = analysisFrame;
         } catch (Throwable error) {
             EchidnaLog.w("TRACK", "не удалось скопировать кадр: " + error);
             analyzing = false;
+            camera.releaseFrame(frame);
             return;
         }
+        // Буфер камеры больше не нужен: у разбора и у окошка свои копии.
+        camera.releaseFrame(frame);
 
         analysisHandler.post(() -> {
             Bitmap probe = null;
             try {
+                checkTrackerHealth(now);
                 // Пока лицо не найдено, раз в полторы секунды кадр уходит в разбор перевёрнутым:
                 // часть телефонов отдаёт картинку вверх ногами, и тогда лицо не находится вовсе.
                 // Если на перевёрнутом кадре лицо есть - камера поворачивается сама.
@@ -396,7 +501,7 @@ public final class TrackingHub {
         return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, false);
     }
 
-    /** Runs both trackers on one frame and merges what they saw. */
+    /** Runs the three trackers on one frame and merges what they saw. */
     private FaceSignals analyzeFrame(Bitmap frame) {
         final long now = SystemClock.elapsedRealtime();
         final FaceTracker.Frame wrapper = new FaceTracker.Frame(frame, 0, null);
@@ -415,10 +520,21 @@ public final class TrackingHub {
             }
             pose = lastPoseSignals;
         }
-        if (face == null && pose == null) {
+        FaceSignals hands = null;
+        if (handTracker != null) {
+            if (now - lastHandMs >= HAND_INTERVAL_MS) {
+                lastHandMs = now;
+                final FaceSignals fresh = handTracker.analyze(wrapper, now);
+                if (fresh != null) {
+                    lastHandSignals = fresh;
+                }
+            }
+            hands = lastHandSignals;
+        }
+        if (face == null && pose == null && hands == null) {
             return null;
         }
-        return merge(face, pose);
+        return merge(face, pose, hands);
     }
 
     /**
@@ -429,12 +545,33 @@ public final class TrackingHub {
      * that is how the avatar keeps following the user instead of falling back to the demo sway the
      * moment the face model loses track.</p>
      */
-    private FaceSignals merge(FaceSignals face, FaceSignals pose) {
+    private FaceSignals merge(FaceSignals face, FaceSignals pose, FaceSignals hands) {
+        final boolean anyHands = hands != null && hands.handsSeen;
+        if (face == null && pose == null) {
+            // Видна только рука: лицо трекер потерял, но жест всё равно должен дойти до модели.
+            if (!anyHands) {
+                return null;
+            }
+            merged.set(new FaceSignals());
+            merged.found = true;
+            merged.poseOnly = true;
+            copyHands(hands, merged, null);
+            return merged;
+        }
         if (face == null) {
-            return pose;
+            // Лицо потеряно, но поза видит человека: голова едет за телом, руки - за кистью.
+            merged.set(pose);
+            if (!merged.found && anyHands) {
+                merged.found = true;
+                merged.poseOnly = true;
+            }
+            copyHands(hands, merged, pose);
+            return merged;
         }
         if (pose == null || !pose.found) {
-            return face;
+            merged.set(face);
+            copyHands(hands, merged, face);
+            return merged;
         }
         merged.set(face);
         merged.body = pose.body;
@@ -463,7 +600,152 @@ public final class TrackingHub {
         } else {
             merged.poseOnly = false;
         }
+        copyHands(hands, merged, face);
         return merged;
+    }
+
+    /**
+     * Adds what the hand model saw to the frame: the fingers, the palm, and how close the fingers are
+     * to the chin.
+     *
+     * <p>The chin is computed here because it needs both trackers: the face supplies the place and
+     * the height of the head, the hand supplies the fingertips. Distances are measured in face
+     * heights, so the gesture works the same for someone close to the phone and for someone sitting
+     * farther away.</p>
+     */
+    private void copyHands(FaceSignals hands, FaceSignals target, FaceSignals face) {
+        if (hands == null || !hands.handsSeen) {
+            return;
+        }
+        target.handsSeen = true;
+        target.hands = hands.hands;
+        target.fingers = hands.fingers;
+        target.fingersLeft = hands.fingersLeft;
+        target.fingersRight = hands.fingersRight;
+        target.handOpen = hands.handOpen;
+        target.handX = hands.handX;
+        target.handY = hands.handY;
+        target.indexX = hands.indexX;
+        target.indexY = hands.indexY;
+        target.middleX = hands.middleX;
+        target.middleY = hands.middleY;
+        target.handSpan = hands.handSpan;
+        target.handLeft = hands.handLeft;
+
+        final float faceHeight;
+        if (face != null && face.faceHeight > 0.02f) {
+            faceHeight = face.faceHeight;
+        } else if (target.faceHeight > 0.02f) {
+            faceHeight = target.faceHeight;
+        } else {
+            faceHeight = 0.5f;
+        }
+        // Подбородок - нижняя граница лица. Y растёт вниз, поэтому он ниже центра на полвысоты.
+        final float chinX = face != null ? face.centerX : 0.0f;
+        final float chinY = (face != null ? face.centerY : 0.0f) + faceHeight * 0.5f;
+        target.chinTouch = HandPose.reachOf(hands.indexX, hands.indexY, hands.middleX, hands.middleY,
+                hands.handX, hands.handY, chinX, chinY, faceHeight);
+        // Поднятая рука: считается от подбородка вверх, в высотах лица.
+        final float raise = clamp01((chinY - hands.handY) / (faceHeight * 1.2f));
+        if (raise > target.handUp) {
+            target.handUp = raise;
+        }
+    }
+
+    private static float clamp01(float v) {
+        return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
+    }
+
+    /** Занят ли трекер кадром: пока занят, новый кадр ему отдавать нельзя. */
+    private static boolean isBusy(FaceTracker tracker) {
+        return tracker != null && tracker.busy();
+    }
+
+    /**
+     * Сторож зависшего трекера.
+     *
+     * <p>Бывает так, что граф поднимается, принимает кадры и молчит: например, драйвер GPU отвечает
+     * ошибкой на каждый кадр. Снаружи это выглядит как "лицо не найдено" и демо-режим, хотя камера
+     * работает. Поэтому если трекер молчит несколько секунд при живом потоке кадров, он
+     * пересобирается заново - с ML Kit или на CPU, что окажется рабочим.</p>
+     */
+    private void checkTrackerHealth(long now) {
+        if (tracker == null || tracker.resultsSeen() < 0L) {
+            return;
+        }
+        final long seen = tracker.resultsSeen();
+        if (seen != lastResultsSeen) {
+            lastResultsSeen = seen;
+            lastResultsChangeMs = now;
+            return;
+        }
+        final long since = now - Math.max(Math.max(lastResultsChangeMs, trackerOpenedMs), startedAtMs);
+        // Кадры должны идти: если камера встала, молчание трекера ничего не значит.
+        final boolean framesFlowing = now - lastAnalysisMs < 1500;
+        if (framesFlowing && since > TRACKER_SILENCE_MS && analyzedFrames > 3) {
+            addDiagnostic("трекер молчит " + (since / 1000) + " с, перезапускаю");
+            EchidnaLog.w("TRACK", "трекер не отвечает " + since + " мс, перезапуск");
+            lastResultsChangeMs = now;
+            openTracker();
+        }
+    }
+
+    /**
+     * Кадр для окошка предпросмотра.
+     *
+     * <p>Копия снимается с буфера камеры, потому что камера пишет в него следующий кадр: если
+     * отдать рендеру сам буфер, на телефоне видно, как картинка дёргается и расползается. Копии
+     * идут по кругу, и каждая живёт, пока рендер не загрузит её в текстуру.</p>
+     */
+    private void publishPreview(Bitmap frame) {
+        final CameraPreviewListener listener = previewListener;
+        if (listener == null) {
+            return;
+        }
+        try {
+            final Bitmap slot = previewSlotFor(frame);
+            if (slot == null) {
+                return;
+            }
+            final android.graphics.Canvas canvas = new android.graphics.Canvas(slot);
+            canvas.drawBitmap(frame, 0f, 0f, null);
+            previewSerial++;
+            listener.onPreview(slot);
+        } catch (Throwable error) {
+            EchidnaLog.w("TRACK", "кадр окошка не подготовлен: " + error);
+        }
+    }
+
+    private Bitmap previewSlotFor(Bitmap frame) {
+        for (int i = 0; i < PREVIEW_SLOTS; i++) {
+            final int index = (previewCursor + i) % PREVIEW_SLOTS;
+            final Bitmap candidate = previewSlots[index];
+            if (candidate == null || candidate.getWidth() != frame.getWidth()
+                    || candidate.getHeight() != frame.getHeight()) {
+                continue;
+            }
+            previewCursor = (index + 1) % PREVIEW_SLOTS;
+            return candidate;
+        }
+        final Bitmap created = Bitmap.createBitmap(frame.getWidth(), frame.getHeight(),
+                Bitmap.Config.ARGB_8888);
+        final int index = previewCursor;
+        previewSlots[index] = created;
+        previewCursor = (index + 1) % PREVIEW_SLOTS;
+        return created;
+    }
+
+    /** Копия кадра в переиспользуемый буфер: без выделения памяти на каждый кадр. */
+    private static Bitmap copyInto(Bitmap target, Bitmap source) {
+        Bitmap out = target;
+        if (out == null || out.getWidth() != source.getWidth()
+                || out.getHeight() != source.getHeight()) {
+            out = Bitmap.createBitmap(source.getWidth(), source.getHeight(),
+                    Bitmap.Config.ARGB_8888);
+        }
+        final android.graphics.Canvas canvas = new android.graphics.Canvas(out);
+        canvas.drawBitmap(source, 0f, 0f, null);
+        return out;
     }
 
     private void syntheticLoop() {

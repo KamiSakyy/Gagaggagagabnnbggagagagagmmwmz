@@ -75,6 +75,46 @@ public final class FaceSignals {
     /** The pose source found a person (the avatar keeps working from it alone). */
     public boolean poseOnly;
 
+    /**
+     * Hands, as seen by the hand model.
+     *
+     * <p>These fields are what let the character follow a gesture: the number of raised fingers, the
+     * place of the palm and of two fingertips, and how far the hand reaches towards the chin. All of
+     * them are in the same coordinate system as {@link #centerX} and {@link #centerY}: -1 is the left
+     * edge of the frame, +1 the right, and Y grows downwards.</p>
+     */
+    public boolean handsSeen;
+    /** How many hands were seen: 0, 1 or 2. */
+    public int hands;
+    /** Fingers of the leading hand, 0 (fist) to 5 (open palm). */
+    public int fingers;
+    /** Fingers of the person's left and right hand: -1 when that hand is not seen. */
+    public int fingersLeft = -1;
+    public int fingersRight = -1;
+    /** 0 for a fist, 1 for an open palm. */
+    public float handOpen;
+    /** Palm of the leading hand. */
+    public float handX;
+    public float handY;
+    /** Tips of the index and middle finger of the leading hand. */
+    public float indexX;
+    public float indexY;
+    public float middleX;
+    public float middleY;
+    /** Size of the hand in the frame, 0..2: how close it is to the camera. */
+    public float handSpan;
+    /** True when the leading hand is the person's left one. */
+    public boolean handLeft;
+    /**
+     * Height of the face in the -1..1 space.
+     *
+     * <p>Needed for the gestures that are measured relative to the face: "the hand reaches the chin"
+     * has to work both for someone sitting close to the phone and for someone across the room.</p>
+     */
+    public float faceHeight;
+    /** How much the leading hand reaches the chin: 0 far, 1 touching. */
+    public float chinTouch;
+
     /** Timestamp of the analysed frame, milliseconds. */
     public long timeMs;
 
@@ -87,6 +127,22 @@ public final class FaceSignals {
         bodyShift = other.bodyShift;
         handUp = other.handUp;
         poseOnly = other.poseOnly;
+        handsSeen = other.handsSeen;
+        hands = other.hands;
+        fingers = other.fingers;
+        fingersLeft = other.fingersLeft;
+        fingersRight = other.fingersRight;
+        handOpen = other.handOpen;
+        handX = other.handX;
+        handY = other.handY;
+        indexX = other.indexX;
+        indexY = other.indexY;
+        middleX = other.middleX;
+        middleY = other.middleY;
+        handSpan = other.handSpan;
+        handLeft = other.handLeft;
+        faceHeight = other.faceHeight;
+        chinTouch = other.chinTouch;
         yaw = other.yaw;
         pitch = other.pitch;
         roll = other.roll;

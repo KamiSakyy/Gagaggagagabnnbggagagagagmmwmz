@@ -2,6 +2,7 @@ package com.echidna.studio.track;
 
 import com.echidna.studio.EchidnaLog;
 import com.echidna.studio.anim.Damp;
+import com.echidna.studio.anim.GestureReaction;
 import com.echidna.studio.anim.ParamLimits;
 import com.echidna.studio.anim.Pose;
 
@@ -33,7 +34,13 @@ public final class TrackingMapper {
     private static final float LIFT_GAIN = 0.10f;
     private static final float ZOOM_GAIN = 0.55f;
 
-    private static final float FACE_LOST_GRACE = 0.45f;
+    /**
+     * Сколько секунд человек может отвернуться, прежде чем модель уйдёт в демо-позу.
+     *
+     * <p>Было 0.45 с: одно моргание трекера - и на экране загоралось "демо-режим". Полторы секунды
+     * переживают и потерю кадра, и то, что человек на секунду опустил глаза.</p>
+     */
+    private static final float FACE_LOST_GRACE = 1.5f;
     private static final float DEMO_IN_TIME = 0.9f;
     private static final float DEMO_OUT_TIME = 0.5f;
 
@@ -53,6 +60,16 @@ public final class TrackingMapper {
     private final Damp bodyLift = new Damp(0.20f);
     private final Damp bodyShift = new Damp(0.18f);
     private final Damp handUp = new Damp(0.22f);
+    /** Кисть: свежая точка отсчёта для жестов, поэтому сглаживается отдельно и мягко. */
+    private final Damp chinTouch = new Damp(0.14f);
+    private final Damp handOpenDamp = new Damp(0.12f);
+    private final Damp handDx = new Damp(0.14f);
+    private final Damp handDy = new Damp(0.14f);
+    /** Реакция на счёт пальцев: кивки. */
+    private final GestureReaction gestures = new GestureReaction();
+
+    /** Знак каналов рук: задаётся кнопкой в настройках. */
+    private boolean armInverted;
 
     private final Pose tracked = new Pose();
     private final Pose demo = new Pose();
@@ -118,6 +135,21 @@ public final class TrackingMapper {
 
     public boolean isMirrored() {
         return mirrored;
+    }
+
+    /**
+     * Направление каналов рук.
+     *
+     * <p>У разных ригов плечо поднимается от разных знаков, и по файлу модели это не видно: модели
+     * хранят только диапазоны. Кнопка в приложении переключает знак, чтобы рука шла вверх, а не
+     * вниз.</p>
+     */
+    public void setArmInverted(boolean value) {
+        armInverted = value;
+    }
+
+    public boolean isArmInverted() {
+        return armInverted;
     }
 
     public void reset() {
@@ -244,14 +276,33 @@ public final class TrackingMapper {
             bodyRoll.update((mirrored ? -1.0f : 1.0f) * s.bodyRoll, dt);
             bodyLift.update(s.bodyLift, dt);
             bodyShift.update((mirrored ? -1.0f : 1.0f) * s.bodyShift, dt);
-            handUp.update(s.handUp, dt);
         } else {
             bodyYaw.update(0.0f, dt);
             bodyRoll.update(0.0f, dt);
             bodyLift.update(0.0f, dt);
             bodyShift.update(0.0f, dt);
+        }
+        // Высота руки приходит из двух мест: от трекера позы (плечи) и от трекера кисти (ладонь
+        // выше подбородка). Поэтому её нельзя обнулять только оттого, что тела в кадре не видно.
+        if (s.body || s.handsSeen) {
+            handUp.update(s.handUp, dt);
+        } else {
             handUp.update(0.0f, dt);
         }
+        // Рука: пальцы, открытая ладонь и путь к подбородку. Когда рук не видно, всё возвращается
+        // в ноль, чтобы модель не осталась с поднятой рукой после того, как человек её опустил.
+        if (s.handsSeen) {
+            chinTouch.update(s.chinTouch, dt);
+            handOpenDamp.update(s.handOpen, dt);
+            handDx.update((mirrored ? -1.0f : 1.0f) * s.handX, dt);
+            handDy.update(s.handY, dt);
+        } else {
+            chinTouch.update(0.0f, dt);
+            handOpenDamp.update(0.0f, dt);
+            handDx.update(0.0f, dt);
+            handDy.update(0.0f, dt);
+        }
+        gestures.update(s.handsSeen ? s.fingers : -1, dt);
         smile.update(s.smile, dt);
         mouth.update(s.mouthOpen, dt);
         centerX.update(s.centerX - neutralCenterX, dt);
@@ -322,13 +373,27 @@ public final class TrackingMapper {
 
     /** Human readable state for the UI. */
     public String status() {
+        if (faceLive() && gestures.shownCount() >= 0) {
+            return "жест: " + gestures.shownCount() + " " + fingersWord(gestures.shownCount());
+        }
         if (faceLive()) {
             return "лицо найдено";
         }
         if (demoBlend > 0.95f) {
-            return "демо-режим: лицо не найдено";
+            return "камера пока не видит лицо: сядь напротив и включи свет";
         }
         return "ищу лицо…";
+    }
+
+    /** Слово для числа пальцев: "4 пальца" читается понятнее, чем "4". */
+    static String fingersWord(int count) {
+        if (count % 10 == 1 && count % 100 != 11) {
+            return "палец";
+        }
+        if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14)) {
+            return "пальца";
+        }
+        return "пальцев";
     }
 
     /**
@@ -403,21 +468,61 @@ public final class TrackingMapper {
         tracked.offsetY = ParamLimits.offset(centerY.value() * -LIFT_GAIN);
         tracked.zoom = ParamLimits.zoom(1.0f + (faceSize.value() - NEUTRAL_FACE) * ZOOM_GAIN);
 
-        // A raised hand turns into a cheerful face: the models of this app have no arms to move, so
-        // the hands drive the expression channels instead of nothing at all.
+        // A raised hand turns into a cheerful face: models without arm channels still show the
+        // gesture, they just show it on the face and the head instead of on the arm.
         final float hands = ParamLimits.unit(handUp.value());
-        // Руки модели поднимаются вместе с руками человека: у объёмного персонажа это кости рук,
-        // у Live2D-ригов - параметры ParamArmL/ParamArmR, если они вообще есть.
+        // Руки модели поднимаются вместе с руками человека: у ригов с параметрами плеча, локтя и
+        // кисти это настоящие движения рук, у остальных - наклон головы и взгляд на руку ниже.
         tracked.armY = hands;
+        tracked.armInverted = armInverted;
+        final float chin = ParamLimits.unit(chinTouch.value());
+        tracked.chinTouch = chin;
+        tracked.handOpen = ParamLimits.unit(handOpenDamp.value());
+        tracked.handsSeen = hands > 0.02f || chin > 0.02f || handOpenDamp.value() > 0.02f;
+        tracked.fingers = gestures.shownCount();
+
+        // Голова кивает столько раз, сколько пальцев показал человек: так "четыре" видно даже на
+        // ригах, у которых рук в модели нет вовсе.
+        final float nod = gestures.nodDegrees();
+        if (nod > 0.0f) {
+            tracked.angleY = ParamLimits.angleY(-pitchValue * PITCH_GAIN + nod);
+        }
+
+        // Глаза и голова поворачиваются к руке, когда человек поднимает её: модель замечает жест.
+        final float attention = ParamLimits.unit((hands - 0.15f) * 1.5f);
+        if (attention > 0.001f) {
+            final float lookX = Pose.clamp(handDx.value(), -1.0f, 1.0f);
+            final float lookY = Pose.clamp(handDy.value(), -1.0f, 1.0f);
+            tracked.angleX = ParamLimits.angleX(
+                    ParamLimits.angleX(tracked.angleX) + lookX * 9.0f * attention);
+            tracked.angleZ = ParamLimits.angleZ(
+                    ParamLimits.angleZ(tracked.angleZ) - lookX * 3.0f * attention);
+            tracked.eyeBallX = ParamLimits.eyeBallX(
+                    ParamLimits.eyeBallX(tracked.eyeBallX) + lookX * 0.45f * attention);
+            tracked.eyeBallY = ParamLimits.eyeBallY(lookY * 0.35f * attention);
+        }
 
         // The gaze leads the head a little, which is what makes eye contact feel alive.
-        tracked.eyeBallX = ParamLimits.eyeBallX(yawValue / 26.0f * 0.55f + centerX.value() * 0.35f);
-        tracked.eyeBallY = ParamLimits.eyeBallY(pitchValue / 26.0f * 0.45f - centerY.value() * 0.25f);
+        final float baseEyeX = yawValue / 26.0f * 0.55f
+                + centerX.value() * 0.35f + handDx.value() * 0.45f * attention;
+        final float baseEyeY = pitchValue / 26.0f * 0.45f - centerY.value() * 0.25f
+                - handDy.value() * 0.30f * attention + chin * 0.25f;
+        tracked.eyeBallX = ParamLimits.eyeBallX(baseEyeX);
+        tracked.eyeBallY = ParamLimits.eyeBallY(baseEyeY);
+
+        // Рука у подбородка: голова чуть опускается, глаза улыбаются - так это читается даже там,
+        // где руки в модели нет.
+        if (chin > 0.001f) {
+            tracked.angleY = ParamLimits.angleY(
+                    ParamLimits.angleY(tracked.angleY) + chin * 3.5f);
+            tracked.angleZ = ParamLimits.angleZ(
+                    ParamLimits.angleZ(tracked.angleZ) + 3.0f * chin * (mirrored ? -1.0f : 1.0f));
+        }
 
         final float smileValue = ParamLimits.unit(Math.max(smile.value(), hands * 0.55f));
         tracked.mouthOpenY = ParamLimits.mouthOpen(smoothStep(0.02f, 0.34f, mouth.value()));
         tracked.mouthForm = ParamLimits.mouthForm(-0.15f + smileValue * 1.0f + extraMouthForm * 0.6f);
-        tracked.cheek = ParamLimits.unit((smileValue - 0.45f) * 2.0f + hands * 0.4f);
+        tracked.cheek = ParamLimits.unit((smileValue - 0.45f) * 2.0f + hands * 0.4f + chin * 0.3f);
         // Squinting and smiling both raise the lower eyelid of the model, which is what the
         // "smiling eyes" parameter does.
         final float eyeSmile = ParamLimits.unit(Math.max(smileValue * 0.8f, extraEyeSquint * 0.9f));
@@ -465,6 +570,7 @@ public final class TrackingMapper {
         // The automatic blinking of the framework stays in charge while the demo plays.
         demo.eyeWeight = 0.0f;
         demo.weight = 0.6f;
+        demo.armInverted = armInverted;
     }
 
     static float smoothStep(float edge0, float edge1, float x) {

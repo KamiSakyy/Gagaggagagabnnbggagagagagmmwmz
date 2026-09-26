@@ -21,7 +21,7 @@ import java.util.Random;
  * Adversarial test of the whole behaviour layer.
  *
  * <p>Every value that comes from outside is unrealistic sometimes: a frame takes two seconds, the
- * tracker reports a NaN, the user's head turns by 400 degrees, the microphone screams, the app is
+ * tracker reports a NaN, the user's head turns by 400 degrees, the app is
  * switched between modes ten times per second. None of that may throw, and none of it may leave the
  * model with a broken pose - the unit tests around single features would not catch such a
  * combination, and on a phone it would show up as a crash or as a character that freezes.</p>
@@ -179,9 +179,6 @@ public class StageStressTest {
                 case 5: stage.playManualMotion("нет-такого-мошена"); break;
                 case 6: stage.playManualMotion(null); break;
                 case 7: stage.randomMotion(); break;
-                case 8: stage.setMicEnabled(random.nextBoolean()); break;
-                case 9: stage.setMicLevel(broken(random)); break;
-                case 10: stage.setMicGain(broken(random)); break;
                 default: break;
             }
 

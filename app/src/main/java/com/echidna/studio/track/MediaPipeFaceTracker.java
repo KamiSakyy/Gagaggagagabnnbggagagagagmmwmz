@@ -1,6 +1,7 @@
 package com.echidna.studio.track;
 
 import android.content.Context;
+import android.os.SystemClock;
 
 import com.echidna.studio.EchidnaLog;
 import com.google.mediapipe.framework.image.BitmapImageBuilder;
@@ -26,6 +27,8 @@ import java.util.List;
 public final class MediaPipeFaceTracker implements FaceTracker {
     public static final String MODEL_ASSET = "models/face_landmarker.task";
     public static final String MODEL_ASSET_ALTERNATIVE = "models/face_landmarker_v2.task";
+    /** Сколько ждём ответа графа, прежде чем считать кадр потерянным. */
+    private static final long BUSY_TIMEOUT_MS = 500;
 
     private final Context context;
     private final String assetPath;
@@ -35,6 +38,10 @@ public final class MediaPipeFaceTracker implements FaceTracker {
     private volatile FaceSignals latest;
     private long lastTimestampMs = -1;
     private boolean running;
+    /** Сколько кадров отдано графу и сколько результатов он вернул. */
+    private volatile long submitted;
+    private volatile long results;
+    private volatile long lastSubmitMs;
 
     public MediaPipeFaceTracker(Context context) {
         this(context, MODEL_ASSET);
@@ -119,6 +126,26 @@ public final class MediaPipeFaceTracker implements FaceTracker {
         }
     }
 
+    /**
+     * True while the graph has a frame in its hands.
+     *
+     * <p>In the live stream mode {@code detectAsync} returns at once and the picture is read by the
+     * graph later, on its own thread. Until the answer comes back the bitmap must not be touched,
+     * so the hub waits (with a timeout - a hung graph must not freeze the camera).</p>
+     */
+    @Override
+    public boolean busy() {
+        if (!running || submitted == 0L || results >= submitted) {
+            return false;
+        }
+        return SystemClock.elapsedRealtime() - lastSubmitMs < BUSY_TIMEOUT_MS;
+    }
+
+    @Override
+    public long resultsSeen() {
+        return results;
+    }
+
     @Override
     public void stop() {
         running = false;
@@ -132,6 +159,9 @@ public final class MediaPipeFaceTracker implements FaceTracker {
         }
         latest = null;
         lastTimestampMs = -1;
+        submitted = 0L;
+        results = 0L;
+        lastSubmitMs = 0L;
     }
 
     @Override
@@ -151,6 +181,8 @@ public final class MediaPipeFaceTracker implements FaceTracker {
                 return null;
             }
             target.detectAsync(image, timestampMs);
+            submitted++;
+            lastSubmitMs = SystemClock.elapsedRealtime();
         } catch (Throwable t) {
             EchidnaLog.w("TRACK", "MediaPipe не принял кадр: " + t);
             fallBackToCpu(t);
@@ -161,6 +193,7 @@ public final class MediaPipeFaceTracker implements FaceTracker {
     }
 
     private void onResult(Object result, Object inputImage) {
+        results++;
         if (result == null) {
             return;
         }

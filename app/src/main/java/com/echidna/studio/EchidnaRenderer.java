@@ -77,6 +77,12 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
     private int previewTexCoordHandle;
     private FloatBuffer previewQuad;
     private volatile Bitmap previewFrame;
+    /** Номер кадра предпросмотра; -1 значит "текстуре нужен любой кадр". */
+    private volatile int previewSerial = -1;
+    private int uploadedPreviewSerial = -1;
+    /** Буферы вершин предпросмотра: их тоже нельзя создавать на каждый кадр. */
+    private FloatBuffer previewVertexBuffer;
+    private FloatBuffer previewTexCoordBuffer;
     private volatile boolean previewEnabled;
     private volatile boolean previewMirror = true;
     /** Куда рисовать себя: маленьким окошком в углу или на весь экран. */
@@ -197,8 +203,16 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         return modelOffsetY;
     }
 
-    public void setPreviewFrame(Bitmap frame) {
+    /**
+     * Новый кадр для окошка камеры.
+     *
+     * @param frame  готовая копия кадра; камера в неё больше не пишет
+     * @param serial номер кадра: по нему рендер понимает, что картинка сменилась, и не гоняет
+     *               трёхмегабайтную текстуру в память видеокарты шестьдесят раз в секунду
+     */
+    public void setPreviewFrame(Bitmap frame, int serial) {
         previewFrame = frame;
+        previewSerial = serial;
     }
 
     public void setPreviewEnabled(boolean enabled) {
@@ -311,6 +325,12 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
     }
 
     /** The last model or render error, empty while everything is fine. */
+    /** Какие каналы рук есть у текущей модели: видно в отчёте самопроверки. */
+    public String armChannels() {
+        final EchidnaModel current = model;
+        return current == null ? "модель не загружена" : current.armChannels();
+    }
+
     public String lastError() {
         return lastError;
     }
@@ -692,11 +712,17 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         GLES20.glUseProgram(previewProgram);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, previewTexture);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, frame, 0);
+        // Текстура обновляется только когда пришёл новый кадр: загрузка картинки 1280x720 в память
+        // видеокарты шестьдесят раз в секунду - это сотни мегабайт в секунду, из-за которых
+        // недорогой телефон дёргает картинку.
+        if (previewSerial != uploadedPreviewSerial) {
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, frame, 0);
+            uploadedPreviewSerial = previewSerial;
+        }
 
         final float left = rect[0];
         final float bottom = rect[1];
@@ -710,8 +736,10 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
                 ? new float[]{1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1}
                 : new float[]{0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1};
 
-        final FloatBuffer vertexBuffer = toBuffer(vertices);
-        final FloatBuffer texBuffer = toBuffer(texCoords);
+        final FloatBuffer vertexBuffer = fill(previewVertexBuffer, vertices);
+        previewVertexBuffer = vertexBuffer;
+        final FloatBuffer texBuffer = fill(previewTexCoordBuffer, texCoords);
+        previewTexCoordBuffer = texBuffer;
 
         GLES20.glVertexAttribPointer(previewPositionHandle, 2, GLES20.GL_FLOAT, false, 0, vertexBuffer);
         GLES20.glEnableVertexAttribArray(previewPositionHandle);
@@ -762,6 +790,17 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
                 centerX + widthNdc * 0.5f,
                 centerY + heightNdc * 0.5f
         };
+    }
+
+    /** Переиспользует буфер, если он уже есть: на каждый кадр новый - это мусор и паузы. */
+    private static FloatBuffer fill(FloatBuffer buffer, float[] data) {
+        if (buffer == null || buffer.capacity() < data.length) {
+            return toBuffer(data);
+        }
+        buffer.clear();
+        buffer.put(data);
+        buffer.position(0);
+        return buffer;
     }
 
     private static FloatBuffer toBuffer(float[] data) {

@@ -76,7 +76,29 @@ public final class CameraController {
     /** Доворот кадра, который пользователь выставил кнопкой: 0, 90, 180 или 270 градусов. */
     private volatile int extraRotation;
     private final BitmapPool pool = new BitmapPool();
+    /** Переиспользуемый буфер пикселей для перевода YUV в ARGB (см. convertYuvToArgb). */
+    private int[] scratch;
+
+    private static int[] ensureScratch(int[] buffer, int size) {
+        if (buffer == null || buffer.length < size) {
+            return new int[size];
+        }
+        return buffer;
+    }
     private long lastFrameLog;
+    /** Когда пришёл последний кадр: по этому времени приложение видит, что камера встала. */
+    private volatile long lastFrameMs;
+
+    /** Сколько времени прошло с последнего кадра камеры, миллисекунды. */
+    public long msSinceLastFrame() {
+        final long last = lastFrameMs;
+        return last == 0L ? Long.MAX_VALUE : System.currentTimeMillis() - last;
+    }
+
+    /** Возвращает буфер камеры в оборот: пока кадр нужен был, его нельзя было переписывать. */
+    public void releaseFrame(Bitmap frame) {
+        pool.release(frame);
+    }
 
     public CameraController(Context context) {
         this.context = context.getApplicationContext();
@@ -222,6 +244,7 @@ public final class CameraController {
 
     public void stop() {
         running = false;
+        pool.reset();
         if (session != null) {
             try {
                 session.close();
@@ -395,6 +418,7 @@ public final class CameraController {
             // Buffers are recycled: at thirty frames per second a fresh 1.2 MB bitmap for every
             // frame would mean forty megabytes of garbage per second, and a stream runs for hours.
             final Bitmap published = convertYuvToArgb(image, rotation, pool.acquire(width, height, rotation));
+            lastFrameMs = timestampMs;
 
             if (frameListener != null) {
                 frameListener.onFrame(published, timestampMs);
@@ -439,14 +463,23 @@ public final class CameraController {
      * @param rotation clockwise rotation in degrees: 0, 90, 180 or 270
      */
     static Bitmap convertYuvToArgb(Image image, int rotation) {
-        return convertYuvToArgb(image, rotation, null);
+        return convert(image, rotation, null, null);
     }
 
     /**
      * @param target bitmap to write into, or null to allocate a new one; it must already be the
      *               right size, which is what {@link BitmapPool} takes care of
      */
-    static Bitmap convertYuvToArgb(Image image, int rotation, Bitmap target) {
+    /** Кадр камеры в буфер контроллера: пиксельный массив переиспользуется между кадрами. */
+    Bitmap convertYuvToArgb(Image image, int rotation, Bitmap target) {
+        final boolean quarter = rotation == 90 || rotation == 270;
+        final int size = (quarter ? image.getHeight() : image.getWidth())
+                * (quarter ? image.getWidth() : image.getHeight());
+        scratch = ensureScratch(scratch, size);
+        return convert(image, rotation, target, scratch);
+    }
+
+    private static Bitmap convert(Image image, int rotation, Bitmap target, int[] buffer) {
         final int width = image.getWidth();
         final int height = image.getHeight();
         final boolean quarter = rotation == 90 || rotation == 270;
@@ -468,7 +501,10 @@ public final class CameraController {
         final int vRowStride = planes[2].getRowStride();
         final int vPixelStride = planes[2].getPixelStride();
 
-        final int[] pixels = new int[outWidth * outHeight];
+        // Пиксельный буфер живёт вместе с контроллером: на 1280x720 это 3.7 МБ, и создавать его
+        // тридцать раз в секунду - это сотня мегабайт мусора, из-за которого телефон уходит в
+        // сборку мусора и кадры камеры начинают пропадать. Поток кадров один, гонок нет.
+        final int[] pixels = ensureScratch(buffer, outWidth * outHeight);
         final int yBase = yPlane.position();
         final int uBase = uPlane.position();
         final int vBase = vPlane.position();
@@ -542,6 +578,13 @@ public final class CameraController {
     static final class BitmapPool {
         private static final int SLOTS = 4;
         private final Bitmap[] slots = new Bitmap[SLOTS];
+        /**
+         * Занятые буферы: кадр, который уже рисуется в предпросмотре или разбирается трекером,
+         * нельзя переписывать. Раньше это не проверялось, и на телефоне было видно, как картинка
+         * в окошке дёргается и рвётся по диагонали - камера успевала записать в буфер следующий
+         * кадр, пока предыдущий ещё читался.
+         */
+        private final boolean[] inUse = new boolean[SLOTS];
         private int cursor;
 
         Bitmap acquire(int sourceWidth, int sourceHeight, int rotation) {
@@ -551,17 +594,53 @@ public final class CameraController {
             for (int i = 0; i < SLOTS; i++) {
                 final int index = (cursor + i) % SLOTS;
                 final Bitmap candidate = slots[index];
-                if (candidate != null
+                if (candidate != null && !inUse[index]
                         && candidate.getWidth() == width
                         && candidate.getHeight() == height) {
                     cursor = (index + 1) % SLOTS;
+                    inUse[index] = true;
                     return candidate;
                 }
             }
+            // Свободного буфера нет: либо все заняты, либо изменилось разрешение. Заводим новый
+            // слот, чтобы никогда не писать в чужой кадр; старое разрешение уйдёт само.
+            int slot = -1;
+            for (int i = 0; i < SLOTS; i++) {
+                final int index = (cursor + i) % SLOTS;
+                if (slots[index] == null || !inUse[index]) {
+                    slot = index;
+                    break;
+                }
+            }
+            if (slot < 0) {
+                // Все четыре в работе (телефон не успевает): берём тот, что отдан раньше всех.
+                slot = cursor;
+            }
             final Bitmap created = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            slots[cursor] = created;
-            cursor = (cursor + 1) % SLOTS;
+            slots[slot] = created;
+            inUse[slot] = true;
+            cursor = (slot + 1) % SLOTS;
             return created;
+        }
+
+        /** Потребитель закончил с кадром: буфер можно отдавать снова. */
+        void release(Bitmap bitmap) {
+            if (bitmap == null) {
+                return;
+            }
+            for (int i = 0; i < SLOTS; i++) {
+                if (slots[i] == bitmap) {
+                    inUse[i] = false;
+                    return;
+                }
+            }
+        }
+
+        /** Камера остановлена: занятость сбрасывается, иначе буферы остались бы занятыми навсегда. */
+        void reset() {
+            for (int i = 0; i < SLOTS; i++) {
+                inUse[i] = false;
+            }
         }
     }
 

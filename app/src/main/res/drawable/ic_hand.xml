@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ладонь из набора Material: движение рук, которое повторяет модель. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#F3ECFF"
+        android:pathData="M13,24c-3.26,0 -6.19,-1.98 -7.4,-5.02l-3.68,-9.19C1.54,8.84 2.04,7.77 3.03,7.45c0.82,-0.27 1.7,0.11 2.06,0.87l2.05,4.38L7.5,2.5C7.42,1.71 8.03,1 8.83,1c0.74,0 1.36,0.55 1.45,1.28L11,9h1V1.83C12,1.01 12.65,0.34 13.47,0.32 14.32,0.31 15,0.99 15,1.83V9h1V3.34c0,-0.83 0.67,-1.5 1.5,-1.5s1.5,0.67 1.5,1.5V10h1V5.34c0,-0.83 0.67,-1.5 1.5,-1.5s1.5,0.67 1.5,1.5V15c0,5.52 -4.48,10 -10,10z" />
+</vector>

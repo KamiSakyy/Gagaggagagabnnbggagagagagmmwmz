@@ -90,6 +90,7 @@ jobs:
             python3 tools/check_resources.py .
             python3 tools/check_ui.py .
             python3 tools/check_model_paths.py .
+            python3 tools/check_hands.py .
             python3 tools/check_startup_order.py .
             python3 tools/fix_motion_meta.py --check app/src/main/assets/live2d
             python3 tools/fix_native_alignment.py --check app/libs/Live2DCubismCore.aar
@@ -118,6 +119,17 @@ jobs:
               echo "МОДЕЛИ ПОЗЫ НЕТ ($m): тело и руки отслеживаться не будут" | tee -a "$BUILD_LOG"
             fi
           done
+
+      - name: Fetch the bundled hand tracking model
+        run: |
+          bash tools/fetch_hand_model.sh app/src/main/assets/models \
+            2>&1 | tee -a "$BUILD_LOG"
+          if [ -f app/src/main/assets/models/hand_landmarker.task ]; then
+            echo "модель кисти в сборке: $(stat -c%s app/src/main/assets/models/hand_landmarker.task) байт" \
+              | tee -a "$BUILD_LOG"
+          else
+            echo "МОДЕЛИ КИСТИ НЕТ: жесты рукой работать не будут" | tee -a "$BUILD_LOG"
+          fi
 
       - name: Check the five characters are in the build
         run: |
@@ -191,6 +203,7 @@ jobs:
               cp "$apk" "$target"
             done
             ls -la handoff || true
+            grep -oE 'versionCode [0-9]+|versionName "[^"]*"' app/build.gradle | head -n 2 || true
             echo "=== проверяю содержимое APK ==="
             APK=$(ls handoff/*.apk 2>/dev/null | head -n 1)
             if [ -z "$APK" ]; then
@@ -204,6 +217,8 @@ jobs:
             echo "модель трекера внутри: $(unzip -l "$APK" | grep -c 'face_landmarker.task' || true)"
             echo "модели-каталоги в APK: $(unzip -l "$APK" | grep -oE 'assets/live2d/[a-z_]+/model3.json' | sort -u | tr '\n' ' ')"
             echo "модели тела внутри: $(unzip -l "$APK" | grep -c 'pose_landmarker' || true)"
+            echo "модель кисти внутри: $(unzip -l "$APK" | grep -c 'hand_landmarker.task' || true)"
+            echo "разрешение на микрофон внутри: $(unzip -l "$APK" | grep -c 'RECORD_AUDIO' || true)"
             echo "файлы моделей в APK: $(unzip -l "$APK" | grep -oE 'assets/models/[a-z_]*\.task' | sort -u | tr '\n' ' ')"
             echo "Live2D моделей внутри: $(unzip -l "$APK" | grep -c 'model3.json' || true)"
             echo "текстур моделей внутри: $(unzip -l "$APK" | grep -cE 'assets/live2d/.*/textures/.*png' || true)"
@@ -238,13 +253,36 @@ jobs:
             SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
             APKSIGNER=$(ls "$SDK"/build-tools/*/apksigner 2>/dev/null | head -n 1)
             APK=$(ls handoff/*.apk | head -n 1)
+            # Отпечаток постоянного ключа: обновление ставится поверх прошлой сборки только тогда,
+            # когда подпись та же самая. Если ключ когда-нибудь подменится, сборка обязана упасть
+            # здесь, а не выясниться у пользователя на телефоне.
+            EXPECTED="224d5708eae32d3626b4d8ab67b3bf17c93b73f93ff127b59be23e1d7c968d4b"
+            VERSION=$(grep -o 'versionName "[^"]*"' app/build.gradle | cut -d'"' -f2)
+            CODE=$(grep -oE 'versionCode [0-9]+' app/build.gradle | head -n 1 | awk '{print $2}')
             if [ -n "$APKSIGNER" ]; then
               "$APKSIGNER" verify --print-certs "$APK"
+              SHA=$("$APKSIGNER" verify --print-certs "$APK" \
+                | grep -m 1 'SHA-256 digest' | awk -F': ' '{print $2}' | tr -d ' ')
             else
-              echo "apksigner не найден, проверяю через keytool"
-              unzip -p "$APK" META-INF/CERT.RSA > /tmp/cert.rsa 2>/dev/null || true
-              ls -la /tmp/cert.rsa 2>/dev/null || true
+              echo "apksigner не найден, подпись проверить нечем"
+              SHA=""
             fi
+            if [ -z "$SHA" ]; then
+              echo "ПОДПИСЬ НЕ ПРОВЕРЕНА: apksigner не отдал отпечаток"
+              exit 1
+            fi
+            if [ "$SHA" != "$EXPECTED" ]; then
+              echo "ПОДПИСЬ СМЕНИЛАСЬ: ожидался $EXPECTED, а APK подписан $SHA"
+              echo "такое обновление не встанет поверх прошлого - сборку публиковать нельзя"
+              exit 1
+            fi
+            {
+              echo "версия: $VERSION (код $CODE)"
+              echo "подпись: постоянный ключ echidna-release.jks"
+              echo "SHA-256 сертификата: $SHA"
+              echo "обновление ставится поверх прошлых сборок с этой же подписью"
+            } > handoff/SIGNATURE.txt
+            cat handoff/SIGNATURE.txt
           } 2>&1 | tee -a "$BUILD_LOG"
 
       - name: Package the sources into the handoff

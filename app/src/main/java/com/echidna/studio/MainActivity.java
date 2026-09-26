@@ -45,21 +45,28 @@ import java.util.Locale;
  * <p>The layout is built in code instead of XML so that the whole app stays in one small set of
  * files and the UI can be tuned together with the behaviour it drives. Everything the streamer needs
  * is one tap away: the five shows, the random motion, the camera mode, the chroma key backgrounds
- * for OBS, the microphone lip sync, the motion gallery with all 68 animations and the self check.</p>
+ * for OBS, the motion gallery with all the animations and the self check.</p>
+ *
+ * <p>Everything the character does comes from the camera: the face, the body and the hands. There is
+ * no microphone - the mouth of the model is driven by the mouth of the person.</p>
  */
 public final class MainActivity extends Activity implements ModelStage.Listener, EchidnaRenderer.StatusListener {
 
     private static final int REQUEST_PERMISSIONS = 4711;
+    /**
+     * Только камера.
+     *
+     * <p>Микрофон приложению больше не нужен: движение модели идёт исключительно от камеры - лицо,
+     * тело и кисти рук. Ничего не слушается и никуда не отправляется.</p>
+     */
     private static final String[] PERMISSIONS = {
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.CAMERA
     };
 
     private GLSurfaceView glView;
     private EchidnaRenderer renderer;
     private ModelStage stage;
     private TrackingHub hub;
-    private AudioLevelMonitor audio;
 
     private TextView statusText;
     private TextView fpsText;
@@ -70,7 +77,6 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private LinearLayout sliderRow;
     private LinearLayout galleryPanel;
     private Button cameraButton;
-    private Button micButton;
     private Button galleryButton;
     private Button mirrorButton;
     private Button moreButton;
@@ -94,7 +100,6 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private volatile String motionsLoadReport;
     private volatile boolean motionsCheckStarted;
     private boolean cameraMode;
-    private boolean micEnabled;
     private boolean previewMirror = true;
     private String lastModelReport;
     private String lastFps = "";
@@ -112,6 +117,10 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private String modelId = ModelCatalog.DEFAULT_ID;
     private boolean previewFullScreen;
     private boolean turnInverted;
+    /** Направление каналов рук: у разных ригов оно разное, поэтому переключается кнопкой. */
+    private boolean armInverted;
+    /** Большая цифра жеста: сколько пальцев показывает человек. */
+    private TextView gestureBadge;
     private boolean expressionsVisible;
     private boolean modelsPanelVisible;
     private LinearLayout topBar;
@@ -119,7 +128,18 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private View errorPanel;
     private TextView errorText;
     private Button hideButton;
+    private Button armButton;
     private boolean uiHidden;
+    /** Последний показанный жест, чтобы не трогать интерфейс на каждом кадре. */
+    private volatile int shownGesture = -1;
+    private long gestureShownAt;
+    private long lastCameraRestartAt;
+    private final Runnable hideGestureBadge = () -> {
+        if (gestureBadge != null
+                && android.os.SystemClock.elapsedRealtime() - gestureShownAt > 1500) {
+            gestureBadge.setVisibility(View.GONE);
+        }
+    };
     private float pinchStartScale = 1.0f;
     private float pinchStartDistance;
     private float dragStartOffsetX;
@@ -143,12 +163,6 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         hub = new TrackingHub(this);
         hub.setSignalsListener(this::onSignals);
         hub.setPreviewListener(this::onPreview);
-        audio = new AudioLevelMonitor(this);
-        audio.setListener(level -> {
-            if (stage != null) {
-                stage.setMicLevel(level);
-            }
-        });
 
         try {
             buildUi();
@@ -210,8 +224,34 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         root.addView(buildHint());
         root.addView(buildPermissionBanner());
         root.addView(buildErrorPanel());
+        root.addView(buildGestureBadge());
 
         setContentView(root);
+    }
+
+    /**
+     * Большая плашка с числом пальцев.
+     *
+     * <p>У ригов Live2D кисть - одна картинка, отдельных пальцев в модели нет, поэтому показать
+     * "четыре пальца" самой моделью нельзя. Зато видно и то, что модель nod-ит четыре раза, и то,
+     * что на экране горит цифра: зритель понимает жест сразу. Полоса идёт от края до края, как и
+     * всё остальное в интерфейсе.</p>
+     */
+    private View buildGestureBadge() {
+        gestureBadge = new TextView(this);
+        gestureBadge.setTextColor(0xFF120E20);
+        gestureBadge.setTextSize(34);
+        gestureBadge.setTypeface(gestureBadge.getTypeface(), android.graphics.Typeface.BOLD);
+        gestureBadge.setGravity(android.view.Gravity.CENTER);
+        gestureBadge.setBackgroundColor(0xEEFFD54F);
+        gestureBadge.setPadding(dp(10), dp(10), dp(10), dp(10));
+        gestureBadge.setVisibility(View.GONE);
+        final FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.gravity = android.view.Gravity.TOP;
+        params.topMargin = dp(96);
+        gestureBadge.setLayoutParams(params);
+        return gestureBadge;
     }
 
     private View buildTopBar() {
@@ -499,8 +539,8 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         settingsLine1.addView(mirrorButton);
         settingsLine2.addView(labeledButton(R.drawable.ic_check, "самопроверка",
                 v -> runSelfTest()));
-        micButton = labeledButton(R.drawable.ic_mic, "микрофон", v -> toggleMic());
-        settingsLine2.addView(micButton);
+        armButton = labeledButton(R.drawable.ic_hand, "руки: вверх", v -> toggleArmDirection());
+        settingsLine2.addView(armButton);
         hideButton = labeledButton(R.drawable.ic_eye, "спрятать интерфейс", v -> toggleUi());
         settingsLine2.addView(hideButton);
         settingsRow.addView(settingsLine1);
@@ -518,15 +558,27 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             renderer.setModelOffsetY(value / 200.0f);
             saveSetting("offsetY", value);
         }));
-        sliderRow.addView(slider("Громкость губ", 20, 300, 100, value -> {
-            final float gain = value / 100.0f;
-            audio.setGain(gain);
-            stage.setMicGain(gain);
-            saveSetting("gain", value);
-        }));
         modelPanel.addView(sliderRow);
 
+        final TextView version = new TextView(this);
+        version.setTextColor(0x88FFFFFF);
+        version.setTextSize(11);
+        version.setText("версия " + appVersion() + " · только камера, микрофон не используется");
+        version.setPadding(0, dp(10), 0, dp(4));
+        modelPanel.addView(version);
+
         return overlayPanel;
+    }
+
+    /** Версия приложения: по ней видно, встало ли обновление поверх прошлой сборки. */
+    private String appVersion() {
+        try {
+            final android.content.pm.PackageInfo info = getPackageManager()
+                    .getPackageInfo(getPackageName(), 0);
+            return info.versionName + " (" + info.versionCode + ")";
+        } catch (Throwable error) {
+            return "неизвестна";
+        }
     }
 
     private TextView sectionTitle(String text) {
@@ -986,16 +1038,16 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         renderer.setPreviewFullScreen(previewFullScreen);
         renderer.requestModel(modelId);
         final int scale = prefs.getInt("scale", 100);
-        final int gain = prefs.getInt("gain", 100);
         final int offset = prefs.getInt("offsetY", 0);
         renderer.setBackground(backgroundCursor);
         renderer.setPreviewMirror(previewMirror);
         renderer.setModelScale(scale / 100.0f);
         renderer.setModelOffsetY(offset / 200.0f);
-        audio.setGain(gain / 100.0f);
-        stage.setMicGain(gain / 100.0f);
         stage.mapper().setMirrored(previewMirror);
-        micEnabled = false;
+        armInverted = prefs.getBoolean("arm-invert", false);
+        if (armButton != null) {
+            updateArmButtonText();
+        }
     }
 
     private void saveSetting(String key, int value) {
@@ -1134,10 +1186,6 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         if (cameraMode) {
             startCamera();
         }
-        if (micEnabled) {
-            audio.start();
-            stage.setMicEnabled(true);
-        }
         handleIntentExtras(getIntent());
     }
 
@@ -1145,7 +1193,6 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     protected void onPause() {
         super.onPause();
         hub.stop();
-        audio.stop();
         glView.onPause();
     }
 
@@ -1154,7 +1201,6 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         super.onDestroy();
         handler.removeCallbacksAndMessages(null);
         hub.release();
-        audio.stop();
         if (glView != null) {
             // Only the model is dropped here. The framework itself stays up for the whole process:
             // disposing it would throw away the id manager the model keeps using when the user
@@ -1272,10 +1318,6 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             renderer.requestIdle();
             return;
         }
-        if (!micEnabled && AudioLevelMonitor.hasPermission(this)) {
-            micEnabled = audio.start();
-            stage.setMicEnabled(micEnabled);
-        }
         highlight(cameraButton, true);
         if (previewWindowButton != null) {
             previewWindowButton.setVisibility(View.VISIBLE);
@@ -1291,8 +1333,11 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             flipCameraButton.setVisibility(View.VISIBLE);
             updateFlipButtonText();
         }
-        updateMicButtonText();
-        toast(ModelCatalog.byId(modelId).title + " повторяет твою мимику и повороты тела");
+        // Направление рук берётся из настроек: у разных ригов каналы вращаются в разные стороны,
+        // и одно нажатие кнопки "руки: вверх/вниз" это исправляет.
+        stage.mapper().setArmInverted(armInverted);
+        toast(ModelCatalog.byId(modelId).title
+                + " повторяет мимику, повороты тела и жесты рукой");
         EchidnaLog.i("APP", "режим камеры включён, трекер " + hub.trackerName());
     }
 
@@ -1328,25 +1373,25 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         return started;
     }
 
-    private void toggleMic() {
-        if (micEnabled) {
-            micEnabled = false;
-            audio.stop();
-            stage.setMicEnabled(false);
-            stage.setMicLevel(0.0f);
-            updateMicButtonText();
-            toast("Липсинк по микрофону выключен");
-            return;
+    /**
+     * Меняет направление каналов рук.
+     *
+     * <p>Разные риги вращают плечо в разные стороны, и угадать это по файлу модели нельзя - можно
+     * только посмотреть. Поэтому у кнопки два положения, и одно нажатие ставит руку так, как надо
+     * именно этой модели.</p>
+     */
+    private void toggleArmDirection() {
+        armInverted = !armInverted;
+        saveSetting("arm-invert", armInverted);
+        stage.mapper().setArmInverted(armInverted);
+        updateArmButtonText();
+        toast(armInverted ? "Руки: обратное направление" : "Руки: прямое направление");
+    }
+
+    private void updateArmButtonText() {
+        if (armButton != null) {
+            armButton.setText(armInverted ? "руки: вниз" : "руки: вверх");
         }
-        if (!AudioLevelMonitor.hasPermission(this)) {
-            toast("Нет разрешения на микрофон");
-            requestPermissions();
-            return;
-        }
-        micEnabled = audio.start();
-        stage.setMicEnabled(micEnabled);
-        updateMicButtonText();
-        toast(micEnabled ? "Липсинк по микрофону включён" : "Микрофон недоступен");
     }
 
     /** Один раз рассказывает, где выбрать модель: без этого список моделей никто не находил. */
@@ -1357,12 +1402,6 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         prefs.edit().putBoolean("hint-shown", true).apply();
         toast("Персонажи — кнопка внизу: " + ModelCatalog.available(getAssets()).size()
                 + " модели на выбор");
-    }
-
-    private void updateMicButtonText() {
-        if (micButton != null) {
-            micButton.setText(micEnabled ? "микрофон: да" : "микрофон: нет");
-        }
     }
 
     private void cycleBackground() {
@@ -1698,6 +1737,14 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                     out.append("; тело: ").append(
                             com.echidna.studio.track.MediaPipePoseTracker.assetAvailable(getBaseContext())
                                     ? "есть" : "нет");
+                    // Кисть: и модель в сборке, и живой трекер. По ним модель двигает руками и
+                    // кивает столько раз, сколько пальцев показал человек.
+                    out.append("; кисть: ").append(
+                            com.echidna.studio.track.MediaPipeHandTracker.assetAvailable(getBaseContext())
+                                    ? (hub.handsAvailable() ? "есть" : "модель есть, трекер нет") : "нет");
+                    out.append("; каналы рук у модели: ").append(renderer.armChannels());
+                    out.append("; микрофон: не используется");
+                    out.append("; версия ").append(appVersion());
                     out.append("; Android ").append(android.os.Build.VERSION.SDK_INT);
                     out.append("; ").append(android.os.Build.SUPPORTED_ABIS.length > 0
                             ? android.os.Build.SUPPORTED_ABIS[0] : "?");
@@ -1753,33 +1800,64 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             return;
         }
         boolean cameraGranted = false;
-        boolean audioGranted = false;
         for (int i = 0; i < permissions.length && i < grantResults.length; i++) {
             if (Manifest.permission.CAMERA.equals(permissions[i])) {
                 cameraGranted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
-            } else if (Manifest.permission.RECORD_AUDIO.equals(permissions[i])) {
-                audioGranted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
             }
         }
         permissionText.setVisibility(cameraGranted ? View.GONE : View.VISIBLE);
         if (cameraGranted && cameraMode) {
             startCamera();
         }
-        if (audioGranted && micEnabled) {
-            audio.start();
-            stage.setMicEnabled(true);
-        }
-        EchidnaLog.i("APP", "разрешения: камера=" + cameraGranted + ", микрофон=" + audioGranted);
+        EchidnaLog.i("APP", "разрешения: камера=" + cameraGranted);
     }
 
     // ------------------------------------------------------- renderer bridge
 
     private void onSignals(FaceSignals signals) {
         stage.setSignals(signals);
+        final int gesture = signals.handsSeen ? signals.fingers : -1;
+        if (gesture != shownGesture) {
+            shownGesture = gesture;
+            handler.post(() -> showGesture(gesture));
+        }
+        // Сторож камеры: если кадры перестали приходить, сессия пересобирается. Без него человек
+        // видел пустое окошко и надпись "камера", а приложение считало, что всё в порядке.
+        if (cameraMode && hub.isRunning()
+                && hub.camera().msSinceLastFrame() > 2500
+                && android.os.SystemClock.elapsedRealtime() - lastCameraRestartAt > 8000) {
+            lastCameraRestartAt = android.os.SystemClock.elapsedRealtime();
+            handler.post(this::restartCameraAfterStall);
+        }
+    }
+
+    private void showGesture(int fingers) {
+        if (gestureBadge == null) {
+            return;
+        }
+        if (fingers < 0) {
+            gestureBadge.setVisibility(View.GONE);
+            return;
+        }
+        gestureBadge.setText(fingers == 0
+                ? "КУЛАК · 0 ПАЛЬЦЕВ"
+                : "ПОКАЗАНО ПАЛЬЦЕВ: " + fingers);
+        gestureBadge.setVisibility(View.VISIBLE);
+        gestureShownAt = android.os.SystemClock.elapsedRealtime();
+        handler.removeCallbacks(hideGestureBadge);
+        handler.postDelayed(hideGestureBadge, 1600);
+    }
+
+    /** Камера перестала отдавать кадры: перезапускаем сессию и говорим об этом вслух. */
+    private void restartCameraAfterStall() {
+        EchidnaLog.w("APP", "кадры камеры пропали, перезапускаю сессию");
+        if (hub.restartCamera()) {
+            toast("Камера перезапущена");
+        }
     }
 
     private void onPreview(Bitmap frame) {
-        renderer.setPreviewFrame(frame);
+        renderer.setPreviewFrame(frame, hub.previewSerial());
     }
 
     @Override

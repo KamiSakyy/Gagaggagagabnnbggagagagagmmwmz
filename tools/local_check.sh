@@ -27,12 +27,14 @@ compile() {          # compile <output dir> <sources file> <classpath>
   "${JAVAC[@]}" -cp "$cp" -d "$out" "@$sources"
 }
 
-echo "=== 0/6 содержимое дерева, ресурсы, порядок запуска, счётчики движений, выравнивание ==="
+echo "=== 0/6 содержимое дерева, ресурсы, жесты, порядок запуска, счётчики движений, выравнивание ==="
 # Первым делом: не откатилось ли дерево к версии без движка 3D и четырёх моделей.
 python3 "$ROOT/tools/check_tree.py" "$ROOT"
 python3 "$ROOT/tools/check_resources.py" "$ROOT"
 python3 "$ROOT/tools/check_ui.py" "$ROOT"
 python3 "$ROOT/tools/check_model_paths.py" "$ROOT"
+# Жесты рукой и отсутствие микрофона: трекер кисти, каналы рук, ни одного упоминания микрофона.
+python3 "$ROOT/tools/check_hands.py" "$ROOT"
 python3 "$ROOT/tools/check_startup_order.py" "$ROOT"
 # Счётчики движения обязаны совпадать с данными кривых, иначе разбор падает с IndexOutOfBounds.
 python3 "$ROOT/tools/fix_motion_meta.py" --check "$ROOT/app/src/main/assets/live2d"

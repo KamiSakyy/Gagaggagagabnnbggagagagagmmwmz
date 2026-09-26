@@ -64,12 +64,6 @@ public final class ModelStage implements Motions {
     private float signalTimeout = 10.0f;
 
     // Written from the UI thread and the audio thread, read by the GL thread every frame.
-    private volatile float micLevel;
-    /** Усиление микрофона по умолчанию; им же заменяется испорченное значение. */
-    private static final float DEFAULT_MIC_GAIN = 1.0f;
-
-    private volatile float micGain = DEFAULT_MIC_GAIN;
-    private volatile boolean micEnabled;
 
     // The automatic blink of the framework runs in every mode; in the camera mode the eyelids are
     // driven by the tracker with full weight, which overrides it, unless the tracker has no blink
@@ -141,23 +135,8 @@ public final class ModelStage implements Motions {
         autoBlink = value;
     }
 
-    public void setMicEnabled(boolean enabled) {
-        micEnabled = enabled;
-    }
 
-    public boolean isMicEnabled() {
-        return micEnabled;
-    }
 
-    public void setMicGain(float gain) {
-        // Math.max would keep a NaN, and a NaN gain would make every mouth value unusable.
-        micGain = Float.isNaN(gain) ? DEFAULT_MIC_GAIN : Math.max(0.1f, Math.min(8.0f, gain));
-    }
-
-    /** Raw RMS level of the microphone, 0..1. */
-    public void setMicLevel(float level) {
-        micLevel = ParamLimits.unit(level);
-    }
 
     // ------------------------------------------------------------------ commands
 
@@ -285,8 +264,9 @@ public final class ModelStage implements Motions {
                 break;
             }
             case CAMERA: {
+                // Всё движение идёт от камеры: рот модели повторяет рот человека, потому что
+                // трекер лица читает его по губам. Микрофона в приложении нет.
                 tracker.pose(dt, incoming);
-                applyMicLipsync(dt);
                 break;
             }
             case IDLE:
@@ -343,22 +323,6 @@ public final class ModelStage implements Motions {
     /** Size multiplier of the model as of the last {@link #tick}. */
     public float viewZoom() {
         return result.zoom;
-    }
-
-    /**
-     * The microphone adds to the tracked mouth instead of replacing it, and the tracked mouth keeps
-     * a small floor so that the lips do not slam shut between words.
-     */
-    private void applyMicLipsync(float dt) {
-        if (!micEnabled) {
-            return;
-        }
-        final float shaped = (float) Math.pow(micLevel * micGain * 3.0f, 0.6);
-        final float micMouth = ParamLimits.mouthOpen(shaped);
-        final float tracked = Math.max(incoming.mouthOpenY * 0.35f, micMouth);
-        final float k = 1.0f - (float) Math.exp(-dt / (micMouth > incoming.mouthOpenY ? 0.035f : 0.13f));
-        incoming.mouthOpenY = ParamLimits.mouthOpen(
-                incoming.mouthOpenY + (tracked - incoming.mouthOpenY) * k);
     }
 
     private void notifyListener() {

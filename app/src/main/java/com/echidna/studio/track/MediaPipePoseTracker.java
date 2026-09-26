@@ -30,6 +30,8 @@ public final class MediaPipePoseTracker implements FaceTracker {
     public static final String MODEL_FULL = "models/pose_landmarker_full.task";
     /** The lightweight model is the fallback for slower devices. */
     public static final String MODEL_LITE = "models/pose_landmarker_lite.task";
+    /** Сколько ждём ответа графа, прежде чем считать кадр потерянным. */
+    private static final long BUSY_TIMEOUT_MS = 500;
 
     private static final int NOSE = 0;
     private static final int LEFT_EYE = 2;
@@ -53,6 +55,10 @@ public final class MediaPipePoseTracker implements FaceTracker {
     private volatile FaceSignals latest;
     private long lastTimestampMs = -1;
     private boolean running;
+    /** Сколько кадров отдано графу и сколько ответов пришло: нужно, чтобы не переписывать кадр. */
+    private volatile long submitted;
+    private volatile long results;
+    private volatile long lastSubmitMs;
 
     public MediaPipePoseTracker(Context context) {
         this(context, assetPathFor(context));
@@ -142,6 +148,30 @@ public final class MediaPipePoseTracker implements FaceTracker {
         }
         latest = null;
         lastTimestampMs = -1;
+        submitted = 0L;
+        results = 0L;
+        lastSubmitMs = 0L;
+    }
+
+    /**
+     * True while the graph reads the frame it was given.
+     *
+     * <p>{@code detectAsync} returns at once and the picture is parsed later, on the thread of
+     * MediaPipe. The hub therefore has to wait before reusing the frame, otherwise the model reads a
+     * picture that is already being overwritten - the same fault that used to make the face vanish
+     * out of the blue.</p>
+     */
+    @Override
+    public boolean busy() {
+        if (!running || submitted == 0L || results >= submitted) {
+            return false;
+        }
+        return android.os.SystemClock.elapsedRealtime() - lastSubmitMs < BUSY_TIMEOUT_MS;
+    }
+
+    @Override
+    public long resultsSeen() {
+        return results;
     }
 
     @Override
@@ -156,6 +186,8 @@ public final class MediaPipePoseTracker implements FaceTracker {
         try {
             final MPImage image = new BitmapImageBuilder(frame.bitmap).build();
             landmarker.detectAsync(image, timestampMs);
+            submitted++;
+            lastSubmitMs = android.os.SystemClock.elapsedRealtime();
         } catch (Throwable error) {
             EchidnaLog.w("POSE", "кадр не принят: " + error);
             return null;
@@ -164,6 +196,7 @@ public final class MediaPipePoseTracker implements FaceTracker {
     }
 
     private void onResult(Object result, Object inputImage) {
+        results++;
         if (result == null) {
             return;
         }

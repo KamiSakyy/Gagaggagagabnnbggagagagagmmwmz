@@ -30,6 +30,29 @@ public interface FaceTracker {
      */
     FaceSignals analyze(Frame frame, long timestampMs);
 
+    /**
+     * True while the tracker still works on a frame that was handed to it.
+     *
+     * <p>The camera reuses its bitmaps, so handing a new frame to a tracker that is not finished
+     * with the previous one means the native code reads a picture that is being overwritten right
+     * under it: the face then disappears out of the blue. The hub therefore asks before reusing a
+     * buffer. Trackers that finish inside {@link #analyze} answer {@code false}.</p>
+     */
+    default boolean busy() {
+        return false;
+    }
+
+    /**
+     * How many results the tracker produced since it started.
+     *
+     * <p>A tracker that is alive but never answers is worse than a slow one: this number is what
+     * lets the hub notice a dead graph and switch to the next tracker instead of telling the user
+     * "лицо не найдено" forever.</p>
+     */
+    default long resultsSeen() {
+        return -1L;
+    }
+
     /** A camera frame in a form both trackers can consume. */
     final class Frame {
         public final android.graphics.Bitmap bitmap;

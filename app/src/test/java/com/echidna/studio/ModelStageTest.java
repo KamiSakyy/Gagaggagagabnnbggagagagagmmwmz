@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * Checks the behaviour of the stage with a fake avatar: the shows start their motions, the camera
- * mode hands the pose over to the tracker, the microphone opens the mouth and the transitions
+ * mode hands the pose over to the tracker and the transitions
  * between the modes are smooth instead of abrupt.
  */
 public class ModelStageTest {
@@ -177,34 +177,6 @@ public class ModelStageTest {
     }
 
     @Test
-    public void microphoneOpensTheMouth() {
-        final FakeAvatar avatar = new FakeAvatar();
-        final ModelStage stage = new ModelStage();
-        stage.attach(avatar, null);
-        stage.mapper().setAutoCalibration(false);
-        stage.toCamera();
-        stage.setMicEnabled(true);
-
-        final FaceSignals signals = new FaceSignals();
-        signals.found = true;
-        final Pose pose = new Pose();
-        for (int i = 0; i < 30; i++) {
-            stage.setSignals(signals);
-            stage.setMicLevel(0.0f);
-            pose.set(stage.tick(STEP));
-        }
-        final float closed = pose.mouthOpenY;
-
-        for (int i = 0; i < 25; i++) {
-            stage.setSignals(signals);
-            stage.setMicLevel(0.85f);
-            pose.set(stage.tick(STEP));
-        }
-        assertTrue("микрофон не открыл рот: " + closed + " -> " + pose.mouthOpenY,
-                pose.mouthOpenY > closed + 0.1f && pose.mouthOpenY > 0.2f);
-    }
-
-    @Test
     public void manualMotionReturnsToIdleWhenItEnds() {
         final FakeAvatar avatar = new FakeAvatar();
         final ModelStage stage = new ModelStage();
@@ -250,7 +222,7 @@ public class ModelStageTest {
                     break;
                 case "camera":
                     stage.mapper().setAutoCalibration(false);
-        stage.toCamera();
+                    stage.toCamera();
                     break;
                 case "manual":
                     stage.playManualMotion("act_kouyou");
@@ -302,7 +274,6 @@ public class ModelStageTest {
                 signals.smile = (float) Math.abs(Math.sin(i * 0.02f));
                 signals.mouthOpen = (float) Math.abs(Math.cos(i * 0.04f));
                 stage.setSignals(signals);
-                stage.setMicLevel((float) Math.abs(Math.sin(i * 0.11f)));
                 pose.set(stage.tick(STEP));
 
                 assertTrue("угол Y вне диапазона: " + pose.angleY,

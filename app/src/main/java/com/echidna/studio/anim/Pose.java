@@ -43,6 +43,24 @@ public final class Pose {
      */
     public float armY;
 
+    /**
+     * How open the hand is: 0 a fist, 1 an open palm. Models whose rig has hand parameters pose the
+     * hand with it; the others simply receive the reaction on the face and the head.
+     */
+    public float handOpen;
+
+    /** How much the tracked hand reaches the chin: 0 far, 1 touching. */
+    public float chinTouch;
+
+    /** True when the arm channels of the rig run the other way round (set by the user). */
+    public boolean armInverted;
+
+    /** Fingers shown by the leading hand, -1 when no hand is seen. Feeds the reaction on the head. */
+    public int fingers = -1;
+
+    /** Without hands the arm channels stay still, however strong the rest of the pose is. */
+    public boolean handsSeen;
+
     /** Strength of the whole pose, 0..1. */
     /**
      * Shift of the whole model inside the frame, in projection units: 1.0 is the half width of the
@@ -86,6 +104,11 @@ public final class Pose {
         browRY = other.browRY;
         cheek = other.cheek;
         armY = other.armY;
+        handOpen = other.handOpen;
+        chinTouch = other.chinTouch;
+        armInverted = other.armInverted;
+        fingers = other.fingers;
+        handsSeen = other.handsSeen;
         offsetX = other.offsetX;
         offsetY = other.offsetY;
         zoom = other.zoom;
@@ -113,6 +136,11 @@ public final class Pose {
         browRY = 0;
         cheek = 0;
         armY = 0;
+        handOpen = 0.0f;
+        chinTouch = 0.0f;
+        armInverted = false;
+        fingers = -1;
+        handsSeen = false;
         offsetX = 0;
         offsetY = 0;
         zoom = 1.0f;
@@ -151,6 +179,11 @@ public final class Pose {
         out.browRY = mix(a.browRY, b.browRY, t);
         out.cheek = mix(a.cheek, b.cheek, t);
         out.armY = mix(a.armY, b.armY, t);
+        out.handOpen = mix(a.handOpen, b.handOpen, t);
+        out.chinTouch = mix(a.chinTouch, b.chinTouch, t);
+        out.handsSeen = t < 1.0f ? a.handsSeen : b.handsSeen;
+        out.armInverted = t < 1.0f ? a.armInverted : b.armInverted;
+        out.fingers = t < 1.0f ? a.fingers : b.fingers;
         out.offsetX = mix(a.offsetX, b.offsetX, t);
         out.offsetY = mix(a.offsetY, b.offsetY, t);
         out.zoom = mix(a.zoom, b.zoom, t);
