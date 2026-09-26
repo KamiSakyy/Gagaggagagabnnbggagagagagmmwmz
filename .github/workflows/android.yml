@@ -128,6 +128,11 @@ jobs:
             echo "3D МОДЕЛИ НЕТ: объёмного персонажа в списке не будет" | tee -a "$BUILD_LOG"
           fi
 
+      - name: Check the six characters are in the build
+        run: |
+          set -o pipefail
+          python3 tools/check_tree.py . 2>&1 | tee -a "$BUILD_LOG"
+
       - name: Run the unit tests
         run: |
           set -o pipefail

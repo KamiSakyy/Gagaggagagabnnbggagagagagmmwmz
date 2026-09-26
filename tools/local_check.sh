@@ -27,7 +27,9 @@ compile() {          # compile <output dir> <sources file> <classpath>
   "${JAVAC[@]}" -cp "$cp" -d "$out" "@$sources"
 }
 
-echo "=== 0/6 ресурсы, порядок запуска, счётчики движений, выравнивание библиотек ==="
+echo "=== 0/6 содержимое дерева, ресурсы, порядок запуска, счётчики движений, выравнивание ==="
+# Первым делом: не откатилось ли дерево к версии без движка 3D и четырёх моделей.
+python3 "$ROOT/tools/check_tree.py" "$ROOT"
 python3 "$ROOT/tools/check_resources.py" "$ROOT"
 python3 "$ROOT/tools/check_startup_order.py" "$ROOT"
 # Счётчики движения обязаны совпадать с данными кривых, иначе разбор падает с IndexOutOfBounds.
