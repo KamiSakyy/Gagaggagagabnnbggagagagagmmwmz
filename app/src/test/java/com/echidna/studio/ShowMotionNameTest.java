@@ -28,7 +28,7 @@ import static org.junit.Assert.fail;
 public class ShowMotionNameTest {
 
     private static final String[] MODEL_IDS = {
-        "echidna", "echidna_valentine", "emilia_bunny", "emilia_swimsuit", "nahida_genshin",
+        "emilia_bunny",
     };
 
     private static File assetsRoot() {

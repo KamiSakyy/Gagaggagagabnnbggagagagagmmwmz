@@ -477,7 +477,7 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
     }
 
     /** Найденные у модели каналы мимики: брови, глаза, слёзы, бледность. */
-    private final Map<String, CubismId> emotionIds = new HashMap<String, CubismId>();
+    private final Map<String, Channel> emotionIds = new HashMap<String, Channel>();
     private boolean emotionResolved;
 
     /** Список каналов мимики этой модели: видно в отчёте самопроверки. */
@@ -642,17 +642,51 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
      * имеет индекс меньше числа параметров. Чего у модели нет - то просто не двигается.</p>
      */
     private static final String[] EMOTION_PARAMETER_NAMES = {
-            "ParamBrowLAngle", "ParamBrowRAngle", "ParamBrowLAngle2", "ParamBrowRAngle2",
-            "ParamBrowLForm", "ParamBrowRForm",
-            "ParamBrowLX", "ParamBrowRX",
-            "ParamEyeBallYorime",
-            "ParamEYEL_ikaru", "ParamEYER_ikaru",
-            "ParamBxNamidaL", "ParamBxNamidaR",
-            "ParamPale",
-            "ParamAngry", "ParamAngry2",
-            "ParamCheek2",
-            "ParamMouthForm2", "ParamMouthForm3",
+            // Брови: наклон, форма, сдвиг и высота. У Эмилии-кролика есть все четыре.
+            "ParamBrowLAngle", "ParamBrowRAngle", "ParamBrowLForm", "ParamBrowRForm",
+            "ParamBrowLX", "ParamBrowRX", "ParamBrowLY", "ParamBrowRY",
+            "ParamBrowLAngle2", "ParamBrowRAngle2",
+            // «Бровь» по-японски: отдельный канал рига.
+            "mayu",
+            // Глаза: злой взгляд, слёзы, зрачок «в кучку», прикрытые веки.
+            "ParamEYEL_ikaru", "ParamEYER_ikaru", "ParamBxNamidaL", "ParamBxNamidaR",
+            "ParamEyeBallYorime", "ParamEYEL_Y", "ParamEYER_Y",
+            "ParamEyeLSmile", "ParamEyeRSmile",
+            // Лицо: злость, бледность, румянец.
+            "ParamAngry", "ParamAngry2", "anger", "ParamPale", "ParamCheek", "ParamCheek2",
+            // Рот: поджатые губы и форма рта.
+            "ParamMouthForm", "ParamMouthForm2", "ParamMouthForm3",
     };
+
+    /**
+     * Канал модели: индекс, а главное - собственные границы параметра.
+     *
+     * <p>Это и есть «точечная» настройка: у каждой модели свои единицы измерения (угол брови может
+     * быть от минус единицы до единицы, а может быть в градусах, от минус тридцати до тридцати).
+     * Раньше значения задавались «на глаз», и каналы либо не доходили до края, либо упирались в
+     * него и обрезались. Здесь каждое значение считается как доля собственного диапазона
+     * параметра: минус единица - это его минимум, плюс единица - максимум, ноль - значение по
+     * умолчанию. Поэтому одна и та же эмоция выглядит одинаково сильно на любом риге.</p>
+     */
+    private static final class Channel {
+        final CubismId id;
+        final float min;
+        final float max;
+        final float def;
+
+        Channel(CubismId id, float min, float max, float def) {
+            this.id = id;
+            this.min = min;
+            this.max = max;
+            this.def = def;
+        }
+
+        /** Значение канала для доли от минус единицы до единицы. */
+        float value(float amount) {
+            final float a = amount < -1.0f ? -1.0f : (amount > 1.0f ? 1.0f : amount);
+            return a >= 0.0f ? def + (max - def) * a : def + (def - min) * a;
+        }
+    }
 
     /** Насколько сдвигается наклон бровей: заметно, но не карикатурно. */
     private static final float BROW_ANGLE_DEGREES = 12.0f;
@@ -671,7 +705,10 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             final CubismId candidate = id(EMOTION_PARAMETER_NAMES[i]);
             final int index = model.getParameterIndex(candidate);
             if (index >= 0 && index < count) {
-                emotionIds.put(EMOTION_PARAMETER_NAMES[i], candidate);
+                emotionIds.put(EMOTION_PARAMETER_NAMES[i], new Channel(candidate,
+                        model.getParameterMinimumValue(index),
+                        model.getParameterMaximumValue(index),
+                        model.getParameterDefaultValue(index)));
             }
         }
         if (!emotionIds.isEmpty()) {
@@ -694,50 +731,67 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         final float angle = ParamLimits.unitSign(pose.browAngle);
         final float form = ParamLimits.unitSign(pose.browForm);
         final float side = ParamLimits.unitSign(pose.browX) * BROW_SIDE;
-        for (Map.Entry<String, CubismId> entry : emotionIds.entrySet()) {
+        // Каждому каналу задаётся доля от его собственного диапазона: минус единица - минимум
+        // параметра, плюс единица - максимум. Так одна и та же эмоция одинаково сильно выглядит на
+        // любой модели, чем бы ни измерялся её канал.
+        for (Map.Entry<String, Channel> entry : emotionIds.entrySet()) {
             final String name = entry.getKey();
-            float target = 0.0f;
+            float amount = 0.0f;
             boolean active = true;
             if (name.startsWith("ParamBrowL") || name.startsWith("ParamBrowR")) {
-                final boolean right = name.contains("R") && !name.startsWith("ParamBrowL");
                 if (name.contains("Angle")) {
-                    // Внутренние концы бровей вверх - грусть и мольба; вниз - злость.
-                    target = -angle * BROW_ANGLE_DEGREES * (right ? 1.0f : 1.0f);
+                    // Внутренние концы бровей вверх - это грусть и мольба, вниз - злость.
+                    amount = -angle;
                 } else if (name.contains("Form")) {
-                    target = form * BROW_FORM_DEGREES;
+                    amount = form;
                 } else if (name.contains("X")) {
-                    target = side * (right ? -1.0f : 1.0f);
+                    amount = side;
+                } else if (name.contains("Y")) {
+                    // Высота бровей: та же величина, что уходит в модель как высота брови.
+                    amount = pose.browLY;
                 } else {
                     active = false;
                 }
-                active = active && mood > 0.05f;
+                active = active && (mood > 0.03f || Math.abs(amount) > 0.03f);
+            } else if (name.equals("mayu")) {
+                // Отдельный канал бровей рига: двигается вместе с их высотой и наклоном.
+                amount = (pose.browLY + form * 0.5f - angle * 0.5f) * 0.5f;
+                active = Math.abs(amount) > 0.03f;
             } else if (name.startsWith("ParamEYEL_ikaru") || name.startsWith("ParamEYER_ikaru")) {
-                target = pose.glareL * 1.0f;
-                active = target > 0.01f;
+                // «Злые глаза»: взгляд исподлобья вместе с силой злости.
+                amount = pose.glareL;
+                active = amount > 0.01f;
             } else if (name.startsWith("ParamBxNamida")) {
-                target = pose.tears;
-                active = target > 0.02f;
-            } else if (name.equals("ParamPale")) {
-                target = pose.pale;
-                active = target > 0.02f;
-            } else if (name.equals("ParamAngry") || name.equals("ParamAngry2")) {
-                target = pose.angryFace;
-                active = target > 0.02f;
+                amount = pose.tears;
+                active = amount > 0.02f;
             } else if (name.equals("ParamEyeBallYorime")) {
-                target = pose.eyeYorime;
-                active = target > 0.02f;
-            } else if (name.equals("ParamCheek2")) {
-                target = pose.cheek;
-                active = target > 0.02f;
+                amount = pose.eyeYorime;
+                active = amount > 0.02f;
+            } else if (name.startsWith("ParamEyeLSmile") || name.startsWith("ParamEyeRSmile")) {
+                // Улыбка глазами: у Эмилии это отдельные каналы, и без них радость не читалась.
+                amount = pose.eyeLSmile;
+                active = amount > 0.02f;
+            } else if (name.startsWith("ParamEYEL_Y") || name.startsWith("ParamEYER_Y")) {
+                // Прикрытые веки: усталость и полуприкрытый взгляд.
+                amount = Pose.clamp(1.0f - pose.eyeLOpen, 0.0f, 1.0f) * 0.9f;
+                active = amount > 0.02f;
+            } else if (name.equals("ParamPale")) {
+                amount = pose.pale;
+                active = amount > 0.02f;
+            } else if (name.equals("ParamAngry") || name.equals("ParamAngry2") || name.equals("anger")) {
+                amount = pose.angryFace;
+                active = amount > 0.02f;
+            } else if (name.startsWith("ParamCheek")) {
+                amount = pose.cheek;
+                active = amount > 0.02f;
             } else if (name.startsWith("ParamMouthForm")) {
-                // Поджатые губы и «собранный» рот: состояние сосредоточенности и сдержанности.
-                target = ParamLimits.mouthForm(pose.mouthTension);
-                active = Math.abs(target) > 0.02f;
+                amount = pose.mouthTension;
+                active = Math.abs(amount) > 0.02f;
             } else {
                 active = false;
             }
             if (active) {
-                blend(entry.getValue(), target, weight);
+                blend(entry.getValue().id, entry.getValue().value(amount), weight);
             }
         }
     }

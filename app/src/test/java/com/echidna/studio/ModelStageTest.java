@@ -295,10 +295,11 @@ public class ModelStageTest {
         stage.attach(avatar, null);
         stage.mapper().setAutoCalibration(false);
         stage.toCamera();
-        // No camera frames at all: the stage must fall back to the demo pose, not freeze or crash.
+        // Кадров камеры нет вовсе: сцена не должна ни падать, ни начинать жить своей жизнью -
+        // персонаж спокойно стоит, а вес позы уходит в ноль, чтобы он не делал лишних движений.
         final Pose pose = run(stage, 6.0f);
         assertFalse(Float.isNaN(pose.angleX));
-        assertTrue("демо-режим должен оживить модель", pose.weight > 0.0f);
+        assertTrue("без лица модель должна успокоиться: " + pose.weight, pose.weight < 0.2f);
     }
 
     /** Сцена обязана показывать и включать выражения объёмной модели: у неё нет AvatarBridge. */

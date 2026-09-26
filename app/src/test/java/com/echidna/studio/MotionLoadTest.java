@@ -35,11 +35,7 @@ public class MotionLoadTest {
     private static final Map<String, Integer> EXPECTED = new LinkedHashMap<String, Integer>();
 
     static {
-        EXPECTED.put("echidna", 68);
-        EXPECTED.put("echidna_valentine", 66);
         EXPECTED.put("emilia_bunny", 125);
-        EXPECTED.put("emilia_swimsuit", 115);
-        EXPECTED.put("nahida_genshin", 0);
     }
 
     private static void prepareFramework() throws Exception {
@@ -126,14 +122,14 @@ public class MotionLoadTest {
                 }
             }
         }
-        assertTrue("не разобралось ни одного движения", total > 300);
+        assertTrue("не разобралось ни одного движения", total > 100);
         assertTrue("движения, которые не разобрались:\n" + String.join("\n", failures), failures.isEmpty());
     }
 
     @Test
     public void aMotionWithUnderstatedCountersStillLoads() throws Exception {
         prepareFramework();
-        final File source = motionFiles("echidna").get(0);
+        final File source = motionFiles("emilia_bunny").get(0);
         final String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
         // «Убитые» счётчики - именно то, из-за чего приложение показывало ошибку отрисовки.
         final String damaged = text
@@ -148,7 +144,7 @@ public class MotionLoadTest {
     @Test
     public void aTruncatedCurveDoesNotBreakTheParser() throws Exception {
         prepareFramework();
-        final File source = motionFiles("echidna").get(1);
+        final File source = motionFiles("emilia_bunny").get(1);
         final String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
         final int start = text.indexOf("\"Segments\"");
         assertTrue("в движении нет сегментов", start > 0);

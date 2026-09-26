@@ -88,6 +88,15 @@ public final class CameraController {
     private volatile int rotationOverride = -1;
     /** Поворот, с которым собран последний отданный кадр: нужен автоподбору ориентации. */
     private volatile int lastFrameRotation = -1;
+    /**
+     * Доворот, который камера выучила сама.
+     *
+     * <p>Складывается с ручным доворотом кнопки, но запоминается отдельно: если лицо говорит, что
+     * кадр вверх ногами, приложение доворачивает его само и держит так и дальше. Выученное значение
+     * не сбрасывается при выключении камеры - перезапуск не должен снова показывать перевёрнутое
+     * лицо - но пересматривается, если после доворота лицо опять окажется вверх ногами.</p>
+     */
+    private volatile int autoRotation;
     /** Сколько миллисекунд занял перевод последнего кадра: видно в отчёте. */
     private volatile long lastConvertMs;
     private final BitmapPool pool = new BitmapPool();
@@ -200,6 +209,25 @@ public final class CameraController {
 
     public int rotationOverride() {
         return rotationOverride;
+    }
+
+    /** Доворот, выученный по лицу: 0 или 180 градусов (может сложиться и в 90/270 при смене камеры). */
+    public int autoRotation() {
+        return autoRotation;
+    }
+
+    /** Запоминает доворот, выученный по лицу. */
+    public void setAutoRotation(int degrees) {
+        final int normalized = CameraRotation.normalize(degrees);
+        if (normalized != autoRotation) {
+            autoRotation = normalized;
+            EchidnaLog.i("CAMERA", "выученный доворот кадра: " + normalized + "°");
+        }
+    }
+
+    /** Забывает выученный доворот: понадобилось, когда человек сам повернул кадр кнопкой. */
+    public void clearAutoRotation() {
+        autoRotation = 0;
     }
 
     /** Поворот, с которым собран последний отданный кадр (для автоподбора ориентации). */
@@ -501,12 +529,14 @@ public final class CameraController {
         if (override >= 0) {
             return override;
         }
-        return CameraRotation.upright(frontFacing, sensorOrientation, deviceRotation(), extraRotation);
+        return CameraRotation.upright(frontFacing, sensorOrientation, deviceRotation(),
+                extraRotation + autoRotation);
     }
 
     /** Поворот кадра по правилу камеры, без автоподбора: с него начинается автоподбор. */
     public int computedRotation() {
-        return CameraRotation.upright(frontFacing, sensorOrientation, deviceRotation(), extraRotation);
+        return CameraRotation.upright(frontFacing, sensorOrientation, deviceRotation(),
+                extraRotation + autoRotation);
     }
 
     private int deviceRotation() {

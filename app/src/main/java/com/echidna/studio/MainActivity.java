@@ -813,7 +813,16 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
      * градусов: производители по-разному вешают фронтальный сенсор, и правило
      * {@code SENSOR_ORIENTATION} описывает не все телефоны. Выбор запоминается.</p>
      */
+    /**
+     * Ручной поворот кадра на 180 градусов.
+     *
+     * <p>Заодно отменяется автоматический доворот: если приложение уже выучило, что кадр надо
+     * повернуть, ручное нажатие начинает с чистого листа, а не спорит с ним.</p>
+     */
     private void flipCamera() {
+        if (hub != null) {
+            hub.forgetLearnedRotation();
+        }
         final int next = (hub.camera().extraRotation() + 180) % 360;
         hub.camera().setExtraRotation(next);
         saveSetting("camera-rotation", next);
@@ -1891,6 +1900,16 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             shownGesture = gesture;
             handler.post(() -> showGesture(gesture));
         }
+        // Смена распознанной эмоции показывается плашкой: человек должен видеть, что приложение
+        // поняло его лицо. Порог низкий - сдержанное выражение тоже считается.
+        final int emotion = stage.emotion();
+        final float intensity = stage.emotionIntensity();
+        if (emotion != shownEmotion) {
+            shownEmotion = emotion;
+            if (emotion != com.echidna.studio.track.EmotionDetector.NEUTRAL && intensity > 0.33f) {
+                handler.post(() -> showEmotion(emotion));
+            }
+        }
         // Сторож камеры: если кадры перестали приходить, сессия пересобирается. Без него человек
         // видел пустое окошко и надпись "камера", а приложение считало, что всё в порядке.
         if (cameraMode && hub.isRunning()
@@ -1948,6 +1967,24 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         }
         moodText.setText("эмоция: " + stage.emotionName() + " "
                 + Math.round(stage.emotionIntensity() * 100.0f) + "%");
+    }
+
+    /**
+     * Показывает всплывающую плашку с распознанной эмоцией.
+     *
+     * <p>Строка в шапке отвечает на вопрос «что видит приложение сейчас», а плашка - на вопрос «оно
+     * вообще меня понимает?». Появляется на смене эмоции и сама исчезает.</p>
+     */
+    private void showEmotion(int emotion) {
+        if (gestureBadge == null) {
+            return;
+        }
+        gestureBadge.setText(com.echidna.studio.track.EmotionDetector.name(emotion).toUpperCase()
+                + " · " + Math.round(stage.emotionIntensity() * 100.0f) + "%");
+        gestureBadge.setVisibility(View.VISIBLE);
+        gestureShownAt = android.os.SystemClock.elapsedRealtime();
+        handler.removeCallbacks(hideGestureBadge);
+        handler.postDelayed(hideGestureBadge, 1400);
     }
 
     private void showGesture(int fingers) {

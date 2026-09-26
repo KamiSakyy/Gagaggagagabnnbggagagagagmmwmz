@@ -300,6 +300,9 @@ public final class TrackingHub {
         // загрузка моделей больше не держит нажатие кнопки.
         running = true;
         trackersReady = false;
+        // Выученный доворот сохраняется между включениями камеры: лицо в кадре не должно
+        // переворачиваться на каждой остановке. Сбрасываются только наблюдения - решение будет
+        // принято заново по свежим кадрам.
         orientation.reset();
         trackersStartedAt = SystemClock.elapsedRealtime();
         addDiagnostic("камера включена, распознавание поднимается");
@@ -328,6 +331,18 @@ public final class TrackingHub {
     /** Сколько раз кадр доворачивался сам, потому что лицо оказывалось вверх ногами. */
     public int cameraFlips() {
         return orientation.flips();
+    }
+
+    /**
+     * Человек сам повернул кадр кнопкой.
+     *
+     * <p>Ручное решение отменяет выученное: иначе автоматика и кнопка тянули бы кадр каждая в свою
+     * сторону. Заодно очищаются наблюдения, чтобы автоматика не сработала на старых кадрах.</p>
+     */
+    public void forgetLearnedRotation() {
+        camera.clearAutoRotation();
+        orientation.reset();
+        camera.setExtraRotation(camera.extraRotation());
     }
 
     /** Готово ли распознавание лица: по этому интерфейс пишет «загружается» или «работает». */
@@ -785,6 +800,11 @@ public final class TrackingHub {
         if (!fresh.faceUprightKnown) {
             return;
         }
+        // Голосует только лицо, которое видно достаточно крупно: маленькое лицо в углу кадра
+        // измеряется по нескольким пикселям, и верить ему нельзя.
+        if (fresh.scale > 0.02f && fresh.scale < 0.12f) {
+            return;
+        }
         orientation.record(fresh.faceUpright);
         final int decision = orientation.decide(now);
         if (decision == FrameOrientation.UNSURE) {
@@ -795,8 +815,10 @@ public final class TrackingHub {
             orientation.onConfirmedUpright();
             return;
         }
-        final int rotation = (camera.extraRotation() + 180) % 360;
-        camera.setExtraRotation(rotation);
+        // Доворот складывается с уже выученным: так кадр исправляется и в первый раз, и если
+        // после поворота лицо снова оказалось вверх ногами.
+        final int rotation = (camera.autoRotation() + 180) % 360;
+        camera.setAutoRotation(rotation);
         orientation.onFlipped(now);
         resetFlipStats();
         // Проверка перевёрнутых кадров больше не нужна: лицо уже сказало, как оно стоит.

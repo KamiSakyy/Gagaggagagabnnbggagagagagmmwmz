@@ -42,9 +42,9 @@ public final class EmotionDetector {
     /** Насколько сильнее должна быть новая эмоция, чтобы вытеснить текущую. */
     private static final float SWITCH_MARGIN = 0.05f;
     /** Сколько эмоция держится, прежде чем её можно сменить: защита от дрожания. */
-    private static final float MIN_HOLD = 0.35f;
+    private static final float MIN_HOLD = 0.28f;
     /** Время сглаживания силы эмоции, секунды. */
-    private static final float SMOOTH = 0.09f;
+    private static final float SMOOTH = 0.07f;
 
     private final float[] level = new float[COUNT];
     private int current = NEUTRAL;
@@ -162,7 +162,11 @@ public final class EmotionDetector {
         final float sneer = (s.blendNoseSneerLeft + s.blendNoseSneerRight) * 0.5f;
         final float stretch = (s.blendMouthStretchLeft + s.blendMouthStretchRight) * 0.5f;
         // Брови: к коэффициентам добавляется измеренная высота бровей над глазами.
-        final float browGeo = s.geometric ? Math.max(0.0f, s.browGeo) * 0.8f : 0.0f;
+        final float browGeoUp = s.geometric ? Math.max(0.0f, s.browGeo) * 0.8f : 0.0f;
+        // Опущенные брови и уголки рта вниз измерение видит так же хорошо, как поднятые: это
+        // хмурый взгляд и недовольство, и без них лицо модели оставалось спокойным.
+        final float browGeoDown = s.geometric ? Math.max(0.0f, -s.browGeo) * 0.7f : 0.0f;
+        final float frownGeo = s.geometric ? Math.max(0.0f, -s.smileGeo) * 0.8f : 0.0f;
         final float eyeWide = (s.blendEyeWideLeft + s.blendEyeWideRight) * 0.5f;
         final float lookAside = (s.blendEyeLookOutLeft + s.blendEyeLookOutRight
                 + s.blendEyeLookInLeft + s.blendEyeLookInRight) * 0.25f;
@@ -180,15 +184,17 @@ public final class EmotionDetector {
         final float delight = clamp((smile - 0.42f) * 2.1f + cheekSquint * 0.4f + squint * 0.3f
                 + (s.geometric ? Math.max(0.0f, s.smileGeo - 0.5f) * 1.5f : 0.0f));
         // Удивление: брови вскинуты (внутренние и внешние концы), глаза широко, рот открыт.
-        final float surprise = clamp(browInner * 0.45f + browOuter * 0.45f + browGeo * 0.6f
+        final float surprise = clamp(browInner * 0.45f + browOuter * 0.45f + browGeoUp * 0.6f
                 + eyeWide * 0.45f + jaw * 0.5f
                 + (s.geometric ? s.mouthOpenGeo * 0.3f : 0.0f) + lookUp * 0.15f);
         // Злость: брови сведены, губы сжаты, уголки рта вниз, нос сморщен.
         final float anger = clamp(browDown * 0.8f + press * 0.45f + frown * 0.4f
-                + sneer * 0.35f + stretch * 0.2f - smile * 0.5f);
+                + sneer * 0.35f + stretch * 0.2f + browGeoDown * 0.8f + frownGeo * 0.5f
+                - smile * 0.5f);
         // Грусть: внутренние концы бровей вверх, уголки рта и нижняя губа вниз, взгляд вниз.
         final float sadness = clamp(browInner * 0.75f + frown * 0.5f + lowerDown * 0.45f
-                + lookDown * 0.35f + s.blendMouthShrugLower * 0.25f - smile * 0.6f);
+                + lookDown * 0.35f + s.blendMouthShrugLower * 0.25f + frownGeo * 0.6f
+                - smile * 0.6f);
         // Смущение: лёгкая улыбка, вскинутые внутренние брови, взгляд отведён в сторону, румянец.
         final float shy = clamp(browInner * 0.45f + smile * 0.4f + lookAside * 0.5f
                 + cheekSquint * 0.3f + roll * 0.01f - jaw * 0.3f - browOuter * 0.3f
@@ -223,13 +229,21 @@ public final class EmotionDetector {
             dt = 1.0f / 60.0f;
         }
         final float eyesClosed = 1.0f - Math.min(s.eyeLeft, s.eyeRight);
+        // Без коэффициентов мимики остаются улыбка, рот и измерения по точкам лица. Их хватает,
+        // чтобы понимать радость, удивление, злость и грусть: измерение видит и поднятые, и
+        // сведённые брови, и опущенные уголки рта, а знак улыбки показывает, доволен человек или нет.
+        final float smile = Math.max(s.smile, s.geometric ? Math.max(0.0f, s.smileGeo) : 0.0f);
+        final float frownGeo = s.geometric ? Math.max(0.0f, -s.smileGeo) : 0.0f;
+        final float browUp = s.geometric ? Math.max(0.0f, s.browGeo) : 0.0f;
+        final float browLow = s.geometric ? Math.max(0.0f, -s.browGeo) : 0.0f;
+        final float open = Math.max(s.mouthOpen, s.geometric ? s.mouthOpenGeo : 0.0f);
         applyLevels(dt,
-                clamp(s.smile * 1.2f),
-                clamp(s.mouthOpen * 1.1f - s.smile * 0.5f),
-                0.0f,
-                clamp(-s.smile * 0.6f + (1.0f - s.eyeLeft) * 0.3f),
-                clamp(s.smile * 0.5f),
-                0.0f,
+                clamp(smile * 1.2f),
+                clamp(open * 1.1f - smile * 0.5f + browUp * 0.6f),
+                clamp(browLow * 0.9f + frownGeo * 0.5f),
+                clamp(frownGeo * 0.9f + (1.0f - s.eyeLeft) * 0.3f),
+                clamp(smile * 0.5f),
+                clamp(browLow * 0.4f),
                 clamp(eyesClosed * 1.4f));
         lastJoy = level[JOY];
         lastSurprise = level[SURPRISE];

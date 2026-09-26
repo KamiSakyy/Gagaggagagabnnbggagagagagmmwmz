@@ -13,13 +13,9 @@ import json
 import os
 import sys
 
-# Каталог модели -> (сколько файлов движений обязано быть, есть ли своя мимика)
+# Каталог модели -> сколько файлов движений обязано быть в сборке
 MODELS = {
-    "echidna": 68,
-    "echidna_valentine": 66,
     "emilia_bunny": 125,
-    "emilia_swimsuit": 115,
-    "nahida_genshin": 0,
 }
 
 ENGINE = [
@@ -102,7 +98,7 @@ def main(argv):
             continue
         refs = data.get("FileReferences", {})
         groups = refs.get("Motions", {})
-        if not groups and name != "nahida_genshin":
+        if not groups:
             warnings.append("в " + model_json + " нет ссылок на движения")
         # Текстуры каждой модели обязаны лежать в её собственной папке: из-за жёсткого пути к
         # папке Ехидны остальные персонажи оставались белыми.

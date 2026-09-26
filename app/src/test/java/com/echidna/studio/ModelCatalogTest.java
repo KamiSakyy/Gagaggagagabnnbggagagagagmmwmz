@@ -23,7 +23,8 @@ public class ModelCatalogTest {
     @Test
     public void theCatalogCarriesEveryCharacter() {
         final List<ModelCatalog.ModelSpec> all = ModelCatalog.all();
-        assertEquals("персонажей в каталоге", 5, all.size());
+        // В сборке осталась одна модель - Эмилия-кролик: вся настройка камеры выверена по ней.
+        assertEquals("персонажей в каталоге", 1, all.size());
 
         final Set<String> ids = new HashSet<String>();
         for (int i = 0; i < all.size(); i++) {
@@ -89,7 +90,7 @@ public class ModelCatalogTest {
     @Test
     public void everyPromisedCharacterIsInTheCatalog() {
         final String[] promised = {
-                "echidna", "echidna_valentine", "emilia_bunny", "emilia_swimsuit", "nahida_genshin"
+                "emilia_bunny"
         };
         for (int i = 0; i < promised.length; i++) {
             boolean found = false;

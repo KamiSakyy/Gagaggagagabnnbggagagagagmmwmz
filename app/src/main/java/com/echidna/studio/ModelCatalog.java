@@ -48,22 +48,21 @@ public final class ModelCatalog {
 
     /** The setting the chosen character is stored under. */
     public static final String PREF_KEY = "model-id";
-    /** Персонаж по умолчанию: Ехидна из Re:Zero. */
-    public static final String DEFAULT_ID = "echidna";
+    /**
+     * Персонаж по умолчанию - Эмилия в кроличьем костюме.
+     *
+     * <p>В сборке осталась одна модель, и вся настройка камеры (углы головы, каналы лица, эмоции)
+     * выверена именно по ней: у Эмилии самое большое портфолио движений (125) и самый богатый
+     * набор параметров, включая наклон и форму бровей, злые глаза и слёзы.</p>
+     */
+    public static final String DEFAULT_ID = "emilia_bunny";
 
     private static final List<ModelSpec> MODELS = Collections.unmodifiableList(Arrays.asList(
-            new ModelSpec("echidna", "Ехидна", "\uD83D\uDDA4",
-                    "Ведьма из Re:Zero: спокойная, с хитринкой, 68 движений", "live2d/echidna"),
-            new ModelSpec("echidna_valentine", "Ехидна (Валентин)", "\uD83D\uDC9D",
-                    "Праздничный наряд: 66 движений", "live2d/echidna_valentine"),
             new ModelSpec("emilia_bunny", "Эмилия (кролик)", "\uD83D\uDC30",
-                    "Кроличий костюм, самое большое портфолио - 125 движений", "live2d/emilia_bunny"),
-            new ModelSpec("emilia_swimsuit", "Эмилия (пляж)", "\uD83C\uDF0A",
-                    "Купальник, 115 движений", "live2d/emilia_swimsuit"),
-            new ModelSpec("nahida_genshin", "Нахида (Genshin)", "\uD83C\uDF43",
-                    "Архонт мудрости с 13 выражениями лица", "live2d/nahida_genshin")
-            // Объёмной модели 3D в приложении больше нет: остаются только Live2D-персонажи.
-            // Движок 3D остался в коде (three/), но персонажа в списке нет и .vrm в APK не едет.
+                    "Кроличий костюм: 125 движений, руки, брови, злые глаза и слёзы",
+                    "live2d/emilia_bunny")
+            // Остальные персонажи убраны из сборки: вся мощь направлена на одну модель, как и
+            // просил пользователь. Осталась самая полная по возможностям - Эмилия-кролик.
     ));
 
     private ModelCatalog() {

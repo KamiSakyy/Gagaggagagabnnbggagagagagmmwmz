@@ -9,9 +9,11 @@ package com.echidna.studio.track;
  * ногами - ниже. Здесь копятся такие наблюдения, и когда лицо несколько раз подряд оказалось
  * «наоборот», кадр доворачивается на 180 градусов.</p>
  *
- * <p>Правило нарочно осторожное: кадр поворачивается только по уверенному большинству наблюдений и
- * не более двух раз за сеанс, чтобы ошибочное решение не гоняло картинку туда-сюда. Класс не знает
- * ни про Android, ни про камеру, поэтому проверяется тестом.</p>
+ * <p>Правило осторожное, но не запирающее: кадр поворачивается по уверенному большинству
+ * наблюдений, а после поворота счётчики начинаются заново. Если после поворота лицо снова
+ * оказывается вверх ногами - значит, повернули не туда, и решение принимается заново: застрять в
+ * перевёрнутом положении приложение не может. Класс не знает ни про Android, ни про камеру,
+ * поэтому проверяется тестом.</p>
  */
 public final class FrameOrientation {
 
@@ -26,15 +28,17 @@ public final class FrameOrientation {
     public static final int MIN_VOTES = 6;
     /** Какая доля наблюдений должна говорить об одном и том же. */
     private static final float MAJORITY = 0.75f;
-    /** Больше двух раз за сеанс кадр не трогаем: это уже не исправление, а дрожание. */
-    public static final int MAX_FLIPS = 2;
-
     private int upright;
     private int inverted;
     private int flips;
     private long lastFlipMs = Long.MIN_VALUE / 2;
-    /** Сколько ждать после поворота, прежде чем снова что-то решать. */
-    private static final long QUIET_AFTER_FLIP_MS = 1500L;
+    /**
+     * Сколько ждать после поворота, прежде чем снова что-то решать.
+     *
+     * <p>Пауза нужна, чтобы кадры, снятые до поворота, не участвовали в следующем решении: за это
+     * время успевают прийти кадры в новом положении.</p>
+     */
+    private static final long QUIET_AFTER_FLIP_MS = 1200L;
 
     /** Записывает одно наблюдение: лицо на кадре стоит правильно или вверх ногами. */
     public void record(boolean uprightFace) {
@@ -52,7 +56,7 @@ public final class FrameOrientation {
      * @return {@link #FLIP}, {@link #KEEP} или {@link #UNSURE}
      */
     public int decide(long nowMs) {
-        if (flips >= MAX_FLIPS || nowMs - lastFlipMs < QUIET_AFTER_FLIP_MS) {
+        if (nowMs - lastFlipMs < QUIET_AFTER_FLIP_MS) {
             return UNSURE;
         }
         final int total = upright + inverted;
@@ -77,7 +81,13 @@ public final class FrameOrientation {
         lastFlipMs = nowMs;
     }
 
-    /** Кадр оказался ровным: наблюдения больше не копятся. */
+    /**
+     * Кадр оказался ровным.
+     *
+     * <p>Счётчики очищаются, но проверка не выключается: если телефон перевернут или камера
+     * сменится, приложение снова заметит перевёрнутое лицо. Наблюдения продолжают копиться, и
+     * следующее решение принимается по свежему окну.</p>
+     */
     public void onConfirmedUpright() {
         upright = 0;
         inverted = 0;

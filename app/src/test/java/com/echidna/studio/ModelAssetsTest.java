@@ -27,11 +27,7 @@ public class ModelAssetsTest {
 
     /** Сколько файлов движений обещает каждая модель. */
     private static final String[][] MOTION_COUNTS = {
-            {"echidna", "68"},
-            {"echidna_valentine", "66"},
             {"emilia_bunny", "125"},
-            {"emilia_swimsuit", "115"},
-            {"nahida_genshin", "0"},
     };
 
     private static File assetsRoot() {

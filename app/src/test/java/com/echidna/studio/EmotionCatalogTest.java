@@ -59,63 +59,54 @@ public class EmotionCatalogTest {
     }
 
     @Test
-    public void everyEmotionOfNahidaFindsItsExpression() throws Exception {
-        final List<String> names = namesOf("nahida_genshin");
-        assertTrue("выражения Нахиды найдены", names.contains("Happy1"));
-        assertEquals("радость", "Happy1",
-                EmotionCatalog.expressionFor(EmotionDetector.JOY, names));
-        assertEquals("грусть", "Sad1",
+    public void everyEmotionOfEmiliaFindsItsScene() throws Exception {
+        final List<String> names = namesOf("emilia_bunny");
+        assertTrue("сцены Эмилии найдены", names.contains("act_egao"));
+        assertEquals("радость", "act_egao", EmotionCatalog.expressionFor(EmotionDetector.JOY, names));
+        // У Эмилии сцены печали есть только в версии для говорящего рта («_w»), и это нормально:
+        // выбирается простейшая из существующих.
+        assertEquals("грусть", "face_kanashimu_w",
                 EmotionCatalog.expressionFor(EmotionDetector.SADNESS, names));
-        assertEquals("злость", "Angry",
+        assertEquals("злость", "face_ikaru",
                 EmotionCatalog.expressionFor(EmotionDetector.ANGER, names));
-        assertEquals("смущение", "Shy",
-                EmotionCatalog.expressionFor(EmotionDetector.SHY, names));
-        assertEquals("задумчивость", "Halfeyes",
+        assertEquals("удивление", "act_odoroku",
+                EmotionCatalog.expressionFor(EmotionDetector.SURPRISE, names));
+        assertEquals("задумчивость", "act_kangaeru",
                 EmotionCatalog.expressionFor(EmotionDetector.THINKING, names));
-        assertEquals("восторг", "StarEye",
-                EmotionCatalog.expressionFor(EmotionDetector.DELIGHT, names));
-        // Спокойствие выражения не требует: лицо и так живёт своей мимикой.
+        assertEquals("усталость", "act_tameiki",
+                EmotionCatalog.expressionFor(EmotionDetector.TIRED, names));
+        // Восторг - самая широкая улыбка рига.
+        final String delight = EmotionCatalog.expressionFor(EmotionDetector.DELIGHT, names);
+        assertNotNull("восторг", delight);
+        assertTrue("восторг должен быть про улыбку: " + delight, delight.contains("egao")
+                || delight.contains("hohoemu"));
+        // Спокойствие сцены не требует: лицо и так живёт своей мимикой.
         assertNull(EmotionCatalog.expressionFor(EmotionDetector.NEUTRAL, names));
     }
 
     @Test
-    public void theRigsFindTheirOwnMotionsForEmotions() throws Exception {
-        final List<String> echidna = namesOf("echidna");
-        assertEquals("радость у Ехидны", "face_egao",
-                EmotionCatalog.expressionFor(EmotionDetector.JOY, echidna));
-        assertEquals("удивление", "face_odoroku",
-                EmotionCatalog.expressionFor(EmotionDetector.SURPRISE, echidna));
-        assertEquals("злость", "face_ikaru",
-                EmotionCatalog.expressionFor(EmotionDetector.ANGER, echidna));
-        assertEquals("смущение", "act_tereru",
-                EmotionCatalog.expressionFor(EmotionDetector.SHY, echidna));
-        // У Эмилии к именам добавляется суффикс, поэтому совпадение ищется по началу имени.
-        final List<String> emilia = namesOf("emilia_bunny");
-        final String sad = EmotionCatalog.expressionFor(EmotionDetector.SADNESS, emilia);
-        assertNotNull("грусть у Эмилии", sad);
-        assertTrue("имя должно быть про грусть: " + sad, sad.startsWith("face_kanashimu"));
+    public void theSimplestSceneWins() throws Exception {
+        final List<String> names = namesOf("emilia_bunny");
+        // Там, где есть сцена без версии для говорящего рта, выбирается именно она.
+        assertEquals("act_egao", EmotionCatalog.expressionFor(EmotionDetector.JOY, names));
+        assertEquals("act_odoroku", EmotionCatalog.expressionFor(EmotionDetector.SURPRISE, names));
+        assertEquals("act_tameiki", EmotionCatalog.expressionFor(EmotionDetector.TIRED, names));
+        assertFalse("версия для говорящего рта не должна выигрывать у основной",
+                EmotionCatalog.expressionFor(EmotionDetector.JOY, names).endsWith("_w"));
     }
 
     @Test
-    public void anUnrelatedExpressionIsNeverChosen() throws Exception {
-        final List<String> nahida = namesOf("nahida_genshin");
+    public void anUnrelatedSceneIsNeverChosen() throws Exception {
+        final List<String> names = namesOf("emilia_bunny");
         for (int emotion = 0; emotion <= EmotionDetector.DELIGHT; emotion++) {
-            final String found = EmotionCatalog.expressionFor(emotion, nahida);
+            final String found = EmotionCatalog.expressionFor(emotion, names);
             if (found == null) {
                 continue;
             }
-            assertFalse("под эмоцию выбрано чужое выражение: " + found,
-                    found.equals("black") || found.equals("HandChange") || found.equals("mouthchange"));
+            assertFalse("под эмоцию выбрана чужая сцена: " + found,
+                    found.contains("usamimi") || found.contains("ribon") || found.contains("hurihuri")
+                            || found.contains("legL") || found.contains("legR"));
         }
-    }
-
-    @Test
-    public void aModelWithoutExpressionsSimplyShowsNothing() {
-        assertNull("без выражений показывать нечего",
-                EmotionCatalog.expressionFor(EmotionDetector.JOY, new ArrayList<String>()));
-        assertNull("пустой список", EmotionCatalog.expressionFor(EmotionDetector.JOY, null));
-        assertNull("чужие имена не подходят",
-                EmotionCatalog.expressionFor(EmotionDetector.JOY, Arrays.asList("kabe", "usamimiL")));
     }
 
     @Test

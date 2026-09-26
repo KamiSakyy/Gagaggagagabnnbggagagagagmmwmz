@@ -489,6 +489,11 @@ public final class TrackingMapper {
         }
     }
 
+    /** Сколько пальцев показывает человек: по этому интерфейс рисует плашку. */
+    public int shownFingers() {
+        return gestures.shownCount();
+    }
+
     /** Номер распознанной эмоции: видно в интерфейсе и в самопроверке. */
     public int emotion() {
         return emotions.emotion();
@@ -697,12 +702,9 @@ public final class TrackingMapper {
         tracked.handsSeen = hands > 0.02f || chin > 0.02f || handOpenDamp.value() > 0.02f;
         tracked.fingers = gestures.shownCount();
 
-        // Голова кивает столько раз, сколько пальцев показал человек: так "четыре" видно даже на
-        // ригах, у которых рук в модели нет вовсе.
-        final float nod = gestures.nodDegrees();
-        if (nod > 0.0f) {
-            tracked.angleY = ParamLimits.angleY(-pitchValue * PITCH_GAIN + nod);
-        }
+        // Кивки убраны: раньше модель кивала столько раз, сколько пальцев показал человек, и это
+        // выглядело как «она делает то, чего я не делал». Счёт пальцев виден плашкой на экране, а
+        // в лице модели остаётся только то, что человек действительно сделал.
 
         // Глаза и голова поворачиваются к руке, когда человек поднимает её: модель замечает жест.
         final float attention = ParamLimits.unit((hands - 0.15f) * 1.5f);
@@ -807,33 +809,57 @@ public final class TrackingMapper {
         tracked.weight = 1.0f;
     }
 
+    /**
+     * Поза, в которую уходит модель, когда лица не видно.
+     *
+     * <p>Раньше это было собственное покачивание персонажа - и человек справедливо говорил, что
+     * модель «делает то, чего он не делал». Теперь это спокойное состояние: голова и корпус в
+     * ноль, глаза открыты, вес позы нулевой. Всё, что остаётся, - собственное дыхание рига и
+     * автоматическое моргание движка, как в VTube Studio с выключенным трекингом.</p>
+     */
     private void buildDemo() {
-        final float t = clock;
-        demo.angleX = ParamLimits.angleX(1.8f * (float) Math.sin(t * 0.31f) + 0.6f * (float) Math.sin(t * 1.7f));
-        demo.angleY = ParamLimits.angleY(3.0f * (float) Math.sin(t * 0.23f + 1.0f));
-        demo.angleZ = ParamLimits.angleZ(2.6f * (float) Math.sin(t * 0.19f + 2.0f));
-        demo.bodyX = ParamLimits.bodyX(1.2f * (float) Math.sin(t * 0.17f));
-        demo.bodyZ = ParamLimits.bodyZ(1.0f * (float) Math.sin(t * 0.21f + 0.8f));
+        demo.angleX = 0.0f;
+        demo.angleY = 0.0f;
+        demo.angleZ = 0.0f;
+        demo.bodyX = 0.0f;
         demo.bodyY = 0.0f;
-        demo.eyeBallX = ParamLimits.eyeBallX(0.28f * (float) Math.sin(t * 0.27f + 0.5f));
-        demo.eyeBallY = ParamLimits.eyeBallY(0.12f * (float) Math.sin(t * 0.21f + 1.4f));
-        demo.mouthOpenY = ParamLimits.mouthOpen(0.04f + 0.03f * (float) Math.sin(t * 0.9f));
-        demo.mouthForm = ParamLimits.mouthForm(0.25f);
-        demo.browLY = Pose.clamp(0.22f * (float) Math.max(0.0, Math.sin(t * 0.13f + 0.4f)), 0.0f, 0.4f);
-        demo.browRY = demo.browLY;
-        demo.cheek = ParamLimits.unit(0.15f);
-        demo.eyeLSmile = ParamLimits.unit(0.15f);
-        demo.eyeRSmile = ParamLimits.unit(0.15f);
+        demo.bodyZ = 0.0f;
+        demo.eyeBallX = 0.0f;
+        demo.eyeBallY = 0.0f;
+        demo.mouthOpenY = 0.0f;
+        demo.mouthForm = 0.0f;
+        demo.browLY = 0.0f;
+        demo.browRY = 0.0f;
+        demo.cheek = 0.0f;
+        demo.eyeLSmile = 0.0f;
+        demo.eyeRSmile = 0.0f;
         demo.eyeLOpen = 1.0f;
         demo.eyeROpen = 1.0f;
         demo.offsetX = 0.0f;
         demo.offsetY = 0.0f;
         demo.zoom = 1.0f;
-        // The automatic blinking of the framework stays in charge while the demo plays.
+        // Руки в спокойном состоянии не подняты.
+        demo.armY = 0.0f;
+        demo.armLeft = -1.0f;
+        demo.armRight = -1.0f;
+        demo.handOpenLeft = -1.0f;
+        demo.handOpenRight = -1.0f;
+        demo.handSeenLeft = false;
+        demo.handSeenRight = false;
+        demo.chinTouch = 0.0f;
+        demo.chinTouchLeft = 0.0f;
+        demo.chinTouchRight = 0.0f;
+        demo.chinLeft = false;
+        demo.chinRight = false;
+        demo.handOpen = 0.0f;
+        demo.handsSeen = false;
+        demo.fingers = -1;
+        // Автоматическое моргание движка остаётся: это единственное, что может делать персонаж,
+        // которого никто не видит, - и оно есть в любой VTuber-студии.
         demo.eyeWeight = 0.0f;
-        demo.weight = 0.6f;
+        // Вес нулевой: спокойное состояние не навязывает модели позу, а отпускает её.
+        demo.weight = 0.0f;
         demo.armInverted = armInverted;
-        // Демо-поза живёт своей жизнью: каналы лица из трекинга в неё не переносятся.
         demo.emotion = 0;
         demo.emotionWeight = 0.0f;
         demo.browAngle = 0.0f;

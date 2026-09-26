@@ -32,6 +32,23 @@ public class FrameOrientationTest {
     }
 
     @Test
+    public void afterTheFrameIsRightTheCheckKeepsWatching() {
+        final FrameOrientation orientation = new FrameOrientation();
+        for (int i = 0; i < FrameOrientation.MIN_VOTES; i++) {
+            orientation.record(true);
+        }
+        assertEquals(FrameOrientation.KEEP, orientation.decide(5_000L));
+        // Кадр ровный: приложение очищает счётчики, но проверка продолжается - второй раз решать
+        // есть чем, наблюдения снова копятся.
+        orientation.onConfirmedUpright();
+        assertEquals(0, orientation.uprightVotes());
+        for (int i = 0; i < FrameOrientation.MIN_VOTES; i++) {
+            orientation.record(true);
+        }
+        assertEquals(FrameOrientation.KEEP, orientation.decide(8_000L));
+    }
+
+    @Test
     public void anUprightFaceKeepsTheFrameAsItIs() {
         final FrameOrientation orientation = new FrameOrientation();
         for (int i = 0; i < FrameOrientation.MIN_VOTES; i++) {
@@ -73,8 +90,11 @@ public class FrameOrientationTest {
         for (int i = 0; i < FrameOrientation.MIN_VOTES; i++) {
             orientation.record(false);
         }
-        assertEquals("больше двух раз кадр не трогаем",
-                FrameOrientation.UNSURE, orientation.decide(40_000L));
-        assertEquals(2, orientation.flips());
+        // Поворот оказался не тем: лицо снова вверх ногами. Приложение исправляет себя - застрять
+        // в перевёрнутом положении оно не может.
+        assertEquals("кадр всегда можно довернуть обратно",
+                FrameOrientation.FLIP, orientation.decide(40_000L));
+        orientation.onFlipped(40_000L);
+        assertEquals(3, orientation.flips());
     }
 }

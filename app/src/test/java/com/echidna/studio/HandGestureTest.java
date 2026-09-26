@@ -69,7 +69,7 @@ public class HandGestureTest {
     }
 
     @Test
-    public void fourFingersMakeTheHeadNod() {
+    public void fourFingersAreCountedAndDoNotMoveTheHead() {
         final TrackingMapper mapper = new TrackingMapper();
         mapper.setAutoCalibration(false);
         final FaceSignals signals = frame(4, 0.0f, 0.5f);
@@ -85,8 +85,11 @@ public class HandGestureTest {
             deepest = Math.max(deepest, pose.angleY);
             shallowest = Math.min(shallowest, pose.angleY);
         }
-        assertTrue("голова не качнулась: " + deepest + ".." + shallowest,
-                deepest - shallowest > 2.0f);
+        // Счёт пальцев доходит до интерфейса (плашка «показано пальцев: 4»), но голова модели сама
+        // не кивает: в режиме камеры модель делает только то, что делает человек.
+        assertEquals("пальцев должно быть 4", 4, mapper.shownFingers());
+        assertTrue("голова не должна качаться сама: " + deepest + ".." + shallowest,
+                deepest - shallowest < 1.0f);
     }
 
     @Test
