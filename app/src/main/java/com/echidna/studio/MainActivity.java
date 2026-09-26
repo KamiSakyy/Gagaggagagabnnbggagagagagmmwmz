@@ -161,6 +161,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             showFallbackScreen(error);
             return;
         }
+        handler.postDelayed(this::showFirstRunHint, 1200);
         EchidnaLog.i("APP", "Echidna Studio запущено, версия " + versionName());
     }
 
@@ -231,6 +232,9 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         statusText.setText("Загружаю " + ModelCatalog.byId(modelId).title + "…");
         statusText.setTextColor(0xFFB388FF);
         statusText.setTextSize(12);
+        // Человек первым делом трогает то, что видит: нажатие на имя модели открывает их выбор.
+        statusText.setPadding(0, dp(2), 0, dp(2));
+        statusText.setOnClickListener(v -> showOverlay(true));
         bar.addView(statusText);
 
         fpsText = new TextView(this);
@@ -1294,6 +1298,16 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         stage.setMicEnabled(micEnabled);
         updateMicButtonText();
         toast(micEnabled ? "Липсинк по микрофону включён" : "Микрофон недоступен");
+    }
+
+    /** Один раз рассказывает, где выбрать модель: без этого список моделей никто не находил. */
+    private void showFirstRunHint() {
+        if (prefs == null || prefs.getBoolean("hint-shown", false)) {
+            return;
+        }
+        prefs.edit().putBoolean("hint-shown", true).apply();
+        toast("Персонажи — кнопка внизу: " + ModelCatalog.available(getAssets()).size()
+                + " модели на выбор");
     }
 
     private void updateMicButtonText() {
