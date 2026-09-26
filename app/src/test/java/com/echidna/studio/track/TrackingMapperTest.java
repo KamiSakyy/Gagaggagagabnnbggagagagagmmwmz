@@ -2,7 +2,6 @@ package com.echidna.studio.track;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.echidna.studio.anim.ParamLimits;
@@ -20,6 +19,15 @@ import java.util.Random;
 public class TrackingMapperTest {
 
     private static final float STEP = 1.0f / 60.0f;
+
+    /**
+     * The mapper the tests use: automatic calibration is switched off, because these tests check how
+     * an absolute angle of the head reaches the model. The calibration itself has its own test.
+     */
+    private static TrackingMapper plain(TrackingMapper mapper) {
+        mapper.setAutoCalibration(false);
+        return mapper;
+    }
 
     private static FaceSignals signals() {
         final FaceSignals signals = new FaceSignals();
@@ -43,7 +51,7 @@ public class TrackingMapperTest {
 
     @Test
     public void turningTheHeadTurnsTheModel() {
-        final TrackingMapper mapper = new TrackingMapper(true);
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
         final FaceSignals signals = signals();
         signals.yaw = 25.0f;
         final Pose pose = settle(mapper, signals, 1.5f);
@@ -57,10 +65,10 @@ public class TrackingMapperTest {
         final FaceSignals signals = signals();
         signals.yaw = 25.0f;
 
-        final TrackingMapper mirrored = new TrackingMapper(true);
+        final TrackingMapper mirrored = plain(new TrackingMapper(true));
         final Pose mirroredPose = settle(mirrored, signals, 1.0f);
 
-        final TrackingMapper plain = new TrackingMapper(false);
+        final TrackingMapper plain = plain(new TrackingMapper(false));
         final Pose plainPose = settle(plain, signals, 1.0f);
 
         assertEquals("зеркальный режим должен менять знак поворота",
@@ -69,7 +77,7 @@ public class TrackingMapperTest {
 
     @Test
     public void noddingMovesTheHeadTheSameWay() {
-        final TrackingMapper mapper = new TrackingMapper(true);
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
         final FaceSignals signals = signals();
         signals.pitch = 20.0f;
         final Pose pose = settle(mapper, signals, 1.5f);
@@ -79,7 +87,7 @@ public class TrackingMapperTest {
 
     @Test
     public void closingTheEyesClosesTheModelEyes() {
-        final TrackingMapper mapper = new TrackingMapper(true);
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
         final FaceSignals signals = signals();
 
         // Eyes open.
@@ -106,7 +114,7 @@ public class TrackingMapperTest {
 
     @Test
     public void oneEyeWinkStaysOneEyed() {
-        final TrackingMapper mapper = new TrackingMapper(true);
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
         final FaceSignals signals = signals();
         for (int i = 0; i < 30; i++) {
             mapper.onSignals(signals, STEP);
@@ -122,7 +130,7 @@ public class TrackingMapperTest {
 
     @Test
     public void smileAndOpenMouthReachTheModel() {
-        final TrackingMapper mapper = new TrackingMapper(true);
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
         final FaceSignals signals = signals();
         signals.smile = 0.9f;
         signals.mouthOpen = 0.8f;
@@ -134,7 +142,7 @@ public class TrackingMapperTest {
 
     @Test
     public void valuesNeverLeaveTheModelRange() {
-        final TrackingMapper mapper = new TrackingMapper(true);
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
         final FaceSignals signals = signals();
         final Pose pose = new Pose();
         final Random random = new Random(42);
@@ -166,7 +174,7 @@ public class TrackingMapperTest {
 
     @Test
     public void losingTheFaceSwitchesToTheDemoPose() {
-        final TrackingMapper mapper = new TrackingMapper(true);
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
         final FaceSignals signals = signals();
         signals.yaw = 25.0f;
         Pose pose = settle(mapper, signals, 1.5f);
@@ -188,7 +196,7 @@ public class TrackingMapperTest {
 
     @Test
     public void holdingStillKeepsTheModelStill() {
-        final TrackingMapper mapper = new TrackingMapper(true);
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
         final FaceSignals signals = signals();
         final Pose first = settle(mapper, signals, 2.0f);
         final float yaw = first.angleY;
@@ -198,7 +206,7 @@ public class TrackingMapperTest {
 
     @Test
     public void theModelFollowsTheUserSideways() {
-        final TrackingMapper mapper = new TrackingMapper(true);
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
 
         // The user's head is at their right, which is the left half of the raw camera frame.
         final FaceSignals right = signals();
@@ -218,7 +226,7 @@ public class TrackingMapperTest {
 
     @Test
     public void leaningInMakesTheModelBigger() {
-        final TrackingMapper mapper = new TrackingMapper(true);
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
 
         final FaceSignals normal = signals();
         normal.scale = 0.34f;
@@ -260,7 +268,7 @@ public class TrackingMapperTest {
 
     @Test
     public void aTrackerWithoutBlinksHandsTheEyelidsToTheFramework() {
-        final TrackingMapper mapper = new TrackingMapper(true);
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
         final FaceSignals alwaysOpen = signals();
         alwaysOpen.eyeLeft = 1.0f;
         alwaysOpen.eyeRight = 1.0f;
@@ -278,5 +286,135 @@ public class TrackingMapperTest {
         assertFalse("после моргания управление возвращается трекеру", mapper.blinkStarved());
         assertEquals(1.0f, pose.eyeWeight, 0.001f);
         assertTrue("глаза должны закрыться по трекеру", pose.eyeLOpen < 0.6f);
+    }
+
+    // ------------------------------------------------------------- тело, руки, калибровка
+
+    /**
+     * Поворот корпуса человека обязан повернуть всю модель, а не только шею: это то самое
+     * «я поворачиваюсь, и моделька тоже».
+     */
+    @Test
+    public void turningTheShouldersTurnsTheWholeCharacter() {
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
+        final FaceSignals signals = signals();
+        signals.scale = 0.34f;
+        signals.body = true;
+        signals.bodyYaw = 30.0f;
+        signals.bodyRoll = 8.0f;
+        signals.bodyShift = 0.3f;
+        final Pose pose = settle(mapper, signals, 1.5f);
+
+        assertTrue("корпус не поехал за плечами: " + pose.bodyX, Math.abs(pose.bodyX) > 6.0f);
+        assertTrue("наклон тела не передался: " + pose.bodyZ, Math.abs(pose.bodyZ) > 2.0f);
+        assertTrue("смещение тела потерялось", Math.abs(pose.bodyX) > Math.abs(pose.angleY));
+    }
+
+    /** Поднятая рука не остаётся незамеченной: у моделей нет рук, поэтому отвечает лицо. */
+    @Test
+    public void aRaisedHandMakesTheFaceHappy() {
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
+        final FaceSignals calm = signals();
+        calm.scale = 0.34f;
+        calm.body = true;
+        final Pose calmPose = settle(mapper, calm, 1.0f);
+
+        final TrackingMapper happy = plain(new TrackingMapper(true));
+        final FaceSignals raised = signals();
+        raised.scale = 0.34f;
+        raised.body = true;
+        raised.handUp = 1.0f;
+        final Pose happyPose = settle(happy, raised, 1.0f);
+
+        assertTrue("поднятая рука не подняла настроение: "
+                        + calmPose.mouthForm + " -> " + happyPose.mouthForm,
+                happyPose.mouthForm > calmPose.mouthForm + 0.2f);
+        assertTrue("улыбка не усилилась", happyPose.cheek > calmPose.cheek);
+    }
+
+    /**
+     * Калибровка: человек сидит, повернув голову на десять градусов вбок. После съёма нейтрали
+     * модель смотрит прямо, а не повторяет эту позу постоянно.
+     */
+    @Test
+    public void calibrationRemovesTheBiasOfTheUser() {
+        final TrackingMapper mapper = new TrackingMapper(true);
+        final FaceSignals bias = signals();
+        bias.scale = 0.34f;
+        bias.yaw = 12.0f;
+        bias.roll = -4.0f;
+        settle(mapper, bias, 1.0f);
+        assertTrue("нейтраль должна сняться за секунду", mapper.isCalibrated());
+
+        final Pose pose = settle(mapper, bias, 1.0f);
+        assertTrue("модель осталась повёрнутой из-за позы человека: " + pose.angleY,
+                Math.abs(pose.angleY) < 2.0f);
+
+        // А теперь человек реально поворачивает голову: уже относительно своей нейтрали.
+        final FaceSignals turned = signals();
+        turned.scale = 0.34f;
+        turned.yaw = 37.0f;
+        final Pose turnedPose = settle(mapper, turned, 1.5f);
+        assertTrue("поворот относительно нейтрали не сработал: " + turnedPose.angleY,
+                Math.abs(turnedPose.angleY) > 12.0f);
+    }
+
+    /** Пока лицо не найдено, нейтраль не снимается: снимать её не с чего. */
+    @Test
+    public void calibrationWaitsForARealFace() {
+        final TrackingMapper mapper = new TrackingMapper(true);
+        final FaceSignals lost = new FaceSignals();
+        lost.found = false;
+        settle(mapper, lost, 2.0f);
+        assertFalse("нейтраль снялась без лица", mapper.isCalibrated());
+
+        final FaceSignals face = signals();
+        face.scale = 0.34f;
+        settle(mapper, face, 1.2f);
+        assertTrue("нейтраль не снялась с живым лицом", mapper.isCalibrated());
+    }
+
+    /** Мимика из blendshape: поджатые губы и прищур попадают в позу модели. */
+    @Test
+    public void blendshapesReachTheMouthAndTheEyes() {
+        final TrackingMapper plainFace = plain(new TrackingMapper(true));
+        final FaceSignals neutral = signals();
+        neutral.scale = 0.34f;
+        final Pose neutralPose = settle(plainFace, neutral, 1.0f);
+
+        final TrackingMapper expressive = plain(new TrackingMapper(true));
+        final FaceSignals pucker = signals();
+        pucker.scale = 0.34f;
+        pucker.blendMouthPucker = 0.9f;
+        pucker.blendEyeSquintLeft = 0.8f;
+        pucker.blendEyeSquintRight = 0.8f;
+        expressive.onBlendshapes(pucker);
+        final Pose puckerPose = settle(expressive, pucker, 1.0f);
+
+        assertTrue("поджатые губы не изменили форму рта",
+                Math.abs(puckerPose.mouthForm - neutralPose.mouthForm) > 0.1f);
+        assertTrue("прищур не дошёл до глаз", puckerPose.eyeLSmile > neutralPose.eyeLSmile + 0.1f);
+    }
+
+    /**
+     * Тело вместо лица: когда датчик лица потерял пользователя, но поза видна, персонаж продолжает
+     * жить и поворачиваться, а не уходит в демонстрационное покачивание. Именно такую рамку собирает
+     * TrackingHub: лицо потеряно, тело найдено, поэтому в ней found уже true, а poseOnly - метка.
+     */
+    @Test
+    public void theBodyKeepsTheCharacterAliveWhenTheFaceIsLost() {
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
+        final FaceSignals bodyOnly = new FaceSignals();
+        bodyOnly.found = true;
+        bodyOnly.poseOnly = true;
+        bodyOnly.body = true;
+        bodyOnly.bodyYaw = 35.0f;
+        bodyOnly.yaw = 20.0f;
+        final Pose pose = settle(mapper, bodyOnly, 1.5f);
+
+        assertTrue("без лица корпус не двигает модель: " + pose.bodyX, Math.abs(pose.bodyX) > 4.0f);
+        assertTrue("голова не пошла за телом: " + pose.angleY, Math.abs(pose.angleY) > 8.0f);
+        assertTrue("демо-покачивание перебило живого человека: " + mapper.demoBlend(),
+                mapper.demoBlend() < 0.2f);
     }
 }

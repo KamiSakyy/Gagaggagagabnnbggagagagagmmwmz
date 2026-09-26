@@ -50,19 +50,33 @@ public final class MediaPipeFaceTracker implements FaceTracker {
 
     @Override
     public void start() throws Exception {
-        final BaseOptions baseOptions = BaseOptions.builder()
-                .setModelAssetPath(assetPath)
-                .setDelegate(Delegate.CPU)
-                .build();
+        // The GPU delegate is an order of magnitude faster where it is available, which is what
+        // turns a laggy avatar into a mirror. It is missing on some devices, so the CPU stays as the
+        // safety net and the app never loses the camera mode because of a driver.
+        BaseOptions baseOptions;
+        try {
+            baseOptions = BaseOptions.builder()
+                    .setModelAssetPath(assetPath)
+                    .setDelegate(Delegate.GPU)
+                    .build();
+        } catch (Throwable noGpu) {
+            EchidnaLog.i("TRACK", "GPU недоступен для лица, считаю на CPU");
+            baseOptions = BaseOptions.builder()
+                    .setModelAssetPath(assetPath)
+                    .setDelegate(Delegate.CPU)
+                    .build();
+        }
 
         final FaceLandmarker.FaceLandmarkerOptions options =
                 FaceLandmarker.FaceLandmarkerOptions.builder()
                         .setBaseOptions(baseOptions)
                         .setRunningMode(RunningMode.LIVE_STREAM)
                         .setNumFaces(1)
-                        .setMinFaceDetectionConfidence(0.35f)
-                        .setMinFacePresenceConfidence(0.35f)
-                        .setMinTrackingConfidence(0.35f)
+                        // The thresholds are deliberately forgiving: losing the face for a moment is
+                        // far more annoying on a phone than a rare false positive.
+                        .setMinFaceDetectionConfidence(0.25f)
+                        .setMinFacePresenceConfidence(0.25f)
+                        .setMinTrackingConfidence(0.25f)
                         .setOutputFaceBlendshapes(true)
                         .setOutputFacialTransformationMatrixes(true)
                         .setResultListener(this::onResult)
@@ -152,12 +166,21 @@ public final class MediaPipeFaceTracker implements FaceTracker {
                 applyBlendshape(signals, category.name, category.score);
             }
             if (signals.blendshapes) {
-                signals.eyeLeft = clamp01(1.0f - signals.blendEyeBlinkLeft * 1.25f);
-                signals.eyeRight = clamp01(1.0f - signals.blendEyeBlinkRight * 1.25f);
-                signals.mouthOpen = clamp01(signals.blendJawOpen * 1.4f);
-                signals.smile = clamp01((signals.blendMouthSmileLeft + signals.blendMouthSmileRight) * 0.5f);
+                // Eyes: a blink is reported as a probability; the eyelid of the model follows it
+                // almost one to one, and a squint is folded in so that a smile reaches the eyes.
+                final float squint = (signals.blendEyeSquintLeft + signals.blendEyeSquintRight) * 0.5f;
+                signals.eyeLeft = clamp01(1.0f - signals.blendEyeBlinkLeft * 1.35f - squint * 0.15f);
+                signals.eyeRight = clamp01(1.0f - signals.blendEyeBlinkRight * 1.35f - squint * 0.15f);
+                // Mouth: the jaw opening is the main channel, the pucker and the closed lips make it
+                // narrower, which is what keeps the model from looking like it only says "a".
+                final float jaw = signals.blendJawOpen;
+                final float pucker = signals.blendMouthPucker;
+                signals.mouthOpen = clamp01(jaw * 1.35f + pucker * 0.12f);
+                final float smileLeft = signals.blendMouthSmileLeft;
+                final float smileRight = signals.blendMouthSmileRight;
+                signals.smile = clamp01((smileLeft + smileRight) * 0.5f);
                 if (signals.smile < 0.05f) {
-                    signals.smile = clamp01(signals.blendMouthPucker * 0.3f);
+                    signals.smile = clamp01(pucker * 0.3f);
                 }
             }
         }

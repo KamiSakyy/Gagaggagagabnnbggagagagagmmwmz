@@ -10,8 +10,11 @@ local.properties
 # Signing material (the CI job creates and force-adds it)
 keystore.properties
 
-# Downloaded at build time by tools/fetch_face_model.sh
+# Downloaded at build time by tools/fetch_face_model.sh and tools/fetch_pose_model.sh
 app/src/main/assets/models/
+
+# Downloaded at build time by tools/fetch_vrm_model.sh (the 3D character)
+app/src/main/assets/three/
 
 # Build outputs
 out/

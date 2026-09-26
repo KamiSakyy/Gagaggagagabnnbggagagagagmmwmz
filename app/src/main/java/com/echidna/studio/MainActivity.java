@@ -91,6 +91,18 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private String lastFps = "";
     private BackgroundStyle backgroundCursor = BackgroundStyle.NIGHT;
     private SharedPreferences prefs;
+    /** Панель персонажей: 5 моделей приложения плюс переключатели окна камеры. */
+    private LinearLayout modelPanel;
+    private LinearLayout modelRow;
+    private Button modelsButton;
+    private Button previewWindowButton;
+    private Button calibrateButton;
+    private Button expressionsButton;
+    private LinearLayout expressionRow;
+    private String modelId = ModelCatalog.DEFAULT_ID;
+    private boolean previewFullScreen;
+    private boolean expressionsVisible;
+    private boolean modelsPanelVisible;
     private LinearLayout topBar;
     private LinearLayout sideBar;
     private View hintView;
@@ -230,6 +242,8 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                 Gravity.END | Gravity.CENTER_VERTICAL));
 
         bar.addView(sideButton("\uD83C\uDFB2", "случайная анимация", v -> renderer.requestRandomMotion()));
+        modelsButton = sideButton("\uD83D\uDC83", "персонажи и камера", v -> toggleModelPanel());
+        bar.addView(modelsButton);
         cameraButton = sideButton("\uD83C\uDFA5", "режим камеры", v -> toggleCameraMode());
         bar.addView(cameraButton);
         galleryButton = sideButton("\uD83C\uDFAC", "все анимации", v -> toggleGallery());
@@ -270,6 +284,52 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         params.setMargins(dp(10), 0, dp(10), dp(10));
         bottomPanel.setLayoutParams(params);
 
+        // Персонажи и настройки камеры: то же окно, что и у шоу, только выше.
+        modelPanel = new LinearLayout(this);
+        modelPanel.setOrientation(LinearLayout.VERTICAL);
+        modelPanel.setVisibility(View.GONE);
+        modelPanel.setPadding(0, dp(2), 0, dp(4));
+        bottomPanel.addView(modelPanel);
+
+        expressionRow = new LinearLayout(this);
+        expressionRow.setOrientation(LinearLayout.HORIZONTAL);
+        expressionRow.setVisibility(View.GONE);
+        final HorizontalScrollView expressionScroller = new HorizontalScrollView(this);
+        expressionScroller.setHorizontalScrollBarEnabled(false);
+        expressionScroller.addView(expressionRow);
+        modelPanel.addView(expressionScroller);
+
+        final LinearLayout cameraRow = new LinearLayout(this);
+        cameraRow.setOrientation(LinearLayout.HORIZONTAL);
+        previewWindowButton = new Button(this);
+        previewWindowButton.setText("\uD83D\uDD0E камера: окошко в углу");
+        previewWindowButton.setTextSize(12);
+        previewWindowButton.setAllCaps(false);
+        previewWindowButton.setBackground(rounded(0x99140F22, 16));
+        previewWindowButton.setTextColor(0xFFD8CCFF);
+        previewWindowButton.setOnClickListener(v -> togglePreviewWindow());
+        previewWindowButton.setVisibility(View.GONE);
+        calibrateButton = new Button(this);
+        calibrateButton.setText("\uD83C\uDFAF калибровка");
+        calibrateButton.setTextSize(12);
+        calibrateButton.setAllCaps(false);
+        calibrateButton.setBackground(rounded(0x99140F22, 16));
+        calibrateButton.setTextColor(0xFFD8CCFF);
+        calibrateButton.setOnClickListener(v -> calibrate());
+        calibrateButton.setVisibility(View.GONE);
+        cameraRow.addView(previewWindowButton, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)));
+        cameraRow.addView(calibrateButton, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)));
+        modelPanel.addView(cameraRow);
+
+        modelRow = new LinearLayout(this);
+        modelRow.setOrientation(LinearLayout.HORIZONTAL);
+        final HorizontalScrollView modelScroller = new HorizontalScrollView(this);
+        modelScroller.setHorizontalScrollBarEnabled(false);
+        modelScroller.addView(modelRow);
+        modelPanel.addView(modelScroller);
+
         showRow = new LinearLayout(this);
         showRow.setOrientation(LinearLayout.HORIZONTAL);
         final HorizontalScrollView scroller = new HorizontalScrollView(this);
@@ -304,6 +364,113 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         bottomPanel.addView(galleryPanel);
 
         return bottomPanel;
+    }
+
+    /** Кнопка сбоку: список моделей, выражений и настроек камеры. */
+    private void buildModelPanel() {
+        populateModels();
+        populateExpressions();
+    }
+
+    private void populateModels() {
+        if (modelRow == null) {
+            return;
+        }
+        modelRow.removeAllViews();
+        // В списке только те персонажи, чьи файлы действительно есть в сборке.
+        List<ModelCatalog.ModelSpec> all = ModelCatalog.available(getAssets());
+        if (all.isEmpty()) {
+            all = ModelCatalog.all();
+        }
+        for (int i = 0; i < all.size(); i++) {
+            final ModelCatalog.ModelSpec spec = all.get(i);
+            final Button button = new Button(this);
+            button.setText(spec.emoji + " " + spec.title);
+            button.setTextSize(12);
+            button.setAllCaps(false);
+            button.setContentDescription(spec.blurb);
+            final boolean active = spec.id.equals(modelId);
+            button.setBackground(rounded(active ? 0xCC5E35B1 : 0x99140F22, 16));
+            button.setTextColor(active ? 0xFFFFFFFF : 0xFFD8CCFF);
+            button.setOnClickListener(v -> selectModel(spec.id));
+            final LinearLayout.LayoutParams params =
+                    new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(40));
+            params.setMargins(dp(4), dp(2), dp(4), dp(2));
+            button.setLayoutParams(params);
+            modelRow.addView(button);
+        }
+        previewWindowButton.setText(previewFullScreen ? "\uD83D\uDD0D камера: во весь экран"
+                : "\uD83D\uDD0E камера: окошко в углу");
+        calibrateButton.setText("\uD83C\uDFAF калибровка");
+    }
+
+    private void selectModel(String id) {
+        modelId = id;
+        saveSetting(ModelCatalog.PREF_KEY, id);
+        renderer.requestModel(id);
+        populateModels();
+        populateExpressions();
+        toast(ModelCatalog.byId(id).title + ": " + ModelCatalog.byId(id).blurb);
+        EchidnaLog.i("APP", "выбрана модель " + id);
+    }
+
+    /** Выражения текущей модели: у Нахиды их тринадцать, у Ехидны ни одного. */
+    private void populateExpressions() {
+        if (expressionRow == null) {
+            return;
+        }
+        expressionRow.removeAllViews();
+        final List<String> names = stage.knownExpressions();
+        expressionRow.setVisibility(names.isEmpty() ? View.GONE : View.VISIBLE);
+        for (int i = 0; i < names.size(); i++) {
+            final String name = names.get(i);
+            final Button button = new Button(this);
+            button.setText(name);
+            button.setTextSize(11);
+            button.setAllCaps(false);
+            button.setBackground(rounded(0x99140F22, 14));
+            button.setTextColor(0xFFD8CCFF);
+            button.setOnClickListener(v -> {
+                stage.playExpression(name);
+                toast("Выражение: " + name);
+            });
+            final LinearLayout.LayoutParams params =
+                    new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(36));
+            params.setMargins(dp(4), dp(2), dp(4), dp(2));
+            button.setLayoutParams(params);
+            expressionRow.addView(button);
+        }
+    }
+
+    private void toggleModelPanel() {
+        modelsPanelVisible = !modelsPanelVisible;
+        if (modelsPanelVisible) {
+            buildModelPanel();
+        }
+        modelPanel.setVisibility(modelsPanelVisible ? View.VISIBLE : View.GONE);
+        modelsButton.setText(modelsPanelVisible ? "\u2716" : "\uD83D\uDC83");
+    }
+
+    /**
+     * Калибровка: приложение запоминает, как человек сидит сейчас, и считает это положение
+     * нейтральным. Персонаж перестаёт быть повёрнутым из-за того, что пользователь сидит боком.
+     */
+    private void calibrate() {
+        if (!cameraMode) {
+            toast("Калибровка работает в режиме камеры");
+            return;
+        }
+        stage.calibrate();
+        toast("Смотри прямо в камеру пару секунд — снимаю нейтраль");
+    }
+
+    private void togglePreviewWindow() {
+        previewFullScreen = !previewFullScreen;
+        renderer.setPreviewFullScreen(previewFullScreen);
+        saveSetting("preview-fullscreen", previewFullScreen);
+        populateModels();
+        toast(previewFullScreen ? "Камера во весь экран, модель поверх"
+                : "Камера в углу, модель во весь экран");
     }
 
     private void populateShows() {
@@ -531,6 +698,10 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             backgroundCursor = BackgroundStyle.NIGHT;
         }
         previewMirror = prefs.getBoolean("mirror", true);
+        modelId = prefs.getString(ModelCatalog.PREF_KEY, ModelCatalog.DEFAULT_ID);
+        previewFullScreen = prefs.getBoolean("preview-fullscreen", false);
+        renderer.setPreviewFullScreen(previewFullScreen);
+        renderer.requestModel(modelId);
         final int scale = prefs.getInt("scale", 100);
         final int gain = prefs.getInt("gain", 100);
         final int offset = prefs.getInt("offsetY", 0);
@@ -823,8 +994,14 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         }
         cameraButton.setText("\u23F9");
         sliderRow.setVisibility(View.VISIBLE);
+        if (previewWindowButton != null) {
+            previewWindowButton.setVisibility(View.VISIBLE);
+        }
+        if (calibrateButton != null) {
+            calibrateButton.setVisibility(View.VISIBLE);
+        }
         micButton.setText(micEnabled ? "\uD83D\uDD34" : "\uD83C\uDFA4");
-        toast("Режим камеры: Ехидна повторяет твою мимику");
+        toast(ModelCatalog.byId(modelId).title + " повторяет твою мимику и повороты тела");
         EchidnaLog.i("APP", "режим камеры включён, трекер " + hub.trackerName());
     }
 
@@ -835,6 +1012,12 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         renderer.requestIdle();
         cameraButton.setText("\uD83C\uDFA5");
         sliderRow.setVisibility(View.GONE);
+        if (previewWindowButton != null) {
+            previewWindowButton.setVisibility(View.GONE);
+        }
+        if (calibrateButton != null) {
+            calibrateButton.setVisibility(View.GONE);
+        }
         toast("Режим камеры выключен");
     }
 

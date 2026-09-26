@@ -8,6 +8,7 @@ import android.opengl.GLUtils;
 
 import com.echidna.studio.anim.ParamLimits;
 import com.echidna.studio.anim.Pose;
+import com.echidna.studio.three.Model3DStage;
 import com.live2d.sdk.cubism.framework.CubismFramework;
 import com.live2d.sdk.cubism.framework.id.CubismId;
 import com.live2d.sdk.cubism.framework.id.CubismIdManager;
@@ -43,7 +44,19 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
     private final android.content.Context appContext;
 
     private EchidnaModel model;
+    private volatile ModelCatalog.ModelSpec pendingModel;
+    /** Выбранный персонаж: применяется и при загрузке модели, и при перезагрузке. */
+    private volatile ModelCatalog.ModelSpec selectedModel = ModelCatalog.defaultModel();
     private final CubismMatrix44 projection = CubismMatrix44.create();
+
+    /**
+     * Кадр, под который подгоняется персонаж: {центр X, центр Y, ширина, высота} в единицах
+     * модели. Считается по вершинам мешей, поэтому не зависит от огромного пустого холста модели.
+     */
+    private float[] framing;
+    private float[] latestBounds;
+    private float framingAge;
+    private int framingSamples;
     private CubismId idTouchAngleX;
     private CubismId idTouchAngleY;
     private CubismId idTouchEyeX;
@@ -66,6 +79,17 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
     private volatile Bitmap previewFrame;
     private volatile boolean previewEnabled;
     private volatile boolean previewMirror = true;
+    /** Куда рисовать себя: маленьким окошком в углу или на весь экран. */
+    private volatile boolean previewFullScreen;
+    private int previewCorner = PREVIEW_CORNER_TOP_RIGHT;
+
+    /** Сколько секунд анимации усредняется, прежде чем кадр фиксируется. */
+    private static final float FRAMING_SETTLE_SECONDS = 5.0f;
+
+    private static final int PREVIEW_CORNER_TOP_RIGHT = 0;
+    private static final int PREVIEW_CORNER_TOP_LEFT = 1;
+    private static final int PREVIEW_CORNER_BOTTOM_RIGHT = 2;
+    private static final int PREVIEW_CORNER_BOTTOM_LEFT = 3;
 
     private volatile BackgroundStyle background = BackgroundStyle.NIGHT;
     private volatile float modelScale = 1.0f;
@@ -119,12 +143,30 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         pendingCommand = CMD_RANDOM;
     }
 
+    /** Сцена объёмного персонажа: у приложения есть и 2D, и 3D модели. */
+    private Model3DStage model3d;
+
     public void requestCamera() {
         pendingCommand = CMD_CAMERA;
     }
 
     public void requestIdle() {
         pendingCommand = CMD_IDLE;
+    }
+
+    /** Переключает персонажа: модель перезагружается на GL-потоке. */
+    public void requestModel(String modelId) {
+        final ModelCatalog.ModelSpec spec = ModelCatalog.byId(modelId);
+        selectedModel = spec;
+        pendingModel = spec;
+        if (ready.get()) {
+            pendingCommand = CMD_MODEL;
+        }
+    }
+
+    /** Идентификатор текущего персонажа. */
+    public String currentModelId() {
+        return model == null ? ModelCatalog.defaultModel().id : model.spec().id;
     }
 
     public void setBackground(BackgroundStyle style) {
@@ -163,6 +205,19 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         previewEnabled = enabled;
     }
 
+    /** True: камера на весь экран фоном. False: только модель, а камера - окошком в углу. */
+    public void setPreviewFullScreen(boolean fullScreen) {
+        previewFullScreen = fullScreen;
+    }
+
+    public boolean isPreviewFullScreen() {
+        return previewFullScreen;
+    }
+
+    public void setPreviewCorner(int corner) {
+        previewCorner = corner;
+    }
+
     public void setPreviewMirror(boolean mirror) {
         previewMirror = mirror;
     }
@@ -187,6 +242,7 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
     private static final int CMD_CAMERA = 4;
     private static final int CMD_IDLE = 5;
     private static final int CMD_RELOAD = 6;
+    private static final int CMD_MODEL = 7;
 
     // ------------------------------------------------------------------- GL
 
@@ -222,14 +278,9 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
             }
             initPreview();
 
-            model = new EchidnaModel(assets);
-            model.load();
-            stage.attach(model, stageListener);
-            ready.set(true);
-            EchidnaLog.MODEL_NOTE = model.loadReport();
-            EchidnaLog.i("GL", "модель готова: " + model.loadReport());
-            if (statusListener != null) {
-                statusListener.onModelReady(model.loadReport());
+            buildSelectedModel();
+            if (!ready.get()) {
+                return;
             }
             // Start with something alive on screen instead of a frozen pose.
             stage.startShow(com.echidna.studio.anim.ShowLibrary.byId(
@@ -315,6 +366,10 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         }
 
         applyCommands();
+        framingAge += dt;
+        if (latestBounds != null && framing != null) {
+            latestBounds = null;
+        }
 
         final BackgroundStyle bg = background;
         GLES20.glClearColor(bg.r, bg.g, bg.b, 1.0f);
@@ -322,7 +377,15 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
 
         drawPreview();
 
-        if (ready.get() && model != null && model.getModel() != null) {
+        if (ready.get() && model3d != null && model3d.isReady()) {
+            final Pose pose3d = stopRequested ? null : stage.tick(dt);
+            model3d.update(dt, pose3d, stage.isAutoBlink());
+            drawModel3d();
+            if (now - lastParameterSummaryNanos > 200_000_000L) {
+                lastParameterSummaryNanos = now;
+                parameterSummary = model3d.report();
+            }
+        } else if (ready.get() && model != null && model.getModel() != null) {
             if (lookAtTouch && idTouchAngleX != null) {
                 // Touch steers the character like a cursor: drag and the head follows.
                 model.getModel().setParameterValue(idTouchAngleX, touchX * 30.0f, 0.35f);
@@ -388,6 +451,9 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
             case CMD_RELOAD:
                 reloadModel();
                 break;
+            case CMD_MODEL:
+                reloadModel();
+                break;
             default:
                 break;
         }
@@ -396,58 +462,162 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
     /** Drops the current model and builds it again on the GL thread. */
     private void reloadModel() {
         try {
-            if (model != null) {
-                releaseModel();
-            }
+            releaseAll();
             lastError = "";
             consecutiveErrors = 0;
-            model = new EchidnaModel(assets);
-            model.load();
-            stage.attach(model, stageListener);
-            ready.set(true);
-            EchidnaLog.MODEL_NOTE = model.loadReport();
-            parameterSummary = "модель загружена";
-            EchidnaLog.i("GL", "модель перезагружена: " + model.loadReport());
-            if (statusListener != null) {
-                statusListener.onModelReady(model.loadReport());
-            }
+            pendingModel = null;
+            buildSelectedModel();
         } catch (Throwable error) {
             fail("повторная загрузка не удалась: " + describe(error));
         }
     }
 
+    /**
+     * Loads either a Live2D model or a 3D character, whichever the user picked.
+     *
+     * <p>Both paths end in the same {@link ModelStage}, which is what keeps the shows, the idle
+     * behaviour, the camera tracking and the five animations working for the 3D character exactly as
+     * they do for the 2D ones.</p>
+     */
+    private void buildSelectedModel() throws java.io.IOException {
+        if (selectedModel != null && selectedModel.threeD) {
+            model = null;
+            model3d = new Model3DStage(assets);
+            final boolean loaded = model3d.load(selectedModel.assetDir + selectedModel.modelJson);
+            if (!loaded) {
+                fail(model3d.report());
+                return;
+            }
+            stage.attach(null, stageListener);
+            // У объёмной модели нет ни движений, ни AvatarBridge: её выражения сцена получает
+            // напрямую, чтобы ряд кнопок в интерфейсе работал и для неё.
+            stage.setExpressions(model3d.expressionNames(), model3d::playExpression);
+            resetFraming();
+            ready.set(true);
+            parameterSummary = "3D модель загружена";
+            EchidnaLog.MODEL_NOTE = model3d.report();
+            if (statusListener != null) {
+                statusListener.onModelReady(model3d.report());
+            }
+            return;
+        }
+        stage.setExpressions(null, null);
+        model = new EchidnaModel(assets, selectedModel);
+        model.load();
+        stage.attach(model, stageListener);
+        resetFraming();
+        ready.set(true);
+        EchidnaLog.MODEL_NOTE = model.loadReport();
+        parameterSummary = "модель загружена";
+        EchidnaLog.i("GL", "модель готова: " + model.loadReport());
+        if (statusListener != null) {
+            statusListener.onModelReady(model.loadReport());
+        }
+    }
+
+    /** Освобождает и 2D, и 3D модель: переключение персонажа не должно течь. */
+    private void releaseAll() {
+        if (model != null) {
+            releaseModel();
+        }
+        if (model3d != null) {
+            model3d.release();
+            model3d = null;
+        }
+    }
+
+    /** Рисует объёмного персонажа: камера сама подбирает кадр под его габариты. */
+    private void drawModel3d() {
+        final float zoom = ParamLimits.zoom(stage.viewZoom()) * Math.max(0.05f, modelScale);
+        final float offsetY = modelOffsetY + stage.viewOffsetY();
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        model3d.draw(surfaceWidth, surfaceHeight, zoom, modelOffsetX + stage.viewOffsetX(),
+                offsetY, previewMirror);
+    }
+
+    /**
+     * Frames the character on the screen.
+     *
+     * <p>The projection of a Live2D model used to be scaled by the aspect of its canvas, which
+     * squeezed the picture: the vertical scale of a portrait screen is not the horizontal one, so
+     * the character came out narrow ("сплющенная"). Here the projection is built from a real scale -
+     * pixels per model unit - so both axes always get the same factor and the character never
+     * distorts. On top of that the framing follows the bounding box of the character instead of the
+     * canvas: the canvas of a model is several times larger than the girl standing on it, so
+     * fitting by the canvas left her small in the middle of empty space.</p>
+     */
     private void drawModel() {
+        final float[] bounds = fitBounds();
         projection.loadIdentity();
 
-        final float canvasAspect = model.getModel().getCanvasWidth()
-                / Math.max(0.001f, model.getModel().getCanvasHeight());
-        final float viewAspect = (float) surfaceWidth / Math.max(1.0f, (float) surfaceHeight);
+        // Pixels per model unit: the character is fitted into the frame and both axes share it.
+        final float marginX = surfaceWidth * 0.94f;
+        final float marginY = surfaceHeight * 0.96f;
+        final float pixelsPerUnit = Math.min(marginX / bounds[2], marginY / bounds[3]);
 
-        // Fit the canvas the way a mirror app does it: in portrait the width is the limit, in
-        // landscape (a phone on a stand, captured by OBS) the height is, which makes the character
-        // as large as the frame allows instead of leaving wide empty bands.
-        if (viewAspect < 1.0f) {
-            if (canvasAspect > viewAspect) {
-                projection.scale(1.0f, viewAspect / canvasAspect);
-            } else {
-                projection.scale(canvasAspect / viewAspect, 1.0f);
-            }
-        } else {
-            // Landscape: fill the height, crop whatever overflows to the sides.
-            projection.scale(1.0f, 1.0f);
-            final float cover = Math.max(1.0f, viewAspect / Math.max(0.01f, canvasAspect) * 0.62f);
-            projection.scale(cover, cover);
-        }
-        // The camera mode moves the whole model with the head of the user; every other mode keeps
-        // these at zero and one, so the shows are framed exactly as authored.
-        final float zoom = ParamLimits.zoom(stage.viewZoom());
-        projection.scale(modelScale * zoom, modelScale * zoom);
-        projection.translate(modelOffsetX + stage.viewOffsetX(),
-                modelOffsetY + stage.viewOffsetY());
+        final float zoom = ParamLimits.zoom(stage.viewZoom()) * Math.max(0.05f, modelScale);
+        final float scale = pixelsPerUnit * zoom;
 
-        final CubismModelMatrix matrix = model.getModelMatrix();
-        projection.multiplyByMatrix(matrix);
+        // Model units -> NDC. One NDC unit is half of a screen, hence the factor two.
+        final float ndcX = 2.0f * scale / Math.max(1.0f, surfaceWidth);
+        final float ndcY = 2.0f * scale / Math.max(1.0f, surfaceHeight);
+        projection.scale(ndcX, ndcY);
+
+        // The centre of the character goes to the middle of the screen plus whatever the user and
+        // the camera mode asked for.
+        final float panX = (modelOffsetX + stage.viewOffsetX()) * surfaceWidth;
+        final float panY = (modelOffsetY + stage.viewOffsetY()) * surfaceHeight;
+        final float centerNdcX = 2.0f * (surfaceWidth * 0.5f + panX) / Math.max(1.0f, surfaceWidth) - 1.0f;
+        final float centerNdcY = 2.0f * (surfaceHeight * 0.5f + panY) / Math.max(1.0f, surfaceHeight) - 1.0f;
+        projection.translate(centerNdcX - bounds[0] * ndcX, centerNdcY - bounds[1] * ndcY);
+
         model.draw(projection);
+    }
+
+    /**
+     * The box the character is framed by.
+     *
+     * <p>Measuring the meshes every frame would make the picture breathe with every motion, so the
+     * box is measured over the first seconds after loading - the shows and the idle sway go through
+     * their range there - and only grows afterwards when a pose really leaves it.</p>
+     */
+    private float[] fitBounds() {
+        if (model == null) {
+            return new float[]{0.0f, 0.0f, 1.0f, 1.0f};
+        }
+        if (framing == null) {
+            framing = model.characterBounds();
+            latestBounds = framing;
+            return framing;
+        }
+
+        // The union of a few seconds of animation, then a slow growth when the pose needs it.
+        final float[] current = model.characterBounds();
+        latestBounds = current;
+        if (framingAge < FRAMING_SETTLE_SECONDS) {
+            float minX = Math.min(framing[0] - framing[2] * 0.5f, current[0] - current[2] * 0.5f);
+            float maxX = Math.max(framing[0] + framing[2] * 0.5f, current[0] + current[2] * 0.5f);
+            float minY = Math.min(framing[1] - framing[3] * 0.5f, current[1] - current[3] * 0.5f);
+            float maxY = Math.max(framing[1] + framing[3] * 0.5f, current[1] + current[3] * 0.5f);
+            framing = new float[]{(minX + maxX) * 0.5f, (minY + maxY) * 0.5f,
+                    Math.max(0.0001f, maxX - minX), Math.max(0.0001f, maxY - minY)};
+            framingSamples++;
+        } else {
+            final float margin = 1.12f;
+            if (current[2] > framing[2] * margin || current[3] > framing[3] * margin) {
+                framing = current;
+                EchidnaLog.i("GL", "кадр расширен под новую позу персонажа");
+            }
+        }
+        return framing;
+    }
+
+    /** Forgets the measured box: the next frame measures the character again. */
+    private void resetFraming() {
+        framing = null;
+        framingAge = 0.0f;
+        framingSamples = 0;
     }
 
     private void countFps(float dt) {
@@ -478,6 +648,10 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         if (model != null) {
             model.release();
             model = null;
+        }
+        if (model3d != null) {
+            model3d.release();
+            model3d = null;
         }
         ready.set(false);
         if (previewTexture != 0) {
@@ -517,11 +691,17 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         previewTexture = textures[0];
     }
 
+    /**
+     * Draws the camera picture: as a small window in a corner of the screen by default, so the user
+     * sees the character and not themselves, or full screen when asked for.
+     */
     private void drawPreview() {
         final Bitmap frame = previewFrame;
         if (!previewEnabled || frame == null || previewProgram == 0) {
             return;
         }
+        final float[] rect = previewFullScreen ? fullScreenRect() : cornerRect();
+
         GLES20.glUseProgram(previewProgram);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, previewTexture);
@@ -531,9 +711,14 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, frame, 0);
 
-        final float[] vertices = previewMirror
-                ? new float[]{-1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, 1}
-                : new float[]{-1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, 1};
+        final float left = rect[0];
+        final float bottom = rect[1];
+        final float right = rect[2];
+        final float top = rect[3];
+        final float[] vertices = {
+                left, bottom, right, bottom, left, top,
+                right, bottom, right, top, left, top
+        };
         final float[] texCoords = previewMirror
                 ? new float[]{1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1}
                 : new float[]{0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1};
@@ -548,6 +733,48 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
         GLES20.glDisableVertexAttribArray(previewPositionHandle);
         GLES20.glDisableVertexAttribArray(previewTexCoordHandle);
+    }
+
+    private float[] fullScreenRect() {
+        return new float[]{-1.0f, -1.0f, 1.0f, 1.0f};
+    }
+
+    /**
+     * The rectangle of the corner window, in NDC.
+     *
+     * <p>It keeps the aspect of the camera picture, so the user is not stretched in it, and it is
+     * small enough not to cover the character.</p>
+     */
+    private float[] cornerRect() {
+        final Bitmap frame = previewFrame;
+        final float frameAspect = frame == null || frame.getHeight() == 0
+                ? 0.75f
+                : (float) frame.getWidth() / frame.getHeight();
+        // A quarter of the screen width, but never taller than a quarter of the height.
+        float widthNdc = 0.52f;
+        float heightNdc = widthNdc * surfaceWidth / Math.max(1.0f, surfaceHeight) / frameAspect;
+        final float maxHeight = 0.55f;
+        if (heightNdc > maxHeight) {
+            heightNdc = maxHeight;
+            widthNdc = heightNdc * surfaceHeight / Math.max(1.0f, surfaceWidth) * frameAspect;
+        }
+        final float margin = 0.04f;
+        final boolean leftSide = previewCorner == PREVIEW_CORNER_TOP_LEFT
+                || previewCorner == PREVIEW_CORNER_BOTTOM_LEFT;
+        final boolean bottomSide = previewCorner == PREVIEW_CORNER_BOTTOM_LEFT
+                || previewCorner == PREVIEW_CORNER_BOTTOM_RIGHT;
+        final float centerX = leftSide ? (-1.0f + margin + widthNdc * 0.5f)
+                                       : (1.0f - margin - widthNdc * 0.5f);
+        // The top of the screen in NDC is +1, and the studio keeps its own bars at the very top and
+        // bottom, which is why the window sits a little lower than the edge.
+        final float centerY = bottomSide ? (-1.0f + margin + heightNdc * 0.5f)
+                                         : (1.0f - margin - 0.10f - heightNdc * 0.5f);
+        return new float[]{
+                centerX - widthNdc * 0.5f,
+                centerY - heightNdc * 0.5f,
+                centerX + widthNdc * 0.5f,
+                centerY + heightNdc * 0.5f
+        };
     }
 
     private static FloatBuffer toBuffer(float[] data) {
