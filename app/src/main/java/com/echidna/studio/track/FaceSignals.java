@@ -53,6 +53,51 @@ public final class FaceSignals {
     public float blendMouthFrownLeft;
     public float blendMouthFrownRight;
     public float blendTongueOut;
+    /**
+     * Остальные каналы мимики из 52 коэффициентов MediaPipe.
+     *
+     * <p>Каждый коэффициент - это движение одной мышцы лица: внутренние и внешние концы бровей,
+     * прищур, широко раскрытые глаза, нахмуренный нос, сжатые губы, опущенные уголки рта, взгляд
+     * в сторону. Раньше из полусотни каналов читалось четырнадцать, и лицо модели двигалось
+     * только крупными мазками. Из этих значений собираются эмоции - радость, удивление, злость,
+     * грусть, смущение, задумчивость, - и каждая из них уходит в свои параметры модели.</p>
+     */
+    public float blendBrowOuterUpLeft;
+    public float blendBrowOuterUpRight;
+    public float blendCheekSquintLeft;
+    public float blendCheekSquintRight;
+    public float blendNoseSneerLeft;
+    public float blendNoseSneerRight;
+    public float blendEyeWideLeft;
+    public float blendEyeWideRight;
+    public float blendMouthPressLeft;
+    public float blendMouthPressRight;
+    public float blendMouthShrugUpper;
+    public float blendMouthShrugLower;
+    public float blendMouthStretchLeft;
+    public float blendMouthStretchRight;
+    public float blendMouthUpperUpLeft;
+    public float blendMouthUpperUpRight;
+    public float blendMouthLowerDownLeft;
+    public float blendMouthLowerDownRight;
+    public float blendMouthDimpleLeft;
+    public float blendMouthDimpleRight;
+    public float blendMouthLeft;
+    public float blendMouthRight;
+    public float blendMouthFunnel;
+    public float blendMouthClose;
+    public float blendMouthRollLower;
+    public float blendMouthRollUpper;
+    public float blendEyeLookUpLeft;
+    public float blendEyeLookUpRight;
+    public float blendEyeLookDownLeft;
+    public float blendEyeLookDownRight;
+    public float blendEyeLookOutLeft;
+    public float blendEyeLookOutRight;
+    public float blendEyeLookInLeft;
+    public float blendEyeLookInRight;
+    public float blendJawLeft;
+    public float blendJawRight;
 
     /**
      * Body data from the pose tracker (shoulders, hips, hands).
@@ -231,6 +276,42 @@ public final class FaceSignals {
         blendMouthFrownLeft = other.blendMouthFrownLeft;
         blendMouthFrownRight = other.blendMouthFrownRight;
         blendTongueOut = other.blendTongueOut;
+        blendBrowOuterUpLeft = other.blendBrowOuterUpLeft;
+        blendBrowOuterUpRight = other.blendBrowOuterUpRight;
+        blendCheekSquintLeft = other.blendCheekSquintLeft;
+        blendCheekSquintRight = other.blendCheekSquintRight;
+        blendNoseSneerLeft = other.blendNoseSneerLeft;
+        blendNoseSneerRight = other.blendNoseSneerRight;
+        blendEyeWideLeft = other.blendEyeWideLeft;
+        blendEyeWideRight = other.blendEyeWideRight;
+        blendMouthPressLeft = other.blendMouthPressLeft;
+        blendMouthPressRight = other.blendMouthPressRight;
+        blendMouthShrugUpper = other.blendMouthShrugUpper;
+        blendMouthShrugLower = other.blendMouthShrugLower;
+        blendMouthStretchLeft = other.blendMouthStretchLeft;
+        blendMouthStretchRight = other.blendMouthStretchRight;
+        blendMouthUpperUpLeft = other.blendMouthUpperUpLeft;
+        blendMouthUpperUpRight = other.blendMouthUpperUpRight;
+        blendMouthLowerDownLeft = other.blendMouthLowerDownLeft;
+        blendMouthLowerDownRight = other.blendMouthLowerDownRight;
+        blendMouthDimpleLeft = other.blendMouthDimpleLeft;
+        blendMouthDimpleRight = other.blendMouthDimpleRight;
+        blendMouthLeft = other.blendMouthLeft;
+        blendMouthRight = other.blendMouthRight;
+        blendMouthFunnel = other.blendMouthFunnel;
+        blendMouthClose = other.blendMouthClose;
+        blendMouthRollLower = other.blendMouthRollLower;
+        blendMouthRollUpper = other.blendMouthRollUpper;
+        blendEyeLookUpLeft = other.blendEyeLookUpLeft;
+        blendEyeLookUpRight = other.blendEyeLookUpRight;
+        blendEyeLookDownLeft = other.blendEyeLookDownLeft;
+        blendEyeLookDownRight = other.blendEyeLookDownRight;
+        blendEyeLookOutLeft = other.blendEyeLookOutLeft;
+        blendEyeLookOutRight = other.blendEyeLookOutRight;
+        blendEyeLookInLeft = other.blendEyeLookInLeft;
+        blendEyeLookInRight = other.blendEyeLookInRight;
+        blendJawLeft = other.blendJawLeft;
+        blendJawRight = other.blendJawRight;
         timeMs = other.timeMs;
     }
 

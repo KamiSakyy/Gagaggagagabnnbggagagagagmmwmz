@@ -337,6 +337,8 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             GLES20.glDeleteTextures(1, id, 0);
         }
         textureIds.clear();
+        emotionIds.clear();
+        emotionResolved = false;
         motionCache.clear();
         motionIndex.clear();
         try {
@@ -472,6 +474,15 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             poseEffect.updateParameters(model, delta);
         }
         model.update();
+    }
+
+    /** Найденные у модели каналы мимики: брови, глаза, слёзы, бледность. */
+    private final Map<String, CubismId> emotionIds = new HashMap<String, CubismId>();
+    private boolean emotionResolved;
+
+    /** Список каналов мимики этой модели: видно в отчёте самопроверки. */
+    public String emotionChannels() {
+        return emotionIds.isEmpty() ? "нет" : emotionIds.keySet().toString();
     }
 
     /** Какие каналы рук существуют у этой модели: видно в отчёте и в самопроверке. */
@@ -616,6 +627,119 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         }
         resolveArmChannels();
         applyArms(pose, weight);
+        resolveEmotionChannels();
+        applyEmotion(pose, weight);
+    }
+
+    // ------------------------------------------------------------------ эмоции лица
+
+    /**
+     * Каналы мимики, по которым у моделей расходятся названия.
+     *
+     * <p>Набор у каждой модели свой: у Ехидны и Нахиды есть наклон и форма бровей, у Нахиды ещё
+     * «злое лицо» и бледность, у Эмилии - злые глаза и слёзы. Поэтому каналы не назначаются
+     * заранее, а ищутся у загруженной модели тем же правилом, что и каналы рук: настоящий параметр
+     * имеет индекс меньше числа параметров. Чего у модели нет - то просто не двигается.</p>
+     */
+    private static final String[] EMOTION_PARAMETER_NAMES = {
+            "ParamBrowLAngle", "ParamBrowRAngle", "ParamBrowLAngle2", "ParamBrowRAngle2",
+            "ParamBrowLForm", "ParamBrowRForm",
+            "ParamBrowLX", "ParamBrowRX",
+            "ParamEyeBallYorime",
+            "ParamEYEL_ikaru", "ParamEYER_ikaru",
+            "ParamBxNamidaL", "ParamBxNamidaR",
+            "ParamPale",
+            "ParamAngry", "ParamAngry2",
+            "ParamCheek2",
+            "ParamMouthForm2", "ParamMouthForm3",
+    };
+
+    /** Насколько сдвигается наклон бровей: заметно, но не карикатурно. */
+    private static final float BROW_ANGLE_DEGREES = 12.0f;
+    /** Размах формы бровей: складка между ними. */
+    private static final float BROW_FORM_DEGREES = 8.0f;
+    /** Сдвиг бровей в сторону: вместе с наклоном это даёт «домик» над переносицей. */
+    private static final float BROW_SIDE = 0.5f;
+
+    private void resolveEmotionChannels() {
+        if (emotionResolved || model == null) {
+            return;
+        }
+        emotionResolved = true;
+        final int count = model.getParameterCount();
+        for (int i = 0; i < EMOTION_PARAMETER_NAMES.length; i++) {
+            final CubismId candidate = id(EMOTION_PARAMETER_NAMES[i]);
+            final int index = model.getParameterIndex(candidate);
+            if (index >= 0 && index < count) {
+                emotionIds.put(EMOTION_PARAMETER_NAMES[i], candidate);
+            }
+        }
+        if (!emotionIds.isEmpty()) {
+            com.echidna.studio.EchidnaLog.i("MODEL", "каналы мимики: " + emotionIds.keySet());
+        }
+    }
+
+    /**
+     * Раскладывает распознанную эмоцию по каналам модели.
+     *
+     * <p>Брови получают наклон и форму, глаза - «злой взгляд» или зрачок в кучку, лицо - бледность
+     * или румянец, к глазам подступают слёзы. Каналы, которых у модели нет, пропускаются, поэтому
+     * одна и та же эмоция работает и на Нахиде, и на Ехидне, и на Эмилии.</p>
+     */
+    private void applyEmotion(Pose pose, float weight) {
+        if (emotionIds.isEmpty() || pose == null) {
+            return;
+        }
+        final float mood = ParamLimits.unit(pose.emotionWeight);
+        final float angle = ParamLimits.unitSign(pose.browAngle);
+        final float form = ParamLimits.unitSign(pose.browForm);
+        final float side = ParamLimits.unitSign(pose.browX) * BROW_SIDE;
+        for (Map.Entry<String, CubismId> entry : emotionIds.entrySet()) {
+            final String name = entry.getKey();
+            float target = 0.0f;
+            boolean active = true;
+            if (name.startsWith("ParamBrowL") || name.startsWith("ParamBrowR")) {
+                final boolean right = name.contains("R") && !name.startsWith("ParamBrowL");
+                if (name.contains("Angle")) {
+                    // Внутренние концы бровей вверх - грусть и мольба; вниз - злость.
+                    target = -angle * BROW_ANGLE_DEGREES * (right ? 1.0f : 1.0f);
+                } else if (name.contains("Form")) {
+                    target = form * BROW_FORM_DEGREES;
+                } else if (name.contains("X")) {
+                    target = side * (right ? -1.0f : 1.0f);
+                } else {
+                    active = false;
+                }
+                active = active && mood > 0.05f;
+            } else if (name.startsWith("ParamEYEL_ikaru") || name.startsWith("ParamEYER_ikaru")) {
+                target = pose.glareL * 1.0f;
+                active = target > 0.01f;
+            } else if (name.startsWith("ParamBxNamida")) {
+                target = pose.tears;
+                active = target > 0.02f;
+            } else if (name.equals("ParamPale")) {
+                target = pose.pale;
+                active = target > 0.02f;
+            } else if (name.equals("ParamAngry") || name.equals("ParamAngry2")) {
+                target = pose.angryFace;
+                active = target > 0.02f;
+            } else if (name.equals("ParamEyeBallYorime")) {
+                target = pose.eyeYorime;
+                active = target > 0.02f;
+            } else if (name.equals("ParamCheek2")) {
+                target = pose.cheek;
+                active = target > 0.02f;
+            } else if (name.startsWith("ParamMouthForm")) {
+                // Поджатые губы и «собранный» рот: состояние сосредоточенности и сдержанности.
+                target = ParamLimits.mouthForm(pose.mouthTension);
+                active = Math.abs(target) > 0.02f;
+            } else {
+                active = false;
+            }
+            if (active) {
+                blend(entry.getValue(), target, weight);
+            }
+        }
     }
 
     /** Плечо, предплечье, кисть и переключатель позы руки; у каждой руки и её слоёв. */

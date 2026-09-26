@@ -66,9 +66,17 @@ public final class TrackingHub {
     private final Handler analysisHandler;
     private final List<String> diagnostics = new ArrayList<String>();
 
-    private FaceTracker tracker;
+    /**
+     * Трекеры поднимаются в фоне, уже после того как камера начала отдавать кадры.
+     *
+     * <p>Модели лица, тела и кисти весят вместе двадцать мегабайт, и раньше приложение грузило их
+     * прямо в обработчике нажатия: человек нажимал «камера» и ждал секунду-две чёрного экрана.
+     * Теперь порядок обратный - сначала включается камера и в окошке сразу видно себя, а
+     * распознавание поднимается следом. Поля поэтому изменчивые: их читает поток камеры.</p>
+     */
+    private volatile FaceTracker tracker;
     /** Трекер тела и рук: работает вместе с лицом и подстраховывает его. */
-    private FaceTracker poseTracker;
+    private volatile FaceTracker poseTracker;
     private long lastPoseMs;
     private FaceSignals lastPoseSignals;
     /**
@@ -78,7 +86,7 @@ public final class TrackingHub {
      * а кисть - то, что человек показывает рукой. Работает реже остальных: пальцевый граф тяжелее
      * и не нужен на каждом кадре.</p>
      */
-    private FaceTracker handTracker;
+    private volatile FaceTracker handTracker;
     private long lastHandMs;
     private FaceSignals lastHandSignals;
     private final FaceSignals merged = new FaceSignals();
@@ -128,6 +136,10 @@ public final class TrackingHub {
     private long lastResultsChangeMs;
     /** Ждали ли мы ответа лица на последнем такте: видно в отчёте. */
     private volatile boolean waitingForFace;
+    /** Готово ли распознавание: пока нет, интерфейс пишет «распознавание загружается». */
+    private volatile boolean trackersReady;
+    /** Когда начали поднимать трекеры: по этому видно, сколько заняла загрузка. */
+    private volatile long trackersStartedAt;
 
     public TrackingHub(Context context) {
         this.context = context.getApplicationContext();
@@ -222,7 +234,8 @@ public final class TrackingHub {
                 + ", без лица=" + analyzedEmpty
                 + ", камер " + camera.frameWidth() + "x" + camera.frameHeight()
                 + ", " + framesPerSecond + " анализ/с"
-                + ", ожидание ответа лица: " + (waitingForFace ? "да" : "нет");
+                + ", ожидание ответа лица: " + (waitingForFace ? "да" : "нет")
+                + ", распознавание: " + (trackersReady ? "готово" : "загружается");
     }
 
     /**
@@ -262,12 +275,37 @@ public final class TrackingHub {
             addDiagnostic("камера не запустилась: " + camera.lastError());
             return false;
         }
-        if (!openTracker()) {
-            camera.stop();
-            return false;
-        }
+        // Камера уже отдаёт кадры: в окошке сразу видно себя. Распознавание поднимается в фоне -
+        // загрузка моделей больше не держит нажатие кнопки.
         running = true;
+        trackersReady = false;
+        trackersStartedAt = SystemClock.elapsedRealtime();
+        addDiagnostic("камера включена, распознавание поднимается");
+        analysisHandler.post(this::openTrackersInBackground);
         return true;
+    }
+
+    /**
+     * Поднимает трекеры вне потока интерфейса и сообщает, когда они готовы.
+     *
+     * <p>Пока идёт загрузка, окошко камеры уже живое, а модель показывает демонстрационную позу -
+     * ровно так же, как если бы человека не было в кадре. Это лучше, чем замёрзший чёрный экран.</p>
+     */
+    private void openTrackersInBackground() {
+        final long started = SystemClock.elapsedRealtime();
+        final boolean ok = openTracker();
+        trackersReady = ok;
+        final long spent = SystemClock.elapsedRealtime() - started;
+        EchidnaLog.i("TRACK", "распознавание готово за " + spent + " мс: " + trackerName());
+        addDiagnostic("распознавание готово за " + spent + " мс: " + trackerName());
+        if (signalsListener != null && !ok) {
+            addDiagnostic("распознавание не поднялось: смотри журнал");
+        }
+    }
+
+    /** Готово ли распознавание лица: по этому интерфейс пишет «загружается» или «работает». */
+    public boolean trackersReady() {
+        return trackersReady;
     }
 
     /**
@@ -380,6 +418,7 @@ public final class TrackingHub {
 
     public void stop() {
         running = false;
+        trackersReady = false;
         if (tracker != null) {
             tracker.stop();
             tracker = null;
@@ -452,6 +491,13 @@ public final class TrackingHub {
         }
         if (analyzing) {
             // Разбор не успевает за камерой: кадр пропускаем, но окошко уже обновлено.
+            camera.releaseFrame(frame);
+            return;
+        }
+        if (!trackersReady) {
+            // Распознавание ещё поднимается: кадры в него не отдаются. Иначе в очереди разбора
+            // накопились бы кадры, снятые до загрузки моделей, и первый же ответ трекера показал бы
+            // позу полуторасекундной давности.
             camera.releaseFrame(frame);
             return;
         }

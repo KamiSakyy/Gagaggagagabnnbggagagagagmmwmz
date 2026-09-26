@@ -99,4 +99,9 @@ public final class ParamLimits {
     public static float unit(float v) {
         return Pose.clamp(Pose.safe(v), 0.0f, 1.0f);
     }
+
+    /** Канал, который принимает значения от минус единицы до единицы: наклон и форма бровей. */
+    public static float unitSign(float v) {
+        return Pose.clamp(Pose.safe(v), -1.0f, 1.0f);
+    }
 }

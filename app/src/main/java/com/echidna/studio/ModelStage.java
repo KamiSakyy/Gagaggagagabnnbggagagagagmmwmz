@@ -46,6 +46,13 @@ public final class ModelStage implements Motions {
      * читалось как задержка. Теперь переход короткий и резкий, как переключение сцены.</p>
      */
     private static final float TRANSITION = 0.18f;
+    /** Сколько эмоция должна держаться, прежде чем модель покажет своё выражение для неё. */
+    private static final float MOOD_HOLD = 0.6f;
+    /** Ниже этой силы эмоция считается случайной гримасой, а не настроением. */
+    private static final float MOOD_STRENGTH = 0.45f;
+    /** Как часто можно переключать выражение настроения. */
+    private static final float MOOD_COOLDOWN = 5.0f;
+    private static final int MOOD_NONE = -1;
     private static final float FACE_LOST_TIMEOUT = 0.5f;
 
     private final ShowPlayer showPlayer = new ShowPlayer();
@@ -56,6 +63,10 @@ public final class ModelStage implements Motions {
     private final Pose incoming = new Pose();     // pose of the current mode, refreshed every frame
     private final Pose result = new Pose();       // pose handed to the model
     private float transition = 1.0f;
+    /** Сколько эмоция держится и какое выражение уже показано: защита от мигания. */
+    private float moodHold;
+    private float moodCooldown;
+    private int moodShown = MOOD_NONE;
 
     private AvatarBridge model;
     private Mode mode = Mode.IDLE;
@@ -126,6 +137,78 @@ public final class ModelStage implements Motions {
     public TrackingMapper mapper() {
         return tracker;
     }
+
+    /** Название распознанной эмоции: интерфейс показывает его в шапке. */
+    public String emotionName() {
+        return tracker.emotionName();
+    }
+
+    /** Сила распознанной эмоции, 0..1. */
+    public float emotionIntensity() {
+        return tracker.emotionIntensity();
+    }
+
+    /** True когда лицо явно что-то выражает: радость, злость, грусть, удивление. */
+    public boolean emotional() {
+        return tracker.expressive();
+    }
+
+    /** Номер распознанной эмоции. */
+    public int emotion() {
+        return tracker.emotion();
+    }
+
+    /**
+     * Подбирает выражение лица под настроение.
+     *
+     * <p>У объёмных ригов вроде Нахиды вместо движений есть готовые выражения, и они гораздо
+     * выразительнее процедурных бровей: звёзды в глазах, полуприкрытые глаза, румянец. Поэтому
+     * когда человек держит одну эмоцию дольше полусекунды, модель включает своё выражение для неё,
+     * а потом возвращается к живой мимике. Если у модели такого выражения нет, ничего не
+     * происходит: лицо и так двигается за человеком.</p>
+     */
+    private void updateMoodExpression(float dt) {
+        if (moodCooldown > 0.0f) {
+            moodCooldown -= dt;
+        }
+        if (!tracker.expressive() || mode != Mode.CAMERA) {
+            moodHold = 0.0f;
+            if (moodShown != MOOD_NONE && moodCooldown <= 0.0f) {
+                moodShown = MOOD_NONE;
+            }
+            return;
+        }
+        moodHold += dt;
+        if (moodHold < MOOD_HOLD || moodCooldown > 0.0f) {
+            return;
+        }
+        final int emotion = tracker.emotion();
+        if (emotion == moodShown) {
+            return;
+        }
+        if (tracker.emotionIntensity() < MOOD_STRENGTH) {
+            return;
+        }
+        final String name = moodExpression(emotion);
+        if (name != null && playExpression(name)) {
+            moodShown = emotion;
+            moodCooldown = MOOD_COOLDOWN;
+            EchidnaLog.i("STAGE", "настроение " + tracker.emotionName() + ": выражение " + name);
+        }
+    }
+
+    /**
+     * Выражение модели под эмоцию: берётся первое, которое у неё действительно есть.
+     *
+     * <p>У объёмных ригов это выражения лица, у остальных - движения с говорящими именами
+     * (у Ехидны «face_egao», «act_odoroku», «face_kanashimu»). Обе таблицы совпадений лежат в
+     * {@link com.echidna.studio.anim.EmotionCatalog} и проверяются тестом по настоящим именам
+     * файлов из сборки.</p>
+     */
+    public String moodExpression(int emotion) {
+        return com.echidna.studio.anim.EmotionCatalog.expressionFor(emotion, knownExpressions());
+    }
+
 
     /** Снимает нейтраль пользователя заново: по кнопке в интерфейсе. */
     public void calibrate() {
@@ -273,6 +356,8 @@ public final class ModelStage implements Motions {
                 // Всё движение идёт от камеры: рот модели повторяет рот человека, потому что
                 // трекер лица читает его по губам. Микрофона в приложении нет.
                 tracker.pose(dt, incoming);
+                // Устойчивое настроение включает авторское выражение модели, если оно у неё есть.
+                updateMoodExpression(dt);
                 break;
             }
             case IDLE:

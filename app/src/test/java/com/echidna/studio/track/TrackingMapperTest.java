@@ -453,4 +453,106 @@ public class TrackingMapperTest {
         assertTrue("демо-покачивание перебило живого человека: " + mapper.demoBlend(),
                 mapper.demoBlend() < 0.2f);
     }
+
+    /**
+     * Улыбка человека доходит до лица модели целиком: и губы, и щёки, и глаза.
+     *
+     * <p>Эмоция собирается из нескольких мышц, поэтому одной лишь улыбки в сигналах мало - тест
+     * подаёт улыбку вместе с поднятыми щеками и прищуром, как это выглядит у живого человека.</p>
+     */
+    @Test
+    public void aSmileBecomesJoyOnTheFaceOfTheModel() {
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
+        final FaceSignals signals = signals();
+        signals.smile = 0.85f;
+        signals.blendMouthSmileLeft = 0.85f;
+        signals.blendMouthSmileRight = 0.85f;
+        signals.blendCheekSquintLeft = 0.7f;
+        signals.blendCheekSquintRight = 0.7f;
+        signals.blendEyeSquintLeft = 0.5f;
+        signals.blendEyeSquintRight = 0.5f;
+        final Pose pose = settle(mapper, signals, 1.2f);
+
+        assertEquals("улыбка должна распознаться как радость",
+                com.echidna.studio.track.EmotionDetector.JOY, pose.emotion);
+        assertTrue("сила эмоции не дошла до модели: " + pose.emotionWeight, pose.emotionWeight > 0.4f);
+        assertTrue("уголки рта не поднялись: " + pose.mouthForm, pose.mouthForm > 0.3f);
+        assertTrue("щёки не поднялись: " + pose.cheek, pose.cheek > 0.2f);
+        assertTrue("глаза не улыбнулись: " + pose.eyeLSmile, pose.eyeLSmile > 0.2f);
+        assertEquals("радость видна и в интерфейсе", "радость", mapper.emotionName());
+        assertTrue("модель должна считать себя довольной", mapper.expressive());
+    }
+
+    /** Удивление: брови вскинуты, глаза широко раскрыты. */
+    @Test
+    public void surpriseRaisesTheBrowsOnTheModel() {
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
+        final FaceSignals signals = signals();
+        signals.blendBrowInnerUp = 0.9f;
+        signals.blendBrowOuterUpLeft = 0.8f;
+        signals.blendBrowOuterUpRight = 0.8f;
+        signals.blendEyeWideLeft = 0.9f;
+        signals.blendEyeWideRight = 0.9f;
+        signals.blendJawOpen = 0.8f;
+        signals.mouthOpen = 0.8f;
+        final Pose pose = settle(mapper, signals, 1.0f);
+
+        assertEquals(com.echidna.studio.track.EmotionDetector.SURPRISE, pose.emotion);
+        assertTrue("брови модели не поднялись: " + pose.browLY, pose.browLY > 0.3f);
+        assertTrue("глаза модели не раскрылись: " + pose.eyeWideL, pose.eyeWideL > 0.3f);
+    }
+
+    /** Злость: взгляд исподлобья, наклон бровей и «злое лицо» модели. */
+    @Test
+    public void angerGivesTheModelAnAngryFace() {
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
+        final FaceSignals signals = signals();
+        signals.blendBrowDownLeft = 0.9f;
+        signals.blendBrowDownRight = 0.9f;
+        signals.blendMouthPressLeft = 0.8f;
+        signals.blendMouthPressRight = 0.8f;
+        signals.blendMouthFrownLeft = 0.7f;
+        signals.blendMouthFrownRight = 0.7f;
+        signals.blendNoseSneerLeft = 0.6f;
+        signals.blendNoseSneerRight = 0.6f;
+        final Pose pose = settle(mapper, signals, 1.0f);
+
+        assertEquals(com.echidna.studio.track.EmotionDetector.ANGER, pose.emotion);
+        assertTrue("взгляд исподлобья не дошёл: " + pose.glareL, pose.glareL > 0.4f);
+        assertTrue("злое лицо не включилось: " + pose.angryFace, pose.angryFace > 0.3f);
+        assertTrue("брови ушли не вниз: " + pose.browAngle, pose.browAngle < -0.2f);
+        assertTrue("губы не поджались: " + pose.mouthTension, pose.mouthTension > 0.2f);
+    }
+
+    /** Грусть: к глазам подступают слёзы, рот опускается. */
+    @Test
+    public void sadnessBringsTearsToTheEyes() {
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
+        final FaceSignals signals = signals();
+        signals.blendBrowInnerUp = 0.85f;
+        signals.blendMouthFrownLeft = 0.7f;
+        signals.blendMouthFrownRight = 0.7f;
+        signals.blendMouthLowerDownLeft = 0.6f;
+        signals.blendMouthLowerDownRight = 0.6f;
+        signals.blendEyeLookDownLeft = 0.7f;
+        signals.blendEyeLookDownRight = 0.7f;
+        final Pose pose = settle(mapper, signals, 2.0f);
+
+        assertEquals(com.echidna.studio.track.EmotionDetector.SADNESS, pose.emotion);
+        assertTrue("рот не опустился: " + pose.mouthForm, pose.mouthForm < 0.1f);
+        assertTrue("слёзы не появились: " + pose.tears, pose.tears > 0.05f);
+    }
+
+    /** Спокойное лицо: модель не должна «играть» эмоцию, которой нет. */
+    @Test
+    public void aCalmFaceKeepsTheEmotionChannelsSilent() {
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
+        final Pose pose = settle(mapper, signals(), 1.5f);
+
+        assertEquals(com.echidna.studio.track.EmotionDetector.NEUTRAL, pose.emotion);
+        assertTrue("спокойное лицо не должно считаться эмоцией: " + pose.emotionWeight,
+                pose.emotionWeight < 0.2f);
+        assertFalse("спокойствие не выразительно", mapper.expressive());
+        assertEquals("спокойствие", mapper.emotionName());
+    }
 }

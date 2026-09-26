@@ -347,6 +347,12 @@ public final class MediaPipeFaceTracker implements FaceTracker {
             case "jawOpen":
                 s.blendJawOpen = score;
                 break;
+            case "jawLeft":
+                s.blendJawLeft = score;
+                break;
+            case "jawRight":
+                s.blendJawRight = score;
+                break;
             case "mouthSmileLeft":
                 s.blendMouthSmileLeft = score;
                 break;
@@ -355,6 +361,18 @@ public final class MediaPipeFaceTracker implements FaceTracker {
                 break;
             case "mouthPucker":
                 s.blendMouthPucker = score;
+                break;
+            case "mouthFunnel":
+                s.blendMouthFunnel = score;
+                break;
+            case "mouthClose":
+                s.blendMouthClose = score;
+                break;
+            case "mouthLeft":
+                s.blendMouthLeft = score;
+                break;
+            case "mouthRight":
+                s.blendMouthRight = score;
                 break;
             case "browInnerUp":
                 s.blendBrowInnerUp = score;
@@ -365,8 +383,26 @@ public final class MediaPipeFaceTracker implements FaceTracker {
             case "browDownRight":
                 s.blendBrowDownRight = score;
                 break;
+            case "browOuterUpLeft":
+                s.blendBrowOuterUpLeft = score;
+                break;
+            case "browOuterUpRight":
+                s.blendBrowOuterUpRight = score;
+                break;
             case "cheekPuff":
                 s.blendCheekPuff = score;
+                break;
+            case "cheekSquintLeft":
+                s.blendCheekSquintLeft = score;
+                break;
+            case "cheekSquintRight":
+                s.blendCheekSquintRight = score;
+                break;
+            case "noseSneerLeft":
+                s.blendNoseSneerLeft = score;
+                break;
+            case "noseSneerRight":
+                s.blendNoseSneerRight = score;
                 break;
             case "eyeSquintLeft":
                 s.blendEyeSquintLeft = score;
@@ -374,11 +410,83 @@ public final class MediaPipeFaceTracker implements FaceTracker {
             case "eyeSquintRight":
                 s.blendEyeSquintRight = score;
                 break;
+            case "eyeWideLeft":
+                s.blendEyeWideLeft = score;
+                break;
+            case "eyeWideRight":
+                s.blendEyeWideRight = score;
+                break;
+            case "eyeLookUpLeft":
+                s.blendEyeLookUpLeft = score;
+                break;
+            case "eyeLookUpRight":
+                s.blendEyeLookUpRight = score;
+                break;
+            case "eyeLookDownLeft":
+                s.blendEyeLookDownLeft = score;
+                break;
+            case "eyeLookDownRight":
+                s.blendEyeLookDownRight = score;
+                break;
+            case "eyeLookOutLeft":
+                s.blendEyeLookOutLeft = score;
+                break;
+            case "eyeLookOutRight":
+                s.blendEyeLookOutRight = score;
+                break;
+            case "eyeLookInLeft":
+                s.blendEyeLookInLeft = score;
+                break;
+            case "eyeLookInRight":
+                s.blendEyeLookInRight = score;
+                break;
             case "mouthFrownLeft":
                 s.blendMouthFrownLeft = score;
                 break;
             case "mouthFrownRight":
                 s.blendMouthFrownRight = score;
+                break;
+            case "mouthPressLeft":
+                s.blendMouthPressLeft = score;
+                break;
+            case "mouthPressRight":
+                s.blendMouthPressRight = score;
+                break;
+            case "mouthShrugUpper":
+                s.blendMouthShrugUpper = score;
+                break;
+            case "mouthShrugLower":
+                s.blendMouthShrugLower = score;
+                break;
+            case "mouthStretchLeft":
+                s.blendMouthStretchLeft = score;
+                break;
+            case "mouthStretchRight":
+                s.blendMouthStretchRight = score;
+                break;
+            case "mouthUpperUpLeft":
+                s.blendMouthUpperUpLeft = score;
+                break;
+            case "mouthUpperUpRight":
+                s.blendMouthUpperUpRight = score;
+                break;
+            case "mouthLowerDownLeft":
+                s.blendMouthLowerDownLeft = score;
+                break;
+            case "mouthLowerDownRight":
+                s.blendMouthLowerDownRight = score;
+                break;
+            case "mouthDimpleLeft":
+                s.blendMouthDimpleLeft = score;
+                break;
+            case "mouthDimpleRight":
+                s.blendMouthDimpleRight = score;
+                break;
+            case "mouthRollLower":
+                s.blendMouthRollLower = score;
+                break;
+            case "mouthRollUpper":
+                s.blendMouthRollUpper = score;
                 break;
             case "tongueOut":
                 s.blendTongueOut = score;

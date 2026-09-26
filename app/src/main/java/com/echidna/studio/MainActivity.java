@@ -71,6 +71,8 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private TextView statusText;
     private TextView fpsText;
     private TextView handText;
+    /** Строка эмоции: видно, что приложение понимает выражение лица. */
+    private TextView moodText;
     private TextView hintText;
     private TextView permissionText;
     private LinearLayout bottomPanel;
@@ -133,6 +135,8 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private boolean uiHidden;
     /** Последний показанный жест, чтобы не трогать интерфейс на каждом кадре. */
     private volatile int shownGesture = -1;
+    /** Какая эмоция уже показана плашкой: по смене показывается следующая. */
+    private volatile int shownEmotion = com.echidna.studio.track.EmotionDetector.NEUTRAL;
     private long gestureShownAt;
     private long lastCameraRestartAt;
     private final Runnable hideGestureBadge = () -> {
@@ -291,6 +295,14 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         handText.setTextSize(11);
         handText.setText("рука: не видна");
         bar.addView(handText);
+
+        // Строка эмоции: «радость 82%», «удивление 51%», «спокойствие». Пока распознавание
+        // поднимается, здесь же видно, что оно загружается, - а не пустой экран.
+        moodText = new TextView(this);
+        moodText.setTextColor(0x99FFFFFF);
+        moodText.setTextSize(11);
+        moodText.setText("эмоция: —");
+        bar.addView(moodText);
 
         final FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -1358,8 +1370,21 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         EchidnaLog.i("APP", "режим камеры включён, трекер " + hub.trackerName());
     }
 
+    /** Обновляет строку эмоции, пока распознавание загружается: раз в четверть секунды. */
+    private final Runnable moodWatcher = new Runnable() {
+        @Override
+        public void run() {
+            updateMoodText();
+            if (cameraMode && hub != null && !hub.trackersReady()) {
+                handler.postDelayed(this, 250);
+            }
+        }
+    };
+
     private void disableCameraMode() {
         cameraMode = false;
+        handler.removeCallbacks(moodWatcher);
+        updateMoodText();
         hub.stop();
         renderer.setPreviewEnabled(false);
         renderer.requestIdle();
@@ -1381,6 +1406,10 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
 
     private boolean startCamera() {
         final boolean started = hub.start(false);
+        // Камера включается сразу, распознавание - следом за ней: строка об эмоции говорит, что
+        // происходит, и обновляется сама, пока модели не поднимутся.
+        handler.removeCallbacks(moodWatcher);
+        handler.post(moodWatcher);
         if (!started) {
             toast("Камера не запустилась: " + hub.camera().lastError());
             permissionText.setVisibility(CameraController.hasPermission(this) ? View.GONE : View.VISIBLE);
@@ -1760,6 +1789,8 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                             com.echidna.studio.track.MediaPipeHandTracker.assetAvailable(getBaseContext())
                                     ? (hub.handsAvailable() ? "есть" : "модель есть, трекер нет") : "нет");
                     out.append("; каналы рук у модели: ").append(renderer.armChannels());
+                    out.append("; каналы мимики: ").append(renderer.emotionChannels());
+                    out.append("; распознавание: ").append(hub.trackersReady() ? "готово" : "загружается");
                     out.append("; микрофон: не используется");
                     out.append("; сенсор камеры ").append(hub.camera().sensorOrientation())
                             .append("°");
@@ -1839,6 +1870,9 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private void onSignals(FaceSignals signals) {
         stage.setSignals(signals);
         updateHandText(signals);
+        // Эмоция появляется только после того, как кадр обработан, поэтому строку обновляем здесь,
+        // а не в тике: так она меняется ровно тогда, когда меняется лицо.
+        handler.post(this::updateMoodText);
         final int gesture = signals.handsSeen ? signals.fingers : -1;
         if (gesture != shownGesture) {
             shownGesture = gesture;
@@ -1874,6 +1908,33 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         final int fingers = signals.fingers;
         handText.setText("рука: видна, пальцев " + fingers + ", подъём " + percent + "%"
                 + (signals.chinTouch > 0.5f ? ", у подбородка" : ""));
+    }
+
+    /**
+     * Показывает распознанную эмоцию.
+     *
+     * <p>Эмоция считается в потоке разбора, поэтому строка обновляется вместе с кадрами: так видно,
+     * что приложение не просто повторяет повороты головы, а понимает выражение лица. Если
+     * распознавание ещё загружается, строка говорит об этом прямо.</p>
+     */
+    private void updateMoodText() {
+        if (moodText == null) {
+            return;
+        }
+        if (!cameraMode) {
+            moodText.setText("эмоция: камера выключена");
+            return;
+        }
+        if (hub == null || !hub.trackersReady()) {
+            moodText.setText("распознавание: загружается…");
+            return;
+        }
+        if (!stage.emotional()) {
+            moodText.setText("эмоция: спокойствие · мимика включена");
+            return;
+        }
+        moodText.setText("эмоция: " + stage.emotionName() + " "
+                + Math.round(stage.emotionIntensity() * 100.0f) + "%");
     }
 
     private void showGesture(int fingers) {

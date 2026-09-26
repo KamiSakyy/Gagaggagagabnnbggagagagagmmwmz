@@ -28,12 +28,13 @@ public final class TrackingMapper {
      * Усиление поворота головы.
      *
      * <p>Человек поворачивает голову на 30-40 градусов, а угол модели ограничен: без усиления
-     * движение выглядело вялым. Значения подобраны так, чтобы поворот на 20 градусов уже упирался
-     * в предел модели - так её видно, а не угадывается.</p>
+     * движение выглядело вялым. Трекер при этом занижает угол: спокойный поворот головы он читает
+     * как десять-пятнадцать градусов. Усиление 1,8 подобранa так, чтобы такой поворот уже упирался
+     * в предел модели в 30 градусов: движение головы видно так же, как его делает человек.</p>
      */
-    private static final float YAW_GAIN = 1.55f;
-    private static final float PITCH_GAIN = 1.45f;
-    private static final float ROLL_GAIN = 1.50f;
+    private static final float YAW_GAIN = 1.80f;
+    private static final float PITCH_GAIN = 1.70f;
+    private static final float ROLL_GAIN = 1.75f;
     /** Предел угла головы по кадрам трекера: столько же, сколько принимает модель. */
     private static final float HEAD_LIMIT = 30.0f;
 
@@ -95,6 +96,28 @@ public final class TrackingMapper {
     private final Damp chinTouchRight = new Damp(0.07f);
     /** Реакция на счёт пальцев: кивки. */
     private final GestureReaction gestures = new GestureReaction();
+    /**
+     * Распознавание эмоций: по мышцам лица определяется, что человек чувствует.
+     *
+     * <p>Эмоция сразу уходит в лицо модели - брови, губы, щёки, слёзы, - и на неё же опирается
+     * настроение движения: радость поднимает голову, грусть её опускает, злость подаёт её вперёд.</p>
+     */
+    private final EmotionDetector emotions = new EmotionDetector();
+    /** Сглаживание каналов мимики: без него шум трекера дёргал бы брови по десять раз в секунду. */
+    private final Damp browAngle = new Damp(0.05f);
+    private final Damp browForm = new Damp(0.05f);
+    private final Damp browHeight = new Damp(0.05f);
+    private final Damp eyeWide = new Damp(0.04f);
+    private final Damp glare = new Damp(0.06f);
+    private final Damp tears = new Damp(0.35f);
+    private final Damp pale = new Damp(0.30f);
+    private final Damp angryFace = new Damp(0.20f);
+    private final Damp mouthTension = new Damp(0.06f);
+    private final Damp emotionWeight = new Damp(0.25f);
+    /** Сколько человек уже показывает сильную эмоцию: по этому включается «игра» лица. */
+    private float strongEmotionFor;
+    /** Что удерживает восторг: он живёт дольше обычной радости. */
+    private float delightFor;
 
     /** Знак каналов рук: задаётся кнопкой в настройках. */
     private boolean armInverted;
@@ -196,6 +219,19 @@ public final class TrackingMapper {
         bodyLift.reset(0.0f);
         bodyShift.reset(0.0f);
         handUp.reset(0.0f);
+        emotions.reset();
+        browAngle.reset(0.0f);
+        browForm.reset(0.0f);
+        browHeight.reset(0.0f);
+        eyeWide.reset(0.0f);
+        glare.reset(0.0f);
+        tears.reset(0.0f);
+        pale.reset(0.0f);
+        angryFace.reset(0.0f);
+        mouthTension.reset(0.0f);
+        emotionWeight.reset(0.0f);
+        strongEmotionFor = 0.0f;
+        delightFor = 0.0f;
         lostFor = 10.0f;
         demoBlend = 1.0f;
         clock = 0.0f;
@@ -347,6 +383,10 @@ public final class TrackingMapper {
             chinTouchRight.update(s.chinTouchRight, dt);
         }
         gestures.update(s.handsSeen ? s.fingers : -1, dt);
+        // Эмоции считаются до улыбки и рта: они уточняют их - настоящая улыбка приходит вместе со
+        // щеками и прищуром, а грусть или злость забирают улыбку обратно.
+        emotions.update(s, dt);
+        updateFaceChannels(s, dt);
         smile.update(s.smile, dt);
         mouth.update(s.mouthOpen, dt);
         centerX.update(s.centerX - neutralCenterX, dt);
@@ -368,6 +408,94 @@ public final class TrackingMapper {
         }
 
         lostFor = 0.0f;
+    }
+
+    /**
+     * Разбирает мимику на каналы лица: брови, веки, щёки, губы, слёзы.
+     *
+     * <p>До этого места доходили только крупные каналы - улыбка, открытый рот, сомкнутые веки. Всё
+     * остальное, из чего состоит живое лицо, терялось: нахмуренные брови, прищур, поджатые губы,
+     * дрогнувший подбородок. Здесь каждый из них превращается в сглаженное значение, из которого
+     * потом собирается и мимика, и эмоция.</p>
+     */
+    private void updateFaceChannels(FaceSignals s, float dt) {
+        if (!s.blendshapes) {
+            // Трекер без коэффициентов мимики: лицо всё равно повторяется по улыбке и рту.
+            browAngle.update(0.0f, dt);
+            browForm.update(0.0f, dt);
+            browHeight.update(0.0f, dt);
+            eyeWide.update(0.0f, dt);
+            glare.update(0.0f, dt);
+            tears.update(0.0f, dt);
+            pale.update(0.0f, dt);
+            angryFace.update(0.0f, dt);
+            mouthTension.update(0.0f, dt);
+            emotionWeight.update(0.0f, dt);
+            return;
+        }
+        // Брови: высота складывается из поднятых внутренних и внешних концов минус сведённые.
+        final float browUp = (s.blendBrowInnerUp + s.blendBrowOuterUpLeft + s.blendBrowOuterUpRight) / 3.0f;
+        final float browDown = (s.blendBrowDownLeft + s.blendBrowDownRight) * 0.5f;
+        browHeight.update(Pose.clamp(browUp - browDown * 0.8f, -1.0f, 1.0f), dt);
+        // Наклон бровей: внутренние концы вверх - это грусть и мольба, вниз - злость и упрямство.
+        browAngle.update(Pose.clamp(s.blendBrowInnerUp - browDown, -1.0f, 1.0f), dt);
+        // Форма: сведённые брови образуют складку между ними.
+        browForm.update(Pose.clamp(browDown - s.blendBrowInnerUp * 0.5f, -1.0f, 1.0f), dt);
+
+        final float wide = (s.blendEyeWideLeft + s.blendEyeWideRight) * 0.5f;
+        eyeWide.update(Pose.clamp(wide, 0.0f, 1.0f), dt);
+        final float squint = (s.blendEyeSquintLeft + s.blendEyeSquintRight) * 0.5f;
+        final float sneer = (s.blendNoseSneerLeft + s.blendNoseSneerRight) * 0.5f;
+        // «Злые глаза»: сведённые брови вместе с прищуром - это взгляд исподлобья.
+        glare.update(Pose.clamp(browDown * 0.7f + squint * 0.5f + sneer * 0.3f, 0.0f, 1.0f), dt);
+        // Слёзы: поджатые губы, сжатые брови внутренними концами и опущенный взгляд держатся
+        // дольше остальных каналов, поэтому и сглаживаются медленнее - это состояние, а не гримаса.
+        final float sorrow = (s.blendBrowInnerUp + (s.blendMouthFrownLeft + s.blendMouthFrownRight) * 0.5f
+                + (s.blendMouthLowerDownLeft + s.blendMouthLowerDownRight) * 0.5f) / 3.0f;
+        tears.update(Pose.clamp((sorrow - 0.45f) * 2.0f, 0.0f, 1.0f), dt);
+        // Бледность: сильное удивление и испуг - лицо светлеет и замирает.
+        pale.update(Pose.clamp((s.blendEyeWideLeft + s.blendEyeWideRight) * 0.25f
+                + s.blendBrowInnerUp * 0.3f - squint * 0.4f - s.blendMouthSmileLeft * 0.3f, 0.0f, 1.0f), dt);
+        // «Злое лицо» модели: нахмуренные брови, сморщенный нос, сжатые губы.
+        angryFace.update(Pose.clamp(browDown * 0.8f + sneer * 0.5f
+                + (s.blendMouthPressLeft + s.blendMouthPressRight) * 0.25f, 0.0f, 1.0f), dt);
+        // Напряжение губ: поджатые губы и натянутые уголки - это сосредоточенность и сдержанность.
+        mouthTension.update(Pose.clamp((s.blendMouthPressLeft + s.blendMouthPressRight) * 0.5f
+                + (s.blendMouthStretchLeft + s.blendMouthStretchRight) * 0.5f
+                - (s.blendMouthSmileLeft + s.blendMouthSmileRight) * 0.5f, -1.0f, 1.0f), dt);
+
+        // Сила эмоции уходит в модель отдельным каналом: по ней лицо «играет» сильнее, чем по
+        // спокойной мимике - брови выше, щёки круглее, глаза уже.
+        emotionWeight.update(Pose.clamp(emotions.intensity(), 0.0f, 1.0f), dt);
+        if (emotions.expressive()) {
+            strongEmotionFor += dt;
+        } else {
+            strongEmotionFor = Math.max(0.0f, strongEmotionFor - dt * 0.5f);
+        }
+        // Восторг: широкая улыбка прищуренными глазами держится дольше, чем обычная радость.
+        if (emotions.levelOf(EmotionDetector.DELIGHT) > 0.55f) {
+            delightFor = 1.2f;
+        } else {
+            delightFor = Math.max(0.0f, delightFor - dt);
+        }
+    }
+
+    /** Номер распознанной эмоции: видно в интерфейсе и в самопроверке. */
+    public int emotion() {
+        return emotions.emotion();
+    }
+
+    public String emotionName() {
+        return emotions.name();
+    }
+
+    public float emotionIntensity() {
+        return emotions.intensity();
+    }
+
+    /** True когда лицо явно что-то выражает: радость, злость, грусть и так далее. */
+    public boolean expressive() {
+        return emotions.expressive();
     }
 
     /** True when every value of the frame is a number the model can actually use. */
@@ -417,6 +545,9 @@ public final class TrackingMapper {
 
     /** Human readable state for the UI. */
     public String status() {
+        if (faceLive() && expressive()) {
+            return "эмоция: " + emotions.name() + " " + Math.round(emotions.intensity() * 100.0f) + "%";
+        }
         if (faceLive() && gestures.shownCount() >= 0) {
             return "жест: " + gestures.shownCount() + " " + fingersWord(gestures.shownCount());
         }
@@ -484,6 +615,15 @@ public final class TrackingMapper {
     }
 
     private void buildTracked() {
+        // Распознанная эмоция и её сила нужны сразу нескольким блокам ниже: лицу, улыбке и
+        // настроению движения. Объявлены здесь, чтобы не считаться по второму разу.
+        final float mood = emotionWeight.value();
+        final int emotion = emotions.emotion();
+        final float joy = emotions.joy();
+        final float sadness = emotions.sadness();
+        final float anger = emotions.anger();
+        final float surprise = emotions.surprise();
+
         final float yawValue = Pose.clamp(yaw.value(), -HEAD_LIMIT, HEAD_LIMIT);
         final float pitchValue = Pose.clamp(pitch.value(), -HEAD_LIMIT, HEAD_LIMIT);
         final float rollValue = Pose.clamp(roll.value(), -HEAD_LIMIT, HEAD_LIMIT);
@@ -577,6 +717,21 @@ public final class TrackingMapper {
         tracked.eyeBallX = ParamLimits.eyeBallX(baseEyeX);
         tracked.eyeBallY = ParamLimits.eyeBallY(baseEyeY);
 
+        // Настроение движения: каждая эмоция двигает голову и корпус по-своему - радость поднимает
+        // и покачивает, удивление подаёт назад, злость вперёд, грусть опускает. Это то, что видно
+        // даже на модели без каналов бровей и слёз.
+        if (mood > 0.2f) {
+            final float push = mood * 0.8f;
+            tracked.angleY = ParamLimits.angleY(tracked.angleY
+                    + (surprise + joy * 0.6f - sadness * 1.2f - anger * 0.5f) * push * 4.0f);
+            tracked.angleZ = ParamLimits.angleZ(tracked.angleZ
+                    + (joy * 0.8f - anger * 0.9f) * push * 3.0f);
+            tracked.bodyY = ParamLimits.bodyY(tracked.bodyY
+                    + (surprise * 1.2f - sadness * 0.8f) * push * 2.0f);
+            tracked.bodyX = ParamLimits.bodyX(tracked.bodyX
+                    + (anger * 0.9f - surprise * 0.6f) * push * 2.0f);
+        }
+
         // Рука у подбородка: голова чуть опускается, глаза улыбаются - так это читается даже там,
         // где руки в модели нет.
         if (chin > 0.001f) {
@@ -586,7 +741,11 @@ public final class TrackingMapper {
                     ParamLimits.angleZ(tracked.angleZ) + 3.0f * chin * (mirrored ? -1.0f : 1.0f));
         }
 
-        final float smileValue = ParamLimits.unit(Math.max(smile.value(), hands * 0.55f));
+        // Эмоция усиливает живую мимику: настоящая улыбка идёт вместе со щеками и прищуром, а
+        // злость или грусть забирают её обратно - иначе улыбка трекера спорила бы с лицом.
+        final float emotionSmile = ParamLimits.unit(joy * 0.9f + (delightFor > 0.0f ? 0.2f : 0.0f));
+        final float smileValue = ParamLimits.unit(Math.max(
+                Math.max(smile.value(), emotionSmile), hands * 0.55f));
         tracked.mouthOpenY = ParamLimits.mouthOpen(smoothStep(0.02f, 0.34f, mouth.value()));
         tracked.mouthForm = ParamLimits.mouthForm(-0.15f + smileValue * 1.0f + extraMouthForm * 0.6f);
         tracked.cheek = ParamLimits.unit((smileValue - 0.45f) * 2.0f + hands * 0.4f + chin * 0.3f);
@@ -600,6 +759,33 @@ public final class TrackingMapper {
         final float brow = Pose.clamp(-pitchValue * 0.012f + (smileValue - 0.5f) * 0.2f, -0.3f, 0.6f);
         tracked.browLY = brow;
         tracked.browRY = brow;
+
+        // ------------------------------------------------------------------ эмоции лица
+        //
+        // Всё, что распознано по мышцам лица, уходит в модель отдельными каналами. Модели различаются
+        // набором параметров (у Нахиды есть свои «злые» и «бледность», у Эмилии - «злые глаза» и
+        // слёзы), поэтому лишние каналы движок просто не тронет: их отсекает EchidnaModel.
+        tracked.emotion = emotion;
+        tracked.emotionWeight = mood;
+        tracked.browAngle = ParamLimits.unitSign(browAngle.value());
+        tracked.browForm = ParamLimits.unitSign(browForm.value());
+        tracked.browX = ParamLimits.unitSign(browForm.value() * 0.6f);
+        tracked.eyeWideL = ParamLimits.unit(eyeWide.value() * 0.9f + surprise * 0.5f);
+        tracked.eyeWideR = tracked.eyeWideL;
+        tracked.glareL = ParamLimits.unit(glare.value() + anger * 0.6f);
+        tracked.glareR = tracked.glareL;
+        tracked.tears = ParamLimits.unit(tears.value() + (sadness > 0.6f ? (sadness - 0.6f) * 2.0f : 0.0f));
+        tracked.pale = ParamLimits.unit(pale.value() + surprise * 0.4f);
+        tracked.angryFace = ParamLimits.unit(angryFace.value() + anger * 0.5f);
+        tracked.mouthTension = ParamLimits.unitSign(mouthTension.value());
+        // Зрачок «в кучку» при сильной радости и восторге: так модель выглядит счастливой.
+        tracked.eyeYorime = ParamLimits.unit(Math.max(joy - 0.55f, 0.0f) * 2.2f
+                + (delightFor > 0.0f ? 0.35f : 0.0f));
+        // Высота бровей: к мимике добавляется сама эмоция - удивление вскидывает брови, злость и
+        // грусть их сдвигают.
+        final float browBase = browHeight.value();
+        tracked.browLY = Pose.clamp(browBase + surprise * 0.6f - anger * 0.5f - sadness * 0.25f, -1.0f, 1.0f);
+        tracked.browRY = tracked.browLY;
 
         // The eyes of the model follow the lids of the user one to one.
         final float openLeft = mirrored ? eyeR.value() : eyeL.value();
@@ -638,6 +824,21 @@ public final class TrackingMapper {
         demo.eyeWeight = 0.0f;
         demo.weight = 0.6f;
         demo.armInverted = armInverted;
+        // Демо-поза живёт своей жизнью: каналы лица из трекинга в неё не переносятся.
+        demo.emotion = 0;
+        demo.emotionWeight = 0.0f;
+        demo.browAngle = 0.0f;
+        demo.browForm = 0.0f;
+        demo.browX = 0.0f;
+        demo.eyeWideL = 0.0f;
+        demo.eyeWideR = 0.0f;
+        demo.glareL = 0.0f;
+        demo.glareR = 0.0f;
+        demo.tears = 0.0f;
+        demo.pale = 0.0f;
+        demo.angryFace = 0.0f;
+        demo.mouthTension = 0.0f;
+        demo.eyeYorime = 0.0f;
     }
 
     static float smoothStep(float edge0, float edge1, float x) {

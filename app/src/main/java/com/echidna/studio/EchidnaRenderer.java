@@ -326,6 +326,11 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
 
     /** The last model or render error, empty while everything is fine. */
     /** Какие каналы рук есть у текущей модели: видно в отчёте самопроверки. */
+    /** Каналы мимики этой модели: брови, глаза, слёзы, бледность - видно в отчёте. */
+    public String emotionChannels() {
+        return model == null ? "модель не загружена" : model.emotionChannels();
+    }
+
     public String armChannels() {
         final EchidnaModel current = model;
         return current == null ? "модель не загружена" : current.armChannels();

@@ -16,6 +16,7 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemClock;
 import android.util.Range;
 import android.util.Size;
 import android.view.Surface;
@@ -48,13 +49,18 @@ public final class CameraController {
     }
 
     /**
-     * Размер кадра для разбора. Модель лица внутри MediaPipe всё равно приводит картинку к
-     * 256x256, но чем крупнее исходный кадр, тем больше пикселей остаётся на само лицо: сидя в
-     * полутора метрах от телефона, лицо в кадре 640x480 занимает около 90 пикселей, а в кадре
-     * 1280x720 - уже 180. Это и есть разница между «лицо найдено» и «ищу лицо».
+     * Размер кадра для разбора.
+     *
+     * <p>Кадр переводится из YUV в ARGB на Java, и цена перевода растёт вместе с числом пикселей:
+     * 1280x720 - это почти миллион пикселей на кадр, тридцать раз в секунду. Именно здесь
+     * появлялась задержка: телефон не успевал переводить кадры, камера отдавала их всё реже, и
+     * модель отставала от человека. Поэтому берётся кадр около 960x540: лицу в нём всё ещё
+     * хватает пикселей (в кадре для детектора лицо занимает столько же, сколько и на 720p), а
+     * работы в два раза меньше.</p>
      */
-    private static final Size PREFERRED = new Size(1280, 720);
-    private static final int MAX_PIXELS = 1920 * 1080;
+    private static final Size PREFERRED = new Size(960, 540);
+    /** Верхний предел: больше этого не берём даже если камера умеет. */
+    private static final int MAX_PIXELS = 1280 * 720;
 
     private final Context context;
     private HandlerThread thread;
@@ -75,9 +81,21 @@ public final class CameraController {
     private volatile int frameHeight;
     /** Доворот кадра, который пользователь выставил кнопкой: 0, 90, 180 или 270 градусов. */
     private volatile int extraRotation;
+    /**
+     * Абсолютный поворот кадра на время подбора ориентации: автоподбор перебирает 0, 90, 180 и 270
+     * и говорит камере, какой именно поворот применить. Отрицательное значение - подбора нет.
+     */
+    private volatile int rotationOverride = -1;
+    /** Поворот, с которым собран последний отданный кадр: нужен автоподбору ориентации. */
+    private volatile int lastFrameRotation = -1;
+    /** Сколько миллисекунд занял перевод последнего кадра: видно в отчёте. */
+    private volatile long lastConvertMs;
     private final BitmapPool pool = new BitmapPool();
-    /** Переиспользуемый буфер пикселей для перевода YUV в ARGB (см. convertYuvToArgb). */
+    /** Переиспользуемые буферы перевода YUV в ARGB: пиксели и плоскости кадра. */
     private int[] scratch;
+    private byte[] yBytes = new byte[0];
+    private byte[] uBytes = new byte[0];
+    private byte[] vBytes = new byte[0];
 
     private static int[] ensureScratch(int[] buffer, int size) {
         if (buffer == null || buffer.length < size) {
@@ -101,7 +119,9 @@ public final class CameraController {
     }
 
     public CameraController(Context context) {
-        this.context = context.getApplicationContext();
+        // Контекст не нужен самому переводу кадра: он живёт только для разрешения и запуска
+        // камеры, поэтому проверка на null позволяет гонять перевод в тестах без Android.
+        this.context = context == null ? null : context.getApplicationContext();
     }
 
     public void setFrameListener(FrameListener listener) {
@@ -162,6 +182,34 @@ public final class CameraController {
 
     public int extraRotation() {
         return extraRotation;
+    }
+
+    /**
+     * Абсолютный поворот кадра на время автоподбора ориентации.
+     *
+     * <p>Считает его не камера, а {@code FrameOrientationTuner}: он перебирает четыре положения и
+     * смотрит, в каком детектор находит лицо. Отрицательное значение возвращает обычное правило.</p>
+     */
+    public void setRotationOverride(int degrees) {
+        rotationOverride = degrees < 0 ? -1 : CameraRotation.normalize(degrees);
+    }
+
+    public void clearRotationOverride() {
+        rotationOverride = -1;
+    }
+
+    public int rotationOverride() {
+        return rotationOverride;
+    }
+
+    /** Поворот, с которым собран последний отданный кадр (для автоподбора ориентации). */
+    public int lastFrameRotation() {
+        return lastFrameRotation;
+    }
+
+    /** Сколько занял перевод последнего кадра, миллисекунды. */
+    public long lastConvertMs() {
+        return lastConvertMs;
     }
 
     /** Ориентация сенсора камеры из характеристик: видно в отчёте самопроверки. */
@@ -427,7 +475,10 @@ public final class CameraController {
             final int rotation = rotationDegrees();
             // Buffers are recycled: at thirty frames per second a fresh 1.2 MB bitmap for every
             // frame would mean forty megabytes of garbage per second, and a stream runs for hours.
+            final long convertStart = SystemClock.elapsedRealtime();
             final Bitmap published = convertYuvToArgb(image, rotation, pool.acquire(width, height, rotation));
+            lastConvertMs = SystemClock.elapsedRealtime() - convertStart;
+            lastFrameRotation = rotation;
             lastFrameMs = timestampMs;
 
             if (frameListener != null) {
@@ -446,6 +497,15 @@ public final class CameraController {
     }
 
     private int rotationDegrees() {
+        final int override = rotationOverride;
+        if (override >= 0) {
+            return override;
+        }
+        return CameraRotation.upright(frontFacing, sensorOrientation, deviceRotation(), extraRotation);
+    }
+
+    /** Поворот кадра по правилу камеры, без автоподбора: с него начинается автоподбор. */
+    public int computedRotation() {
         return CameraRotation.upright(frontFacing, sensorOrientation, deviceRotation(), extraRotation);
     }
 
@@ -473,7 +533,7 @@ public final class CameraController {
      * @param rotation clockwise rotation in degrees: 0, 90, 180 or 270
      */
     static Bitmap convertYuvToArgb(Image image, int rotation) {
-        return convert(image, rotation, null, null);
+        return new CameraController(null).convert(image, rotation, null);
     }
 
     /**
@@ -482,14 +542,18 @@ public final class CameraController {
      */
     /** Кадр камеры в буфер контроллера: пиксельный массив переиспользуется между кадрами. */
     Bitmap convertYuvToArgb(Image image, int rotation, Bitmap target) {
-        final boolean quarter = rotation == 90 || rotation == 270;
-        final int size = (quarter ? image.getHeight() : image.getWidth())
-                * (quarter ? image.getWidth() : image.getHeight());
-        scratch = ensureScratch(scratch, size);
-        return convert(image, rotation, target, scratch);
+        return convert(image, rotation, target);
     }
 
-    private static Bitmap convert(Image image, int rotation, Bitmap target, int[] buffer) {
+    /**
+     * YUV в ARGB: плоскости копируются в массивы целиком, а не читаются побайтово через буфер.
+     *
+     * <p>Раньше на каждый пиксель приходилось по три вызова {@code ByteBuffer.get} с проверкой
+     * границ, и на кадре 1280x720 это было около трёх миллионов вызовов на кадр - камера не
+     * успевала, кадры шли редко, и движение модели отставало. Массовое копирование делает ту же
+     * работу одним memcpy на плоскость, а дальше идёт только арифметика по массивам.</p>
+     */
+    private Bitmap convert(Image image, int rotation, Bitmap target) {
         final int width = image.getWidth();
         final int height = image.getHeight();
         final boolean quarter = rotation == 90 || rotation == 270;
@@ -500,9 +564,12 @@ public final class CameraController {
                 : Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.ARGB_8888);
 
         final Image.Plane[] planes = image.getPlanes();
-        final ByteBuffer yPlane = planes[0].getBuffer();
-        final ByteBuffer uPlane = planes[1].getBuffer();
-        final ByteBuffer vPlane = planes[2].getBuffer();
+        final byte[] y = copyPlane(planes[0], yBytes, 0);
+        yBytes = y;
+        final byte[] u = copyPlane(planes[1], uBytes, 1);
+        uBytes = u;
+        final byte[] v = copyPlane(planes[2], vBytes, 2);
+        vBytes = v;
 
         final int yRowStride = planes[0].getRowStride();
         final int yPixelStride = planes[0].getPixelStride();
@@ -511,13 +578,11 @@ public final class CameraController {
         final int vRowStride = planes[2].getRowStride();
         final int vPixelStride = planes[2].getPixelStride();
 
-        // Пиксельный буфер живёт вместе с контроллером: на 1280x720 это 3.7 МБ, и создавать его
+        // Пиксельный буфер живёт вместе с контроллером: на 960x540 это 2 МБ, и создавать его
         // тридцать раз в секунду - это сотня мегабайт мусора, из-за которого телефон уходит в
         // сборку мусора и кадры камеры начинают пропадать. Поток кадров один, гонок нет.
-        final int[] pixels = ensureScratch(buffer, outWidth * outHeight);
-        final int yBase = yPlane.position();
-        final int uBase = uPlane.position();
-        final int vBase = vPlane.position();
+        final int[] pixels = ensureScratch(buffer(), outWidth * outHeight);
+        scratch = pixels;
 
         for (int dy = 0; dy < outHeight; dy++) {
             final int outRow = dy * outWidth;
@@ -542,13 +607,13 @@ public final class CameraController {
                         sy = dy;
                         break;
                 }
-                final int yValue = (yPlane.get(yBase + sy * yRowStride + sx * yPixelStride) & 0xFF) - 16;
+                final int yValue = (y[sy * yRowStride + sx * yPixelStride] & 0xFF) - 16;
                 final int uvX = sx >> 1;
                 final int uvY = sy >> 1;
                 final int uValue =
-                        (uPlane.get(uBase + uvY * uRowStride + uvX * uPixelStride) & 0xFF) - 128;
+                        (u[uvY * uRowStride + uvX * uPixelStride] & 0xFF) - 128;
                 final int vValue =
-                        (vPlane.get(vBase + uvY * vRowStride + uvX * vPixelStride) & 0xFF) - 128;
+                        (v[uvY * vRowStride + uvX * vPixelStride] & 0xFF) - 128;
 
                 final int yScaled = (yValue < 0 ? 0 : yValue) * 1192;
                 int r = (yScaled + 1634 * vValue) >> 10;
@@ -573,6 +638,30 @@ public final class CameraController {
             }
         }
         out.setPixels(pixels, 0, outWidth, 0, 0, outWidth, outHeight);
+        return out;
+    }
+
+    private int[] buffer() {
+        return scratch;
+    }
+
+    /**
+     * Копирует плоскость кадра в массив целиком.
+     *
+     * <p>Буфер плоскости начинается не с нуля: {@code position()} указывает на первый пиксель
+     * кадра, и его тоже нужно учесть, иначе картинка сдвинется.</p>
+     */
+    private static byte[] copyPlane(Image.Plane plane, byte[] into, int index) {
+        final java.nio.ByteBuffer planeBuffer = plane.getBuffer();
+        final int start = planeBuffer.position();
+        final int length = planeBuffer.remaining();
+        byte[] out = into;
+        if (out.length < start + length) {
+            out = new byte[start + length];
+        }
+        planeBuffer.position(start);
+        planeBuffer.get(out, start, length);
+        // Копируем вместе со сдвигом в начале буфера: индексация потом идёт от нуля.
         return out;
     }
 

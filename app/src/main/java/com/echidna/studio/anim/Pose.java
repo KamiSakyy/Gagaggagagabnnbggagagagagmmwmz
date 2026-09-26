@@ -33,6 +33,30 @@ public final class Pose {
 
     public float browLY;
     public float browRY;
+    /**
+     * Эмоции лица.
+     *
+     * <p>Кроме высоты бровей у моделей есть их наклон и форма, прищур, зрачок «в кучку», бледность,
+     * румянец, злые глаза и слёзы. Раньше из этого набора использовалась половина, и лицо модели
+     * двигалось крупными мазками. Теперь каждая эмоция раскладывается по своим каналам: радость
+     * поднимает щёки и щурит глаза, злость сводит брови и поджимает губы, удивление вскидывает
+     * брови и раскрывает глаза, грусть тянет уголки рта вниз и добавляет блеск слёз.</p>
+     */
+    public float browAngle;
+    public float browForm;
+    public float browX;
+    public float eyeWideL;
+    public float eyeWideR;
+    public float glareL;
+    public float glareR;
+    public float tears;
+    public float pale;
+    public float angryFace;
+    public float mouthTension;
+    public float eyeYorime;
+    /** Номер распознанной эмоции и её сила: по ним работает интерфейс. */
+    public int emotion;
+    public float emotionWeight;
 
     public float cheek;
 
@@ -121,6 +145,20 @@ public final class Pose {
         mouthForm = other.mouthForm;
         browLY = other.browLY;
         browRY = other.browRY;
+        browAngle = other.browAngle;
+        browForm = other.browForm;
+        browX = other.browX;
+        eyeWideL = other.eyeWideL;
+        eyeWideR = other.eyeWideR;
+        glareL = other.glareL;
+        glareR = other.glareR;
+        tears = other.tears;
+        pale = other.pale;
+        angryFace = other.angryFace;
+        mouthTension = other.mouthTension;
+        eyeYorime = other.eyeYorime;
+        emotion = other.emotion;
+        emotionWeight = other.emotionWeight;
         cheek = other.cheek;
         armY = other.armY;
         handOpen = other.handOpen;
@@ -163,6 +201,20 @@ public final class Pose {
         mouthForm = 0;
         browLY = 0;
         browRY = 0;
+        browAngle = 0;
+        browForm = 0;
+        browX = 0;
+        eyeWideL = 0;
+        eyeWideR = 0;
+        glareL = 0;
+        glareR = 0;
+        tears = 0;
+        pale = 0;
+        angryFace = 0;
+        mouthTension = 0;
+        eyeYorime = 0;
+        emotion = 0;
+        emotionWeight = 0;
         cheek = 0;
         armY = 0;
         handOpen = 0.0f;
@@ -216,6 +268,20 @@ public final class Pose {
         out.mouthForm = mix(a.mouthForm, b.mouthForm, t);
         out.browLY = mix(a.browLY, b.browLY, t);
         out.browRY = mix(a.browRY, b.browRY, t);
+        out.browAngle = mix(a.browAngle, b.browAngle, t);
+        out.browForm = mix(a.browForm, b.browForm, t);
+        out.browX = mix(a.browX, b.browX, t);
+        out.eyeWideL = mix(a.eyeWideL, b.eyeWideL, t);
+        out.eyeWideR = mix(a.eyeWideR, b.eyeWideR, t);
+        out.glareL = mix(a.glareL, b.glareL, t);
+        out.glareR = mix(a.glareR, b.glareR, t);
+        out.tears = mix(a.tears, b.tears, t);
+        out.pale = mix(a.pale, b.pale, t);
+        out.angryFace = mix(a.angryFace, b.angryFace, t);
+        out.mouthTension = mix(a.mouthTension, b.mouthTension, t);
+        out.eyeYorime = mix(a.eyeYorime, b.eyeYorime, t);
+        out.emotion = t < 1.0f ? a.emotion : b.emotion;
+        out.emotionWeight = mix(a.emotionWeight, b.emotionWeight, t);
         out.cheek = mix(a.cheek, b.cheek, t);
         out.armY = mix(a.armY, b.armY, t);
         out.handOpen = mix(a.handOpen, b.handOpen, t);
@@ -295,6 +361,19 @@ public final class Pose {
         mouthForm = clamp(safe(mouthForm), -1.0f, 1.0f);
         browLY = clamp(safe(browLY), -1.0f, 1.0f);
         browRY = clamp(safe(browRY), -1.0f, 1.0f);
+        browAngle = clamp(safe(browAngle), -1.0f, 1.0f);
+        browForm = clamp(safe(browForm), -1.0f, 1.0f);
+        browX = clamp(safe(browX), -1.0f, 1.0f);
+        eyeWideL = clamp(safe(eyeWideL), 0.0f, 1.0f);
+        eyeWideR = clamp(safe(eyeWideR), 0.0f, 1.0f);
+        glareL = clamp(safe(glareL), 0.0f, 1.0f);
+        glareR = clamp(safe(glareR), 0.0f, 1.0f);
+        tears = clamp(safe(tears), 0.0f, 1.0f);
+        pale = clamp(safe(pale), 0.0f, 1.0f);
+        angryFace = clamp(safe(angryFace), 0.0f, 1.0f);
+        mouthTension = clamp(safe(mouthTension), -1.0f, 1.0f);
+        eyeYorime = clamp(safe(eyeYorime), 0.0f, 1.0f);
+        emotionWeight = clamp(safe(emotionWeight), 0.0f, 1.0f);
         cheek = clamp(safe(cheek), 0.0f, 1.0f);
         offsetX = clamp(safe(offsetX), ParamLimits.OFFSET_MIN, ParamLimits.OFFSET_MAX);
         offsetY = clamp(safe(offsetY), ParamLimits.OFFSET_MIN, ParamLimits.OFFSET_MAX);
