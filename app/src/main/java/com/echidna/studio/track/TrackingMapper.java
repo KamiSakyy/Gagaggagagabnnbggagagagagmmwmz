@@ -706,25 +706,14 @@ public final class TrackingMapper {
         // выглядело как «она делает то, чего я не делал». Счёт пальцев виден плашкой на экране, а
         // в лице модели остаётся только то, что человек действительно сделал.
 
-        // Глаза и голова поворачиваются к руке, когда человек поднимает её: модель замечает жест.
-        final float attention = ParamLimits.unit((hands - 0.15f) * 1.5f);
-        if (attention > 0.001f) {
-            final float lookX = Pose.clamp(handDx.value(), -1.0f, 1.0f);
-            final float lookY = Pose.clamp(handDy.value(), -1.0f, 1.0f);
-            tracked.angleX = ParamLimits.angleX(
-                    ParamLimits.angleX(tracked.angleX) + lookX * 9.0f * attention);
-            tracked.angleZ = ParamLimits.angleZ(
-                    ParamLimits.angleZ(tracked.angleZ) - lookX * 3.0f * attention);
-            tracked.eyeBallX = ParamLimits.eyeBallX(
-                    ParamLimits.eyeBallX(tracked.eyeBallX) + lookX * 0.45f * attention);
-            tracked.eyeBallY = ParamLimits.eyeBallY(lookY * 0.35f * attention);
-        }
+        // «Внимание к руке» убрано полностью: раньше модель поворачивала голову и глаза вслед за
+        // поднятой рукой, даже если человек этого не делал. Теперь голова поворачивается только за
+        // головой человека, а рука двигает рукой модели, и ничего больше.
 
-        // The gaze leads the head a little, which is what makes eye contact feel alive.
-        final float baseEyeX = yawValue / 26.0f * 0.55f
-                + centerX.value() * 0.35f + handDx.value() * 0.45f * attention;
+        // Взгляд чуть-чуть опережает голову - так держится живой зрительный контакт.
+        final float baseEyeX = yawValue / 26.0f * 0.55f + centerX.value() * 0.35f;
         final float baseEyeY = pitchValue / 26.0f * 0.45f - centerY.value() * 0.25f
-                - handDy.value() * 0.30f * attention + chin * 0.25f;
+                + chin * 0.25f;
         tracked.eyeBallX = ParamLimits.eyeBallX(baseEyeX);
         tracked.eyeBallY = ParamLimits.eyeBallY(baseEyeY);
 
@@ -755,11 +744,13 @@ public final class TrackingMapper {
         // Эмоция усиливает живую мимику: настоящая улыбка идёт вместе со щеками и прищуром, а
         // злость или грусть забирают её обратно - иначе улыбка трекера спорила бы с лицом.
         final float emotionSmile = ParamLimits.unit(joy * 0.9f + (delightFor > 0.0f ? 0.2f : 0.0f));
-        final float smileValue = ParamLimits.unit(Math.max(
-                Math.max(smile.value(), emotionSmile), hands * 0.55f));
+        // Улыбку больше не рисует рука: улыбается только лицо человека (или его эмоция), иначе
+        // модель улыбалась сама по себе, стоило поднять руку.
+        final float smileValue = ParamLimits.unit(Math.max(smile.value(), emotionSmile));
         tracked.mouthOpenY = ParamLimits.mouthOpen(smoothStep(0.02f, 0.34f, mouth.value()));
         tracked.mouthForm = ParamLimits.mouthForm(-0.15f + smileValue * 1.0f + extraMouthForm * 0.6f);
-        tracked.cheek = ParamLimits.unit((smileValue - 0.45f) * 2.0f + hands * 0.4f + chin * 0.3f);
+        // Рука у подбородка по-прежнему румянит щёки - это движение человек делает сам.
+        tracked.cheek = ParamLimits.unit((smileValue - 0.45f) * 2.0f + chin * 0.3f);
         // Squinting and smiling both raise the lower eyelid of the model, which is what the
         // "smiling eyes" parameter does.
         final float eyeSmile = ParamLimits.unit(Math.max(smileValue * 0.8f, extraEyeSquint * 0.9f));

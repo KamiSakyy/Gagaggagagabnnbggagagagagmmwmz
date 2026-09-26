@@ -317,24 +317,30 @@ public class TrackingMapperTest {
 
     /** Поднятая рука не остаётся незамеченной: у моделей нет рук, поэтому отвечает лицо. */
     @Test
-    public void aRaisedHandMakesTheFaceHappy() {
+    public void aRaisedHandDoesNotChangeTheFaceByItself() {
         final TrackingMapper mapper = plain(new TrackingMapper(true));
         final FaceSignals calm = signals();
         calm.scale = 0.34f;
         calm.body = true;
         final Pose calmPose = settle(mapper, calm, 1.0f);
 
-        final TrackingMapper happy = plain(new TrackingMapper(true));
-        final FaceSignals raised = signals();
-        raised.scale = 0.34f;
-        raised.body = true;
-        raised.handUp = 1.0f;
-        final Pose happyPose = settle(happy, raised, 1.0f);
+        final TrackingMapper raised = plain(new TrackingMapper(true));
+        final FaceSignals withHand = signals();
+        withHand.scale = 0.34f;
+        withHand.body = true;
+        withHand.handUp = 1.0f;
+        final Pose handPose = settle(raised, withHand, 1.0f);
 
-        assertTrue("поднятая рука не подняла настроение: "
-                        + calmPose.mouthForm + " -> " + happyPose.mouthForm,
-                happyPose.mouthForm > calmPose.mouthForm + 0.2f);
-        assertTrue("улыбка не усилилась", happyPose.cheek > calmPose.cheek);
+        // Лицо человека не менялось - значит и лицо модели не меняется: поднятая рука не рисует
+        // улыбку и не румянит щёки сама по себе.
+        assertEquals("рука поменяла улыбку: " + calmPose.mouthForm + " -> " + handPose.mouthForm,
+                calmPose.mouthForm, handPose.mouthForm, 0.05f);
+        assertEquals("рука поменяла щёки: " + calmPose.cheek + " -> " + handPose.cheek,
+                calmPose.cheek, handPose.cheek, 0.05f);
+        assertEquals("рука повернула голову: " + calmPose.angleX + " -> " + handPose.angleX,
+                calmPose.angleX, handPose.angleX, 1.5f);
+        assertTrue("глаза уехали за рукой: " + calmPose.eyeBallX + " -> " + handPose.eyeBallX,
+                Math.abs(handPose.eyeBallX - calmPose.eyeBallX) < 0.15f);
     }
 
     /**
