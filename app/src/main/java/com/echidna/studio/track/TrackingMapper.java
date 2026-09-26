@@ -406,6 +406,9 @@ public final class TrackingMapper {
         // A raised hand turns into a cheerful face: the models of this app have no arms to move, so
         // the hands drive the expression channels instead of nothing at all.
         final float hands = ParamLimits.unit(handUp.value());
+        // Руки модели поднимаются вместе с руками человека: у объёмного персонажа это кости рук,
+        // у Live2D-ригов - параметры ParamArmL/ParamArmR, если они вообще есть.
+        tracked.armY = hands;
 
         // The gaze leads the head a little, which is what makes eye contact feel alive.
         tracked.eyeBallX = ParamLimits.eyeBallX(yawValue / 26.0f * 0.55f + centerX.value() * 0.35f);

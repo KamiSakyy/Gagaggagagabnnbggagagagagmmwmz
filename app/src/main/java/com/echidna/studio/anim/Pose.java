@@ -36,6 +36,13 @@ public final class Pose {
 
     public float cheek;
 
+    /**
+     * How much the arms are raised, 0..1. The body tracker measures how high the hands are above
+     * the shoulders, and the 3D character lifts its arms with them; rigs without arm parameters
+     * simply receive the cheerful face that the hands also drive.
+     */
+    public float armY;
+
     /** Strength of the whole pose, 0..1. */
     /**
      * Shift of the whole model inside the frame, in projection units: 1.0 is the half width of the
@@ -78,6 +85,7 @@ public final class Pose {
         browLY = other.browLY;
         browRY = other.browRY;
         cheek = other.cheek;
+        armY = other.armY;
         offsetX = other.offsetX;
         offsetY = other.offsetY;
         zoom = other.zoom;
@@ -104,6 +112,7 @@ public final class Pose {
         browLY = 0;
         browRY = 0;
         cheek = 0;
+        armY = 0;
         offsetX = 0;
         offsetY = 0;
         zoom = 1.0f;
@@ -141,6 +150,7 @@ public final class Pose {
         out.browLY = mix(a.browLY, b.browLY, t);
         out.browRY = mix(a.browRY, b.browRY, t);
         out.cheek = mix(a.cheek, b.cheek, t);
+        out.armY = mix(a.armY, b.armY, t);
         out.offsetX = mix(a.offsetX, b.offsetX, t);
         out.offsetY = mix(a.offsetY, b.offsetY, t);
         out.zoom = mix(a.zoom, b.zoom, t);

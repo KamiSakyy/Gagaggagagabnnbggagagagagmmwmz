@@ -7,9 +7,14 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import com.echidna.studio.anim.Pose;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -358,5 +363,149 @@ public class ThreeDTest {
         // поиск не падает и возвращает либо кость, либо -1.
         final int spine = model.humanoid("spine");
         assertTrue("поиск альтернативы не должен падать", spine >= -1);
+    }
+
+    // -------------------------------------------------- настоящая модель из APK
+
+    /** Файл объёмной модели: в CI его скачивает шаг «Fetch the bundled 3D character». */
+    private static File realModel() {
+        final String[] candidates = {
+                "src/main/assets/three/character.vrm",
+                "app/src/main/assets/three/character.vrm",
+                "../app/src/main/assets/three/character.vrm",
+                System.getProperty("echidna.assets", "") + "/three/character.vrm",
+        };
+        for (String candidate : candidates) {
+            final File file = new File(candidate);
+            if (file.isFile() && file.length() > 1024 * 1024) {
+                return file;
+            }
+        }
+        return new File(candidates[0]);
+    }
+
+    private static Model3D loadRealModel(File file) throws IOException {
+        final InputStream stream = new FileInputStream(file);
+        try {
+            final Model3D model = new Model3D(Gltf.parse(stream));
+            model.update(1f / 60f);
+            return model;
+        } finally {
+            stream.close();
+        }
+    }
+
+    /**
+     * Поднятые руки человека должны поднимать руки персонажа, а не опускать их.
+     *
+     * <p>Знак поворота плеча - единственное, что нельзя увидеть в коде: он зависит от того, как
+     * выставлена модель в позе покоя. Ошибка тут выглядит как персонаж, который при поднятых руках
+     * пользователя прячет руки за спину. Тест берёт настоящую модель из APK, ставит позу и смотрит
+     * на мировую координату кисти.</p>
+     */
+    @Test
+    public void raisedHandsRaiseTheArmsOfTheThreeDimensionalCharacter() throws IOException {
+        final File file = realModel();
+        if (!file.isFile()) {
+            // Модель качается из интернета (tools/fetch_vrm_model.sh) и в CI лежит на месте до
+            // запуска тестов; без файла проверять нечего.
+            System.out.println("тест пропущен: объёмная модель не скачана (" + file + ")");
+            return;
+        }
+
+        final Model3D model = loadRealModel(file);
+        final int leftHand = model.humanoid("leftHand");
+        final int rightHand = model.humanoid("rightHand");
+        assertTrue("кисть левой руки в humanoid-скелете", leftHand >= 0);
+        assertTrue("кисть правой руки в humanoid-скелете", rightHand >= 0);
+
+        // Отсчёт - та же поза без поднятых рук: сцена всегда кладёт руки чуть ниже плеч, поэтому
+        // сравнивать надо с позой, а не с позой покоя из файла.
+        model.resetPose();
+        Model3DStage.applyPose(model, new Pose());
+        model.update(1f / 60f);
+        final float leftRest = model.worldMatrix(leftHand)[13];
+        final float rightRest = model.worldMatrix(rightHand)[13];
+
+        final Pose pose = new Pose();
+        pose.armY = 1.0f;
+        model.resetPose();
+        Model3DStage.applyPose(model, pose);
+        model.update(1f / 60f);
+        final float leftUp = model.worldMatrix(leftHand)[13];
+        final float rightUp = model.worldMatrix(rightHand)[13];
+
+        assertTrue("левая рука поехала вниз вместо вверх: " + leftRest + " -> " + leftUp,
+                leftUp > leftRest + 0.05f);
+        assertTrue("правая рука поехала вниз вместо вверх: " + rightRest + " -> " + rightUp,
+                rightUp > rightRest + 0.05f);
+
+        // Руки поднимаются одинаково: персонаж не должен накреняться на одну сторону.
+        assertEquals("руки поднялись на разную высоту",
+                leftUp - leftRest, rightUp - rightRest, 0.05f);
+
+        // Опущенная рука возвращается на место: канал не оставляет модель в поднятой позе.
+        model.resetPose();
+        Model3DStage.applyPose(model, new Pose());
+        model.update(1f / 60f);
+        assertEquals("рука не вернулась вниз", leftRest, model.worldMatrix(leftHand)[13], 0.05f);
+    }
+
+    /** Поворот головы влево-вправо должен смотреть на ту же ось, что и у Live2D-ригов. */
+    @Test
+    public void theHeadOfTheRealModelTurnsToTheSide() throws IOException {
+        final File file = realModel();
+        if (!file.isFile()) {
+            // Модель качается из интернета (tools/fetch_vrm_model.sh) и в CI лежит на месте до
+            // запуска тестов; без файла проверять нечего.
+            System.out.println("тест пропущен: объёмная модель не скачана (" + file + ")");
+            return;
+        }
+
+        final Model3D model = loadRealModel(file);
+        final int head = model.humanoid("head");
+        assertTrue("кость головы в humanoid-скелете", head >= 0);
+        // Глаз - дочерняя кость головы: её мировая позиция сдвигается, когда голова поворачивается.
+        final int probe = model.humanoid("leftEye") >= 0 ? model.humanoid("leftEye") : head;
+
+        model.resetPose();
+        model.update(1f / 60f);
+        final float[] rest = model.worldMatrix(probe).clone();
+
+        final Pose yawPose = new Pose();
+        yawPose.angleX = 60f;
+        model.resetPose();
+        Model3DStage.applyPose(model, yawPose);
+        model.update(1f / 60f);
+        final float[] turned = model.worldMatrix(probe);
+
+        final float sideways = Math.abs(turned[12] - rest[12]);
+        final float vertical = Math.abs(turned[13] - rest[13]);
+        if (probe != head) {
+            assertTrue("поворот головы почти не сдвинул её в сторону: " + sideways,
+                    sideways > 0.002f);
+            assertTrue("поворот головы ушёл в кивок вместо поворота: вбок " + sideways
+                            + ", вверх " + vertical,
+                    sideways > vertical);
+        } else {
+            // Кость головы вращается вокруг самой себя: тогда о повороте говорит её матрица.
+            assertTrue("поворот головы не изменил ориентацию кости",
+                    Math.abs(turned[2] - rest[2]) > 0.05f);
+        }
+
+        // Кивок, наоборот, двигает голову по вертикали и не должен уводить её в сторону.
+        final Pose nodPose = new Pose();
+        nodPose.angleY = 45f;
+        model.resetPose();
+        Model3DStage.applyPose(model, nodPose);
+        model.update(1f / 60f);
+        final float[] nodded = model.worldMatrix(probe);
+        final float nodSideways = Math.abs(nodded[12] - rest[12]);
+        final float nodVertical = Math.abs(nodded[13] - rest[13]);
+        assertTrue("кивок не сдвинул глаз по вертикали: " + nodVertical,
+                nodVertical > 0.002f || probe == head);
+        assertTrue("кивок ушёл в поворот вместо кивка: вбок " + nodSideways + ", вверх "
+                        + nodVertical,
+                nodVertical > nodSideways || probe == head);
     }
 }

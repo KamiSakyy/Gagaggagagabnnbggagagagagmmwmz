@@ -7,6 +7,7 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 
 import com.echidna.studio.EchidnaLog;
+import com.echidna.studio.anim.ParamLimits;
 import com.echidna.studio.anim.Pose;
 
 import java.io.IOException;
@@ -364,7 +365,7 @@ public final class Model3DStage {
         clock += dt;
         model.resetPose();
         if (pose != null) {
-            applyPose(pose);
+            applyPose(model, pose);
             model.applyFace(pose.eyeLOpen, pose.mouthOpenY, Pose.safe(pose.cheek),
                     Pose.safe(pose.browLY));
         } else {
@@ -385,11 +386,16 @@ public final class Model3DStage {
     /**
      * The pose of the tracker, mapped onto the bones of the character.
      *
-     * <p>The naming of the angles is the one of Live2D: {@code angleY} turns the head to the side,
-     * {@code angleX} nods, {@code angleZ} tilts. The arms follow the turn of the body, which is what
-     * makes the character look like it is moving rather than gliding.</p>
+     * <p>The naming of the angles is the one of the scene: {@code angleX} turns the head to the
+     * side, {@code angleY} nods, {@code angleZ} tilts. The arms follow the turn of the body and rise
+     * with the hands of the user, which is what makes the character look like it is moving rather
+     * than gliding.</p>
+     *
+     * <p>Метод статический и публичный, чтобы тест мог прогнать ту же самую раскладку позы на
+     * настоящей модели из APK: если знаки осей когда-нибудь перепутаются, рука поедет вниз вместо
+     * вверх и тест это поймает.</p>
      */
-    private void applyPose(Pose pose) {
+    public static void applyPose(Model3D model, Pose pose) {
         // В позе сцены поворот головы влево-вправо лежит в angleX, кивок - в angleY: это
         // соглашение самого рига Live2D, и 3D персонаж следует ему же.
         final float yaw = Pose.safe(pose.angleX);
@@ -409,12 +415,16 @@ public final class Model3DStage {
 
         // The arms swing a little with the body, so the character never stands like a mannequin.
         final float swing = Pose.safe(pose.bodyX) * 0.35f;
-        model.addRotation(model.humanoid("leftUpperArm"), 0f, 0f, -8f - swing);
-        model.addRotation(model.humanoid("rightUpperArm"), 0f, 0f, 8f - swing);
-        model.addRotation(model.humanoid("leftLowerArm"), 0f, -6f, 0f);
-        model.addRotation(model.humanoid("rightLowerArm"), 0f, 6f, 0f);
-        model.addRotation(model.humanoid("leftHand"), Pose.safe(pose.eyeBallY) * 4f, 0f, 0f);
-        model.addRotation(model.humanoid("rightHand"), Pose.safe(pose.eyeBallY) * 4f, 0f, 0f);
+        // Поднятые руки человека поднимают руки персонажа: плечо уходит вверх на 70 градусов,
+        // локоть и кисть слегка догоняют его, чтобы поза выглядела живой, а не поднятой по
+        // линейке.
+        final float raise = ParamLimits.unit(pose.armY) * 70f;
+        model.addRotation(model.humanoid("leftUpperArm"), -raise * 0.25f, 0f, -8f - swing + raise);
+        model.addRotation(model.humanoid("rightUpperArm"), -raise * 0.25f, 0f, 8f - swing - raise);
+        model.addRotation(model.humanoid("leftLowerArm"), 0f, -6f + raise * 0.18f, 0f);
+        model.addRotation(model.humanoid("rightLowerArm"), 0f, 6f - raise * 0.18f, 0f);
+        model.addRotation(model.humanoid("leftHand"), raise * 0.12f, 0f, 0f);
+        model.addRotation(model.humanoid("rightHand"), raise * 0.12f, 0f, 0f);
 
         // The eyes look where the user looks; the pupils of the rig are their own bones.
         final float lookX = Pose.safe(pose.eyeBallX) * 12f;

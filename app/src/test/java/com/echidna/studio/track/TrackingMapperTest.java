@@ -338,6 +338,37 @@ public class TrackingMapperTest {
     }
 
     /**
+     * Руки человека доходят до модели отдельным каналом: объёмный персонаж поднимает руки вместе с
+     * пользователем, и это единственный канал, который для этого используется.
+     */
+    @Test
+    public void aRaisedHandRaisesTheArms() {
+        final TrackingMapper mapper = plain(new TrackingMapper(true));
+        final FaceSignals calm = signals();
+        calm.scale = 0.34f;
+        calm.body = true;
+        final Pose calmPose = settle(mapper, calm, 1.0f);
+        assertEquals("без поднятых рук канал рук должен стоять на нуле",
+                0f, calmPose.armY, 0.02f);
+
+        final TrackingMapper lifted = plain(new TrackingMapper(true));
+        final FaceSignals raised = signals();
+        raised.scale = 0.34f;
+        raised.body = true;
+        raised.handUp = 1.0f;
+        final Pose raisedPose = settle(lifted, raised, 1.0f);
+
+        assertTrue("поднятая рука не подняла руки модели: " + raisedPose.armY,
+                raisedPose.armY > 0.7f);
+        assertTrue("канал рук вышел за диапазон 0..1: " + raisedPose.armY,
+                raisedPose.armY <= 1.0f);
+
+        // Опущенная рука возвращает руки на место, а не оставляет модель с поднятыми.
+        final Pose back = settle(lifted, calm, 3.0f);
+        assertTrue("руки не опустились обратно: " + back.armY, back.armY < 0.1f);
+    }
+
+    /**
      * Калибровка: человек сидит, повернув голову на десять градусов вбок. После съёма нейтрали
      * модель смотрит прямо, а не повторяет эту позу постоянно.
      */
