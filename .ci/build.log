@@ -2,7 +2,7 @@
 
 === хвост ===
 == Echidna Studio ==
-коммит=f034601c6ca3bcd471b224156af7060c5cdf5045 ветка=arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+коммит=5ce307cd440400c0ff425ae4d05e560f4535ab9e ветка=arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
 SDK=/usr/local/lib/android/sdk
 yes: standard output: Broken pipe
 Loading package information...                                                  Loading local repository...                                                     [                                       ] 3% Loading local repository...        [                                       ] 3% Fetch remote repository...         [=                                      ] 3% Fetch remote repository...         [=                                      ] 4% Fetch remote repository...         [=                                      ] 5% Fetch remote repository...         [==                                     ] 5% Fetch remote repository...         [==                                     ] 6% Fetch remote repository...         [==                                     ] 7% Fetch remote repository...         [==                                     ] 7% Computing updates...               [===                                    ] 8% Computing updates...               [===                                    ] 10% Computing updates...              [=======================================] 100% Computing updates...             
@@ -44,7 +44,7 @@ app/libs/Live2DCubismCore.aar: все библиотеки (3) совмести�
 --- источник: официальный Google Storage (релиз 1)
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  57.4M      0 --:--:-- --:--:-- --:--:-- 57.8M
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 3670k  100 3670k    0     0  75.6M      0 --:--:-- --:--:-- --:--:-- 76.2M
   получено 3758596 байт, sha256=64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff
   это ровно официальная модель
 модель получена из: официальный Google Storage (релиз 1)
@@ -54,19 +54,19 @@ app/libs/Live2DCubismCore.aar: все библиотеки (3) совмести�
 --- источник: официальный Google Storage (full, latest)
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 9177k  100 9177k    0     0  44.3M      0 --:--:-- --:--:-- --:--:-- 44.3M
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 9177k  100 9177k    0     0   114M      0 --:--:-- --:--:-- --:--:--  114M
   получено 9398198 байт, sha256=4eaa5eb7a98365221087693fcc286334cf0858e2eb6e15b506aa4a7ecdcec4ad
   это ровно официальная модель (9398198 байт)
 модель получена из: официальный Google Storage (full, latest)
 --- источник: официальный Google Storage (lite, latest)
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 5642k  100 5642k    0     0  52.1M      0 --:--:-- --:--:-- --:--:-- 52.4M
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 5642k  100 5642k    0     0  85.2M      0 --:--:-- --:--:-- --:--:-- 86.0M
   получено 5777746 байт, sha256=59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a
   это ровно официальная модель (5777746 байт)
 модель получена из: официальный Google Storage (lite, latest)
--rw-r--r-- 1 runner runner 9398198 Sep 26 06:43 app/src/main/assets/models/pose_landmarker_full.task
--rw-r--r-- 1 runner runner 5777746 Sep 26 06:43 app/src/main/assets/models/pose_landmarker_lite.task
+-rw-r--r-- 1 runner runner 9398198 Sep 26 06:48 app/src/main/assets/models/pose_landmarker_full.task
+-rw-r--r-- 1 runner runner 5777746 Sep 26 06:48 app/src/main/assets/models/pose_landmarker_lite.task
 МОДЕЛИ ПОЗЫ ГОТОВЫ
 модель позы pose_landmarker_full в сборке: 9398198 байт
 модель позы pose_landmarker_lite в сборке: 5777746 байт
@@ -74,11 +74,19 @@ app/libs/Live2DCubismCore.aar: все библиотеки (3) совмести�
 --- источник: GitHub API (pixiv/three-vrm)
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0 10.2M    0 12321    0     0  35210      0  0:05:06 --:--:--  0:05:06 35202100 10.2M  100 10.2M    0     0  17.1M      0 --:--:-- --:--:-- --:--:-- 17.0M
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 88 10.2M   88 9305k    0     0  15.0M      0 --:--:-- --:--:-- --:--:-- 15.0M100 10.2M  100 10.2M    0     0  16.6M      0 --:--:-- --:--:-- --:--:-- 16.6M
   получено 10776032 байт, формат VRM подтверждён
 3D модель получена из: GitHub API (pixiv/three-vrm)
 3D МОДЕЛЬ ГОТОВА: 10776032 байт
 3D модель в сборке: 10776032 байт
+модели в дереве:
+  echidna            движений 68   moc3 да  model3.json да
+  echidna_valentine  движений 66   moc3 да  model3.json да
+  emilia_bunny       движений 125  moc3 да  model3.json да
+  emilia_swimsuit    движений 115  moc3 да  model3.json да
+  nahida_genshin     движений 0    moc3 да  model3.json да
+объёмная модель: 10776032 байт
+содержимое дерева на месте: шесть персонажей, движок 3D, сцена и шоу
 
 Welcome to Gradle 8.10.2!
 
@@ -99,10 +107,10 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
+> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
 > Task :app:parseDebugLocalResources
-> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
@@ -118,13 +126,13 @@ Note: Recompile with -Xlint:deprecation for details.
 Note: /home/runner/work/Gagaggagagabnnbggagagagagmmwmz/Gagaggagagabnnbggagagagagmmwmz/app/src/main/java/com/live2d/sdk/cubism/framework/model/CubismUserModel.java uses unchecked or unsafe operations.
 Note: Recompile with -Xlint:unchecked for details.
 
-> Task :app:bundleDebugClassesToCompileJar
 > Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
 > Task :app:compileDebugUnitTestJavaWithJavac
 > Task :app:testDebugUnitTest
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_7-1790405023936.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_8-1790405312094.json
 
-BUILD SUCCESSFUL in 46s
+BUILD SUCCESSFUL in 39s
 20 actionable tasks: 19 executed, 1 from cache
 === итог юнит-тестов ===
 tests="6" skipped="0" failures="0" errors="0"
@@ -137,22 +145,22 @@ tests="9" skipped="0" failures="0" errors="0"
 tests="6" skipped="0" failures="0" errors="0"
 tests="10" skipped="0" failures="0" errors="0"
 tests="8" skipped="0" failures="0" errors="0"
-tests="9" skipped="0" failures="0" errors="0"
+tests="11" skipped="0" failures="0" errors="0"
 tests="8" skipped="0" failures="0" errors="0"
-tests="19" skipped="0" failures="0" errors="0"
-name="com.echidna.studio.ModelCatalogTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.005"
+tests="20" skipped="0" failures="0" errors="0"
+name="com.echidna.studio.ModelCatalogTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.004"
 name="com.echidna.studio.ModelFramingTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.003"
-name="com.echidna.studio.ModelStageTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.094"
-name="com.echidna.studio.MotionLoadTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.232"
-name="com.echidna.studio.ShowMotionNameTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.015"
-name="com.echidna.studio.StageStressTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.228"
-name="com.echidna.studio.anim.ExpressionPickerTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.004"
-name="com.echidna.studio.anim.IdleDirectorTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.007"
-name="com.echidna.studio.anim.ShowLibraryTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.003"
-name="com.echidna.studio.anim.ShowPlayerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.012"
-name="com.echidna.studio.three.ThreeDTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.04"
-name="com.echidna.studio.track.FacePoseTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.004"
-name="com.echidna.studio.track.TrackingMapperTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.042"
+name="com.echidna.studio.ModelStageTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.071"
+name="com.echidna.studio.MotionLoadTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.184"
+name="com.echidna.studio.ShowMotionNameTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.01"
+name="com.echidna.studio.StageStressTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.121"
+name="com.echidna.studio.anim.ExpressionPickerTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.003"
+name="com.echidna.studio.anim.IdleDirectorTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.005"
+name="com.echidna.studio.anim.ShowLibraryTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.002"
+name="com.echidna.studio.anim.ShowPlayerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.007"
+name="com.echidna.studio.three.ThreeDTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.202"
+name="com.echidna.studio.track.FacePoseTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.002"
+name="com.echidna.studio.track.TrackingMapperTest" tests="20" skipped="0" failures="0" errors="0" timestamp="2026-09-26T" hostname="runnervmtr4k5" time="0.014"
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
 > Task :app:preBuild UP-TO-DATE
@@ -166,8 +174,8 @@ Daemon will be stopped at the end of the build
 Unable to strip the following libraries, packaging them as they are: libLive2DCubismCoreJNI.so, libface_detector_v2_jni.so, libmediapipe_tasks_jni.so.
 
 > Task :app:generateReleaseResValues FROM-CACHE
-> Task :app:extractReleaseNativeSymbolTables
 > Task :app:checkReleaseAarMetadata
+> Task :app:extractReleaseNativeSymbolTables
 > Task :app:mapReleaseSourceSetPaths
 > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
 > Task :app:generateReleaseResources
@@ -175,8 +183,8 @@ Unable to strip the following libraries, packaging them as they are: libLive2DCu
 > Task :app:parseReleaseLocalResources FROM-CACHE
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
-> Task :app:mergeReleaseResources
 > Task :app:processReleaseMainManifest
+> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifest
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
@@ -188,7 +196,6 @@ Unable to strip the following libraries, packaging them as they are: libLive2DCu
 > Task :app:processReleaseResources
 > Task :app:mergeReleaseAssets
 > Task :app:compileReleaseJavaWithJavac FROM-CACHE
-> Task :app:mergeExtDexRelease
 > Task :app:dexBuilderRelease
 > Task :app:mergeReleaseGlobalSynthetics
 > Task :app:extractReleaseVersionControlInfo
@@ -197,6 +204,7 @@ Unable to strip the following libraries, packaging them as they are: libLive2DCu
 > Task :app:collectReleaseDependencies
 > Task :app:sdkReleaseDependencyData
 > Task :app:mergeReleaseJavaResource
+> Task :app:mergeExtDexRelease
 > Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
@@ -206,17 +214,17 @@ Unable to strip the following libraries, packaging them as they are: libLive2DCu
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_8-1790405068693.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_9-1790405349086.json
 
-BUILD SUCCESSFUL in 51s
+BUILD SUCCESSFUL in 37s
 41 actionable tasks: 36 executed, 5 from cache
-total 91440
-drwxr-xr-x  2 runner runner     4096 Sep 26 06:45 .
-drwxr-xr-x 10 runner runner     4096 Sep 26 06:43 ..
--rw-r--r--  1 runner runner 60739934 Sep 26 06:45 EchidnaStudio-1.0.0-arm64-v8a.apk
--rw-r--r--  1 runner runner 32879872 Sep 26 06:43 EchidnaStudio-source.zip
+total 91448
+drwxr-xr-x  2 runner runner     4096 Sep 26 06:49 .
+drwxr-xr-x 10 runner runner     4096 Sep 26 06:48 ..
+-rw-r--r--  1 runner runner 60739934 Sep 26 06:49 EchidnaStudio-1.1.0-arm64-v8a.apk
+-rw-r--r--  1 runner runner 32888745 Sep 26 06:48 EchidnaStudio-source.zip
 === проверяю содержимое APK ===
-файл: handoff/EchidnaStudio-1.0.0-arm64-v8a.apk
+файл: handoff/EchidnaStudio-1.1.0-arm64-v8a.apk
     98168  1981-01-01 01:01   lib/arm64-v8a/libLive2DCubismCoreJNI.so
   8520960  1981-01-01 01:01   lib/arm64-v8a/libface_detector_v2_jni.so
  11015096  1981-01-01 01:01   lib/arm64-v8a/libmediapipe_tasks_jni.so
@@ -240,24 +248,25 @@ Live2D моделей внутри: 5
 архитектуры: arm64-v8a
 ПОДДЕРЖКА 16 КБ СТРАНИЦ: ОК (Android 15/16 на таких устройствах запустятся)
 ПОДДЕРЖКА 4 КБ СТРАНИЦ: ОК (Android 8-14)
-  package: name='com.echidna.studio' versionCode='1' versionName='1.0.0' platformBuildVersionName='14' platformBuildVersionCode='34' compileSdkVersion='34' compileSdkVersionCodename='14'
+  package: name='com.echidna.studio' versionCode='2' versionName='1.1.0' platformBuildVersionName='14' platformBuildVersionCode='34' compileSdkVersion='34' compileSdkVersionCodename='14'
   sdkVersion:'24'
   targetSdkVersion:'34'
   native-code: 'arm64-v8a'
 === конец проверки совместимости ===
 Signer #1 certificate DN: C=US, O=Android, CN=Android Debug
-Signer #1 certificate SHA-256 digest: c65750c233af91b8267bce953b9035892a973c9011f74f590c62d8bba6f4bbdb
-Signer #1 certificate SHA-1 digest: dadfe1c2b792447dd8455a8d1967c103d3a89307
-Signer #1 certificate MD5 digest: b5d9c91e9750f736c280aa1dc376f4b8
-total 91448
-drwxr-xr-x  2 runner runner     4096 Sep 26 06:45 .
-drwxr-xr-x 10 runner runner     4096 Sep 26 06:43 ..
--rw-r--r--  1 runner runner 60739934 Sep 26 06:45 EchidnaStudio-1.0.0-arm64-v8a.apk
--rw-r--r--  1 runner runner 32888745 Sep 26 06:45 EchidnaStudio-source.zip
-[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz 9e984dd] handoff: сборка arm64 APK
+Signer #1 certificate SHA-256 digest: 49f3a52d1a2f011c72e4f4c9f74419ee643b72e015c7d986aa15e908591eb4bb
+Signer #1 certificate SHA-1 digest: 3a688e858d32c0c4696904de6dd25b01a1804770
+Signer #1 certificate MD5 digest: 2d3edc82de9279b3aa56e346a8c85eab
+total 91452
+drwxr-xr-x  2 runner runner     4096 Sep 26 06:49 .
+drwxr-xr-x 10 runner runner     4096 Sep 26 06:48 ..
+-rw-r--r--  1 runner runner 60739934 Sep 26 06:49 EchidnaStudio-1.1.0-arm64-v8a.apk
+-rw-r--r--  1 runner runner 32894714 Sep 26 06:49 EchidnaStudio-source.zip
+[arena/01a0d529-gagaggagagabnnbggagagagagmmwmz b3f731f] handoff: сборка arm64 APK
  2 files changed, 0 insertions(+), 0 deletions(-)
+ rename handoff/{EchidnaStudio-1.0.0-arm64-v8a.apk => EchidnaStudio-1.1.0-arm64-v8a.apk} (96%)
 remote: warning: See https://gh.io/lfs for more information.        
-remote: warning: File handoff/EchidnaStudio-1.0.0-arm64-v8a.apk is 57.93 MB; this is larger than GitHub's recommended maximum file size of 50.00 MB        
+remote: warning: File handoff/EchidnaStudio-1.1.0-arm64-v8a.apk is 57.93 MB; this is larger than GitHub's recommended maximum file size of 50.00 MB        
 remote: warning: GH001: Large files detected. You may want to try Git Large File Storage - https://git-lfs.github.com.        
 To https://github.com/KamiSakyy/Gagaggagagabnnbggagagagagmmwmz
-   f034601..9e984dd  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
+   5ce307c..b3f731f  HEAD -> arena/01a0d529-gagaggagagabnnbggagagagagmmwmz
