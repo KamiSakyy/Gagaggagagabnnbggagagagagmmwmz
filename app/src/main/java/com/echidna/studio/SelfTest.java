@@ -286,7 +286,7 @@ public final class SelfTest {
             case 12: {
                 final String report = callbacks.capabilitiesReport();
                 pass("возможности: " + report);
-                if (report.contains("3D: нет") || report.contains("тело: нет")) {
+                if (report.contains("тело: нет")) {
                     EchidnaLog.w("SELFTEST", "часть возможностей недоступна: " + report);
                 }
                 phase++;

@@ -29,10 +29,10 @@ compile() {          # compile <output dir> <sources file> <classpath>
 
 echo "=== 0/6 содержимое дерева, ресурсы, порядок запуска, счётчики движений, выравнивание ==="
 # Первым делом: не откатилось ли дерево к версии без движка 3D и четырёх моделей.
-# Локально объёмной модели может не быть: она качается из интернета.
-python3 "$ROOT/tools/check_tree.py" --allow-missing-vrm "$ROOT"
+python3 "$ROOT/tools/check_tree.py" "$ROOT"
 python3 "$ROOT/tools/check_resources.py" "$ROOT"
 python3 "$ROOT/tools/check_ui.py" "$ROOT"
+python3 "$ROOT/tools/check_model_paths.py" "$ROOT"
 python3 "$ROOT/tools/check_startup_order.py" "$ROOT"
 # Счётчики движения обязаны совпадать с данными кривых, иначе разбор падает с IndexOutOfBounds.
 python3 "$ROOT/tools/fix_motion_meta.py" --check "$ROOT/app/src/main/assets/live2d"

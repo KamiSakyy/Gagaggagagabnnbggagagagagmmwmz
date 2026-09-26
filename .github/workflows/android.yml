@@ -89,6 +89,7 @@ jobs:
           {
             python3 tools/check_resources.py .
             python3 tools/check_ui.py .
+            python3 tools/check_model_paths.py .
             python3 tools/check_startup_order.py .
             python3 tools/fix_motion_meta.py --check app/src/main/assets/live2d
             python3 tools/fix_native_alignment.py --check app/libs/Live2DCubismCore.aar
@@ -118,18 +119,7 @@ jobs:
             fi
           done
 
-      - name: Fetch the bundled 3D character
-        run: |
-          bash tools/fetch_vrm_model.sh app/src/main/assets/three \
-            2>&1 | tee -a "$BUILD_LOG"
-          if [ -f app/src/main/assets/three/character.vrm ]; then
-            echo "3D модель в сборке: $(stat -c%s app/src/main/assets/three/character.vrm) байт" \
-              | tee -a "$BUILD_LOG"
-          else
-            echo "3D МОДЕЛИ НЕТ: объёмного персонажа в списке не будет" | tee -a "$BUILD_LOG"
-          fi
-
-      - name: Check the six characters are in the build
+      - name: Check the five characters are in the build
         run: |
           set -o pipefail
           python3 tools/check_tree.py . 2>&1 | tee -a "$BUILD_LOG"
@@ -215,8 +205,9 @@ jobs:
             echo "модели-каталоги в APK: $(unzip -l "$APK" | grep -oE 'assets/live2d/[a-z_]+/model3.json' | sort -u | tr '\n' ' ')"
             echo "модели тела внутри: $(unzip -l "$APK" | grep -c 'pose_landmarker' || true)"
             echo "файлы моделей в APK: $(unzip -l "$APK" | grep -oE 'assets/models/[a-z_]*\.task' | sort -u | tr '\n' ' ')"
-            echo "3D модель внутри: $(unzip -l "$APK" | grep -c 'three/character.vrm' || true)"
             echo "Live2D моделей внутри: $(unzip -l "$APK" | grep -c 'model3.json' || true)"
+            echo "текстур моделей внутри: $(unzip -l "$APK" | grep -cE 'assets/live2d/.*/textures/.*png' || true)"
+            echo "движений моделей внутри: $(unzip -l "$APK" | grep -c 'motion3.json' || true)"
             echo "весит: $(du -h "$APK" | cut -f1)"
           } 2>&1 | tee -a "$BUILD_LOG"
 

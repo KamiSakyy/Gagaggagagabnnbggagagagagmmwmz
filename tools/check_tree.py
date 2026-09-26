@@ -46,7 +46,6 @@ def count_motions(directory):
 
 
 def main(argv):
-    allow_missing_vrm = "--allow-missing-vrm" in argv
     root = "."
     for argument in argv[1:]:
         if not argument.startswith("--"):
@@ -75,19 +74,11 @@ def main(argv):
         elif motions != expected:
             problems.append("{0}: движений {1}, ожидалось {2}".format(name, motions, expected))
 
+    # Объёмной модели в сборке быть не должно: в списке персонажей только Live2D.
     portrait = os.path.join(root, "app/src/main/assets/three/character.vrm")
     if os.path.isfile(portrait):
-        size = os.path.getsize(portrait)
-        print("объёмная модель: {0} байт".format(size))
-        if size < 1024 * 1024:
-            problems.append("файл объёмной модели подозрительно мал: {0} байт".format(size))
-    elif allow_missing_vrm:
-        warnings.append("нет app/src/main/assets/three/character.vrm "
-                        "(качается: tools/fetch_vrm_model.sh)")
-    else:
-        # В сборке файл обязателен: без него шестого персонажа в APK не будет.
-        problems.append("нет app/src/main/assets/three/character.vrm - "
-                        "объёмной модели не будет в сборке (tools/fetch_vrm_model.sh)")
+        warnings.append("в дереве лежит app/src/main/assets/three/character.vrm: "
+                        "3D-персонаж убран из списка, файл в APK не поедет")
 
     catalog = os.path.join(root, "app/src/main/java/com/echidna/studio/ModelCatalog.java")
     if os.path.isfile(catalog):
@@ -100,26 +91,41 @@ def main(argv):
     else:
         problems.append("нет файла ModelCatalog.java")
 
-    for model_json in [os.path.join(root, "app/src/main/assets/live2d", name, "model3.json")
-                       for name in MODELS]:
+    for name in sorted(MODELS):
+        model_json = os.path.join(root, "app/src/main/assets/live2d", name, "model3.json")
         if not os.path.isfile(model_json):
             continue
         try:
             data = json.load(open(model_json, encoding="utf-8"))
-            groups = data.get("FileReferences", {}).get("Motions", {})
-            if not groups and "nahida" not in model_json:
-                warnings.append("в " + model_json + " нет ссылок на движения")
         except (ValueError, KeyError) as error:
             problems.append("сломанный model3.json: " + model_json + ": " + str(error))
+            continue
+        refs = data.get("FileReferences", {})
+        groups = refs.get("Motions", {})
+        if not groups and name != "nahida_genshin":
+            warnings.append("в " + model_json + " нет ссылок на движения")
+        # Текстуры каждой модели обязаны лежать в её собственной папке: из-за жёсткого пути к
+        # папке Ехидны остальные персонажи оставались белыми.
+        textures = refs.get("Textures", [])
+        if not textures:
+            problems.append("у модели " + name + " нет текстур в model3.json")
+        for texture in textures:
+            path = os.path.join(root, "app/src/main/assets/live2d", name, texture)
+            if not os.path.isfile(path):
+                problems.append("нет текстуры модели " + name + ": " + texture)
 
     for warning in warnings:
         print("предупреждение: " + warning)
+    if "vrm_sample" in open(catalog, encoding="utf-8").read() if os.path.isfile(catalog) else False:
+        problems.append("3D-персонаж вернулся в каталог: он должен быть убран")
+
     if problems:
         print("ДЕРЕВО ПОТЕРЯЛО ЧАСТЬ ПРОЕКТА:")
         for problem in problems:
             print("  - " + problem)
         return 1
-    print("содержимое дерева на месте: шесть персонажей, движок 3D, сцена и шоу")
+    print("содержимое дерева на месте: {0} Live2D-персонажей со своими текстурами, "
+          "сцена и шоу".format(len(MODELS)))
     return 0
 
 

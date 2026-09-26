@@ -39,8 +39,13 @@ import java.util.Map;
  * layer only deals with degrees and normalised values.</p>
  */
 public class EchidnaModel extends CubismUserModel implements AvatarBridge {
-    /** Пути по умолчанию: модель Ехидны, если персонажа не выбрали. */
-    public static final String MODEL_DIR = "live2d/echidna/";
+    /**
+     * Куда смотрит конкретная модель.
+     *
+     * <p>Здесь был статический {@code MODEL_DIR = "live2d/echidna/"} — и все персонажи читали
+     * текстуры и файлы движений из папки Ехидны: у Валентины не находилась вторая текстура, а
+     * Эмилии играли чужие движения. Путь обязан быть полем экземпляра.</p>
+     */
     public static final String MODEL_JSON = "model3.json";
 
     private final AssetManager assets;
@@ -58,6 +63,9 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
     private final com.live2d.sdk.cubism.framework.motion.CubismMotionManager expressionManager =
             new com.live2d.sdk.cubism.framework.motion.CubismMotionManager();
     private final List<Integer> textureIds = new ArrayList<Integer>();
+    /** Сколько текстур обещает model3.json и какие из них не открылись. */
+    private int texturesExpected;
+    private final List<String> texturesMissing = new ArrayList<String>();
     private final List<CubismId> lipSyncIds = new ArrayList<CubismId>();
     private final List<CubismId> eyeBlinkIdList = new ArrayList<CubismId>();
 
@@ -227,7 +235,7 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         report.append("moc3 ").append(model.getParameterCount()).append(" параметров, ")
                 .append(model.getDrawableCount()).append(" мешей, ")
                 .append(motionIndex.size()).append(" мошен, ")
-                .append(textureIds.size()).append(" текстур")
+                .append(textureIds.size()).append("/").append(texturesExpected).append(" текстур")
                 .append(", ").append(System.currentTimeMillis() - started).append(" мс");
         loadReport = report.toString();
         EchidnaLog.i("MODEL", "загружено: " + loadReport);
@@ -247,12 +255,14 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
     }
 
     private void setupTextures() {
-        for (int i = 0; i < modelSetting.getTextureCount(); i++) {
+        texturesExpected = modelSetting.getTextureCount();
+        for (int i = 0; i < texturesExpected; i++) {
             final String file = modelSetting.getTextureFileName(i);
             if (file == null || file.isEmpty()) {
                 continue;
             }
-            final String path = MODEL_DIR + file;
+            // Путь строится от папки ЭТОЙ модели: у каждой свои текстуры.
+            final String path = modelDir + file;
             Bitmap bitmap = null;
             InputStream stream = null;
             try {
@@ -270,6 +280,9 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
                 }
             }
             if (bitmap == null) {
+                // Без текстуры модель выглядит белой: об этом надо кричать в лог, а не молчать.
+                texturesMissing.add(path);
+                EchidnaLog.e("MODEL", "текстура не декодировалась: " + path);
                 continue;
             }
 
@@ -278,8 +291,18 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             GLES20.glGenTextures(1, glTexture, 0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, glTexture[0]);
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
-            GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
-            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
+            // Текстуры этих моделей 1500x1500, то есть не степень двойки. В OpenGL ES 2 мипмапы
+            // для таких текстур запрещены: glGenerateMipmap ставит ошибку, текстура остаётся
+            // неполной и модель рисуется белой. Мипмапы включаются только для степени двойки.
+            final boolean powerOfTwo = isPowerOfTwo(bitmap.getWidth()) && isPowerOfTwo(bitmap.getHeight());
+            if (powerOfTwo) {
+                GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
+                GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,
+                        GLES20.GL_LINEAR_MIPMAP_LINEAR);
+            } else {
+                GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,
+                        GLES20.GL_LINEAR);
+            }
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
@@ -291,6 +314,13 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             this.<CubismRendererAndroid>getRenderer().isPremultipliedAlpha(true);
             bitmap.recycle();
         }
+        if (!texturesMissing.isEmpty()) {
+            EchidnaLog.w("MODEL", "модель " + spec.id + ": нет текстур " + texturesMissing);
+        }
+    }
+
+    private static boolean isPowerOfTwo(int value) {
+        return value > 0 && (value & (value - 1)) == 0;
     }
 
     /** Frees the model. Must run on the GL thread. */
@@ -311,6 +341,16 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
         modelSetting = null;
     }
 
+    /** Текстуры, которые модель3.json обещает, но которых нет в сборке. */
+    public List<String> missingTextures() {
+        return new ArrayList<String>(texturesMissing);
+    }
+
+    /** Путь к папке этой модели; по нему самопроверка ищет её файлы. */
+    public String assetDirectory() {
+        return modelDir;
+    }
+
     /**
      * Plays one of the motion files.
      *
@@ -328,7 +368,7 @@ public class EchidnaModel extends CubismUserModel implements AvatarBridge {
             final String group = motionGroupOf(index);
             final String file = modelSetting.getMotionFileName(group, index);
             try {
-                motion = loadMotion(readAsset(MODEL_DIR + file));
+                motion = loadMotion(readAsset(modelDir + file));
             } catch (IOException e) {
                 EchidnaLog.e("MOTION", "не удалось прочитать " + file, e);
                 return false;

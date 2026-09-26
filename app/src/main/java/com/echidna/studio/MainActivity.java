@@ -79,6 +79,8 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private ScrollView overlayScroll;
     private TextView modelSummary;
     private LinearLayout actionBar;
+    /** Полоса закрытия: показывается вместо панели действий, пока открыто окно персонажей. */
+    private LinearLayout closeBar;
 
     /** Цвет подписей на тёмной панели. */
     private static final int COLOR_TEXT = 0xFFF3ECFF;
@@ -88,9 +90,6 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private SelfTest selfTest;
-
-    /** Каталог движений внутри assets и результат их фонового разбора. */
-    private static final String MOTION_DIR = "live2d/echidna/motions";
 
     private volatile String motionsLoadReport;
     private volatile boolean motionsCheckStarted;
@@ -207,6 +206,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         // Окно персонажей лежит под панелью действий, чтобы нижние кнопки остались доступными.
         root.addView(buildOverlay());
         root.addView(buildActionBar());
+        root.addView(buildCloseBar());
         root.addView(buildHint());
         root.addView(buildPermissionBanner());
         root.addView(buildErrorPanel());
@@ -278,6 +278,39 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         return bar;
     }
 
+    /**
+     * Полоса с кнопкой «Закрыть» на всю ширину.
+     *
+     * <p>Крестик в углу окна человек не находил: он маленький и сливается с тёмным фоном. Пока окно
+     * персонажей открыто, вместо панели действий показывается эта полоса — кнопка во всю ширину
+     * экрана, с иконкой и подписью, её невозможно не заметить.</p>
+     */
+    private View buildCloseBar() {
+        closeBar = new LinearLayout(this);
+        closeBar.setOrientation(LinearLayout.HORIZONTAL);
+        closeBar.setPadding(dp(8), dp(8), dp(8), dp(8));
+        closeBar.setBackgroundColor(0xF2100C1C);
+        closeBar.setLayoutParams(new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM));
+        closeBar.setVisibility(View.GONE);
+
+        final Button close = new Button(this);
+        close.setText("Закрыть");
+        close.setTextSize(15);
+        close.setAllCaps(false);
+        close.setTextColor(0xFF231436);
+        close.setBackground(rounded(0xFFB388FF, 20));
+        close.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_close, 0, 0, 0);
+        close.setCompoundDrawablePadding(dp(8));
+        close.setGravity(Gravity.CENTER);
+        close.setOnClickListener(v -> hideOverlay());
+        close.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(52)));
+        closeBar.addView(close);
+        return closeBar;
+    }
+
     /** Одна кнопка нижней панели: иконка сверху, подпись снизу. */
     private Button navItem(int iconRes, String label, View.OnClickListener listener) {
         final Button button = new Button(this);
@@ -318,18 +351,6 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                 ViewGroup.LayoutParams.WRAP_CONTENT, dp(44));
         params.setMargins(dp(3), dp(3), dp(3), dp(3));
         button.setLayoutParams(params);
-        return button;
-    }
-
-    /** Круглая кнопка с одной иконкой: закрыть окно и подобное. */
-    private Button iconButton(int iconRes, String description, View.OnClickListener listener) {
-        final Button button = new Button(this);
-        button.setText("");
-        button.setContentDescription(description);
-        button.setPadding(dp(10), dp(10), dp(10), dp(10));
-        button.setBackground(rounded(0x99140F22, 22));
-        button.setCompoundDrawablesWithIntrinsicBounds(0, 0, iconRes, 0);
-        button.setOnClickListener(listener);
         return button;
     }
 
@@ -386,7 +407,7 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         overlayPanel.setClickable(true);
 
         overlayScroll = new ScrollView(this);
-        overlayScroll.setPadding(dp(12), dp(12), dp(12), dp(74));
+        overlayScroll.setPadding(dp(10), dp(10), dp(10), dp(10));
         overlayPanel.addView(overlayScroll, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -394,9 +415,12 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         modelPanel.setOrientation(LinearLayout.VERTICAL);
         overlayScroll.addView(modelPanel);
 
+        // Заголовок во всю ширину: слева название, справа крупная кнопка закрытия, которую видно
+        // всегда, а не маленький крестик без подписи.
         final LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setPadding(0, 0, 0, dp(4));
         final TextView title = new TextView(this);
         title.setText("Персонажи");
         title.setTextColor(COLOR_TEXT);
@@ -405,7 +429,18 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         title.setLayoutParams(new LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         header.addView(title);
-        header.addView(iconButton(R.drawable.ic_close, "закрыть", v -> hideOverlay()));
+        final Button closeTop = new Button(this);
+        closeTop.setText("Закрыть");
+        closeTop.setTextSize(13);
+        closeTop.setAllCaps(false);
+        closeTop.setTextColor(0xFF231436);
+        closeTop.setBackground(rounded(0xFFB388FF, 18));
+        closeTop.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_close, 0, 0, 0);
+        closeTop.setCompoundDrawablePadding(dp(6));
+        closeTop.setOnClickListener(v -> hideOverlay());
+        closeTop.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, dp(44)));
+        header.addView(closeTop);
         modelPanel.addView(header);
 
         modelSummary = new TextView(this);
@@ -517,6 +552,13 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         }
         highlight(modelsButton, modelsFirst);
         highlight(moreButton, !modelsFirst);
+        // Нижняя панель уступает место кнопке закрытия: она во всю ширину и всегда на виду.
+        if (actionBar != null) {
+            actionBar.setVisibility(View.GONE);
+        }
+        if (closeBar != null) {
+            closeBar.setVisibility(View.VISIBLE);
+        }
         if (overlayScroll != null) {
             overlayScroll.post(() -> overlayScroll.fullScroll(
                     modelsFirst ? ScrollView.FOCUS_UP : ScrollView.FOCUS_DOWN));
@@ -530,6 +572,12 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         }
         highlight(modelsButton, false);
         highlight(moreButton, false);
+        if (actionBar != null) {
+            actionBar.setVisibility(uiHidden ? View.GONE : View.VISIBLE);
+        }
+        if (closeBar != null) {
+            closeBar.setVisibility(View.GONE);
+        }
     }
 
     /** Список всех моделей сборки: строки, а не лента, где видно только первую кнопку. */
@@ -543,8 +591,9 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                 final LinearLayout row = new LinearLayout(this);
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 row.setGravity(Gravity.CENTER_VERTICAL);
-                row.setPadding(dp(10), dp(8), dp(10), dp(8));
-                row.setBackground(rounded(active ? 0xCC5E35B1 : 0x33FFFFFF, 14));
+                // Края до края: подсветка выбранной строки тянется по всей ширине экрана.
+                row.setPadding(dp(6), dp(10), dp(6), dp(10));
+                row.setBackground(rounded(active ? 0xCC5E35B1 : 0x33FFFFFF, 0));
                 row.setOnClickListener(v -> selectModel(spec.id));
 
                 final TextView emoji = new TextView(this);
@@ -1456,42 +1505,67 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
      * of a motion used to be smaller than its curves, and the engine then threw while loading a
      * motion. Runs in a background thread, the result is read by the self test.
      */
+    /**
+     * Разбирает движения ВСЕХ моделей сборки, а не одной Ехидны.
+     *
+     * <p>Сначала путь был жёстко прописан на её папку, поэтому файлы остальных персонажей не
+     * проверялись вовсе. Теперь проверка идёт по каталогу каждой модели, и в логе видно, сколько
+     * движений прочитано у каждой: это и есть ответ на вопрос «собраны ли мои модели целиком».</p>
+     */
     private void parseAllMotions() {
         final StringBuilder broken = new StringBuilder();
+        final StringBuilder perModel = new StringBuilder();
         int total = 0;
         int failed = 0;
         try {
-            final String[] files = getAssets().list(MOTION_DIR);
-            if (files == null) {
-                motionsLoadReport = "каталог движений пуст: " + MOTION_DIR;
-                return;
-            }
-            java.util.Arrays.sort(files);
-            for (String file : files) {
-                if (!file.endsWith(".motion3.json")) {
-                    continue;
-                }
-                total++;
-                try {
-                    final byte[] data = readAsset(MOTION_DIR + "/" + file);
-                    CubismMotion.create(data);
-                } catch (Throwable error) {
-                    failed++;
-                    if (failed <= 6) {
-                        broken.append(broken.length() == 0 ? "" : ", ")
-                              .append(file).append(" (").append(error.getClass().getSimpleName()).append(')');
+            final java.util.List<ModelCatalog.ModelSpec> specs = ModelCatalog.available(getAssets());
+            for (int m = 0; m < specs.size(); m++) {
+                final ModelCatalog.ModelSpec spec = specs.get(m);
+                final String dir = "live2d/" + spec.id + "/motions";
+                final String[] files = getAssets().list(dir);
+                int here = 0;
+                if (files != null) {
+                    java.util.Arrays.sort(files);
+                    for (String file : files) {
+                        if (!file.endsWith(".motion3.json")) {
+                            continue;
+                        }
+                        total++;
+                        here++;
+                        try {
+                            final byte[] data = readAsset(dir + "/" + file);
+                            CubismMotion.create(data);
+                        } catch (Throwable error) {
+                            failed++;
+                            if (failed <= 6) {
+                                broken.append(broken.length() == 0 ? "" : ", ")
+                                      .append(spec.id).append('/').append(file)
+                                      .append(" (").append(error.getClass().getSimpleName()).append(')');
+                            }
+                        }
                     }
                 }
+                if (perModel.length() > 0) {
+                    perModel.append(", ");
+                }
+                perModel.append(spec.id).append(' ').append(here);
             }
         } catch (Throwable error) {
             motionsLoadReport = "проверка движений сорвалась: " + error;
             return;
         }
         final String report = failed == 0
-            ? "движения прочитаны: " + total + "/" + total + ", ошибок 0"
-            : "движения прочитаны: " + (total - failed) + "/" + total + ", ошибок " + failed + ": " + broken;
+            ? "движения всех моделей прочитаны: " + total + "/" + total + " (" + perModel + ")"
+            : "движения прочитаны: " + (total - failed) + "/" + total + " (" + perModel
+              + "), ошибок " + failed + ": " + broken;
         motionsLoadReport = report;
         EchidnaLog.i("MOTION", report);
+    }
+
+    /** Читает текстовый файл из assets: нужен для разбора model3.json в самопроверке. */
+    private String readText(String path) throws java.io.IOException {
+        final byte[] data = readAsset(path);
+        return new String(data, java.nio.charset.Charset.forName("UTF-8"));
     }
 
     private byte[] readAsset(String path) throws java.io.IOException {
@@ -1591,14 +1665,35 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                     } catch (Throwable error) {
                         out.append("моделей ?");
                     }
-                    boolean three = false;
+                    // Сколько текстур обещают файлы моделей и все ли они на месте: именно здесь
+                    // ломалась загрузка чужих моделей.
+                    int textures = 0;
                     try {
-                        getAssets().open("three/character.vrm").close();
-                        three = true;
-                    } catch (Exception missing) {
-                        three = false;
+                        final java.util.List<ModelCatalog.ModelSpec> packed =
+                                ModelCatalog.available(getAssets());
+                        for (int m = 0; m < packed.size(); m++) {
+                            final ModelCatalog.ModelSpec spec = packed.get(m);
+                            final String setting = readText(spec.assetDir + spec.modelJson);
+                            final org.json.JSONObject json = new org.json.JSONObject(setting);
+                            final org.json.JSONArray list = json.getJSONObject("FileReferences")
+                                    .optJSONArray("Textures");
+                            if (list == null) {
+                                continue;
+                            }
+                            for (int t = 0; t < list.length(); t++) {
+                                final String path = spec.assetDir + list.getString(t);
+                                try {
+                                    getAssets().open(path).close();
+                                    textures++;
+                                } catch (Exception missing) {
+                                    EchidnaLog.e("MODEL", "текстуры нет в сборке: " + path);
+                                }
+                            }
+                        }
+                    } catch (Throwable error) {
+                        EchidnaLog.w("MODEL", "проверка текстур: " + error);
                     }
-                    out.append("; 3D: ").append(three ? "да" : "нет");
+                    out.append("; текстуры: ").append(textures);
                     out.append("; лицо: ").append(hub.trackerName());
                     out.append("; тело: ").append(
                             com.echidna.studio.track.MediaPipePoseTracker.assetAvailable(getBaseContext())

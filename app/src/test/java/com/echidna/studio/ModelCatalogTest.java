@@ -23,7 +23,7 @@ public class ModelCatalogTest {
     @Test
     public void theCatalogCarriesEveryCharacter() {
         final List<ModelCatalog.ModelSpec> all = ModelCatalog.all();
-        assertEquals("персонажей в каталоге", 6, all.size());
+        assertEquals("персонажей в каталоге", 5, all.size());
 
         final Set<String> ids = new HashSet<String>();
         for (int i = 0; i < all.size(); i++) {
@@ -70,25 +70,26 @@ public class ModelCatalogTest {
         }
     }
 
-    /** Ровно один персонаж каталога — объёмный. */
+    /**
+     * В приложении только Live2D-персонажи: объёмную модель убрали.
+     *
+     * <p>Тест не даёт вернуть её в список случайно вместе с десятимегабайтным файлом .vrm.</p>
+     */
     @Test
-    public void exactlyOneCharacterIsThreeDimensional() {
-        int threeD = 0;
+    public void thereAreNoThreeDimensionalCharacters() {
         final List<ModelCatalog.ModelSpec> all = ModelCatalog.all();
         for (int i = 0; i < all.size(); i++) {
-            if (all.get(i).threeD) {
-                threeD++;
-            }
+            assertFalse("объёмный персонаж в списке: " + all.get(i).id, all.get(i).threeD);
+            assertTrue("модель обязана лежать в live2d: " + all.get(i).assetDir,
+                    all.get(i).assetDir.startsWith("live2d/"));
         }
-        assertEquals("объёмных персонажей в каталоге", 1, threeD);
     }
 
     /** Все персонажи, обещанные пользователю, лежат в каталоге под своими именами. */
     @Test
     public void everyPromisedCharacterIsInTheCatalog() {
         final String[] promised = {
-                "echidna", "echidna_valentine", "emilia_bunny", "emilia_swimsuit", "nahida_genshin",
-                "vrm_sample"
+                "echidna", "echidna_valentine", "emilia_bunny", "emilia_swimsuit", "nahida_genshin"
         };
         for (int i = 0; i < promised.length; i++) {
             boolean found = false;
@@ -115,16 +116,10 @@ public class ModelCatalogTest {
         for (int i = 0; i < all.size(); i++) {
             final ModelCatalog.ModelSpec spec = all.get(i);
             final File file = findAsset(spec.assetDir + spec.modelJson);
-            if (spec.threeD && !file.isFile()) {
-                // Объёмная модель качается из интернета (tools/fetch_vrm_model.sh) и в репозиторий
-                // не попадает: локально её может не быть. В CI её отсутствие ловит
-                // tools/check_tree.py отдельным шагом.
-                System.out.println("тест пропущен для " + spec.id
-                        + ": файл не скачан (" + file + ")");
-                continue;
-            }
             assertTrue("нет файла модели " + spec.id + ": " + file, file.isFile());
             assertTrue("пустой файл модели " + spec.id, file.length() > 1024);
+            final File moc = findAsset(spec.assetDir + "model.moc3");
+            assertTrue("нет .moc3 у " + spec.id, moc.isFile());
         }
     }
 

@@ -61,11 +61,9 @@ public final class ModelCatalog {
             new ModelSpec("emilia_swimsuit", "Эмилия (пляж)", "\uD83C\uDF0A",
                     "Купальник, 115 движений", "live2d/emilia_swimsuit"),
             new ModelSpec("nahida_genshin", "Нахида (Genshin)", "\uD83C\uDF43",
-                    "Архонт мудрости с 13 выражениями лица", "live2d/nahida_genshin"),
-            // Шестой персонаж - настоящая 3D модель: скелет, мимика морфами и физика волос.
-            new ModelSpec("vrm_sample", "3D модель (VRM)", "\uD83E\uDDCD",
-                    "Объёмная девушка с живым скелетом, мимикой и физикой волос", "three",
-                    "character.vrm", true)
+                    "Архонт мудрости с 13 выражениями лица", "live2d/nahida_genshin")
+            // Объёмной модели 3D в приложении больше нет: остаются только Live2D-персонажи.
+            // Движок 3D остался в коде (three/), но персонажа в списке нет и .vrm в APK не едет.
     ));
 
     private ModelCatalog() {
