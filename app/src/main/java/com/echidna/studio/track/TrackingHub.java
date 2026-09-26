@@ -131,6 +131,14 @@ public final class TrackingHub {
     private volatile int cameraPhase;
     /** Наблюдения за положением кадра и решение о перевороте. */
     private final FlipDecision flipDecision = new FlipDecision();
+    /**
+     * Решение о перевороте по самому лицу.
+     *
+     * <p>Работает всегда, когда лицо найдено: если глаза на кадре оказываются ниже рта, кадр стоит
+     * вверх ногами, и приложение доворачивает его само. Это надёжнее любых формул с углом сенсора,
+     * потому что проверяется по человеку, а не по характеристике камеры.</p>
+     */
+    private final FrameOrientation orientation = new FrameOrientation();
     private long trackerOpenedMs;
     private long lastResultsSeen;
     private long lastResultsChangeMs;
@@ -138,6 +146,19 @@ public final class TrackingHub {
     private volatile boolean waitingForFace;
     /** Готово ли распознавание: пока нет, интерфейс пишет «распознавание загружается». */
     private volatile boolean trackersReady;
+    /**
+     * Трекеры, поднятые заранее.
+     *
+     * <p>Модели распознавания можно собрать до того, как человек нажмёт «камера»: пока он выбирает
+     * персонажа и смотрит движения, лицо, тело и кисть уже загружены в память. Тогда нажатие
+     * включает камеру сразу, без единой задержки на загрузку. Если человек нажимает «камера»
+     * раньше, чем закончилась подготовка, работает обычный путь: трекеры поднимаются в фоне, а в
+     * окошке уже видно себя.</p>
+     */
+    private volatile FaceTracker preparedTracker;
+    private volatile FaceTracker preparedPose;
+    private volatile FaceTracker preparedHand;
+    private volatile boolean warmUpStarted;
     /** Когда начали поднимать трекеры: по этому видно, сколько заняла загрузка. */
     private volatile long trackersStartedAt;
 
@@ -279,6 +300,7 @@ public final class TrackingHub {
         // загрузка моделей больше не держит нажатие кнопки.
         running = true;
         trackersReady = false;
+        orientation.reset();
         trackersStartedAt = SystemClock.elapsedRealtime();
         addDiagnostic("камера включена, распознавание поднимается");
         analysisHandler.post(this::openTrackersInBackground);
@@ -303,9 +325,122 @@ public final class TrackingHub {
         }
     }
 
+    /** Сколько раз кадр доворачивался сам, потому что лицо оказывалось вверх ногами. */
+    public int cameraFlips() {
+        return orientation.flips();
+    }
+
     /** Готово ли распознавание лица: по этому интерфейс пишет «загружается» или «работает». */
     public boolean trackersReady() {
         return trackersReady;
+    }
+
+    /**
+     * Поднимает трекеры заранее, не дожидаясь нажатия «камера».
+     *
+     * <p>Вызывается при запуске приложения, когда разрешение на камеру уже выдано. Загрузка идёт в
+     * фоновом потоке и ничему не мешает: пока человек листает персонажей, модели уже готовы, и
+     * включение камеры становится мгновенным.</p>
+     *
+     * @return true когда подготовка уже идёт или трекеры готовы
+     */
+    public boolean warmUp() {
+        if (warmUpStarted || running || trackersReady) {
+            return true;
+        }
+        warmUpStarted = true;
+        addDiagnostic("готовлю распознавание заранее");
+        analysisHandler.post(this::prepareTrackers);
+        return true;
+    }
+
+    /** Собирает трекеры в фоне и складывает их до первого включения камеры. */
+    private void prepareTrackers() {
+        final long started = SystemClock.elapsedRealtime();
+        try {
+            if (preparedTracker == null) {
+                preparedTracker = buildFaceTracker();
+            }
+            if (preparedPose == null) {
+                preparedPose = buildPoseTracker();
+            }
+            if (preparedHand == null) {
+                preparedHand = buildHandTracker();
+            }
+            trackersReady = true;
+            final long spent = SystemClock.elapsedRealtime() - started;
+            EchidnaLog.i("TRACK", "распознавание подготовлено заранее за " + spent + " мс");
+            addDiagnostic("распознавание готово заранее за " + spent + " мс: " + trackerName());
+        } catch (Throwable error) {
+            EchidnaLog.w("TRACK", "подготовка распознавания не удалась: " + error);
+            trackersReady = false;
+            warmUpStarted = false;
+        }
+    }
+
+    /** Забирает заранее поднятые трекеры: если они готовы, включать ничего не нужно. */
+    private boolean adoptPreparedTrackers() {
+        final FaceTracker face = preparedTracker;
+        if (face == null) {
+            return false;
+        }
+        tracker = face;
+        poseTracker = preparedPose;
+        handTracker = preparedHand;
+        preparedTracker = null;
+        preparedPose = null;
+        preparedHand = null;
+        trackersReady = true;
+        trackerOpenedMs = SystemClock.elapsedRealtime();
+        addDiagnostic("распознавание было готово заранее: " + trackerName());
+        EchidnaLog.i("TRACK", "камера включает готовый трекер: " + trackerName());
+        return true;
+    }
+
+    /** Собирает трекер лица: MediaPipe, а если он не завёлся - ML Kit. */
+    private FaceTracker buildFaceTracker() throws Exception {
+        if (MediaPipeFaceTracker.assetAvailable(context)) {
+            try {
+                final MediaPipeFaceTracker mediaPipe = new MediaPipeFaceTracker(context);
+                mediaPipe.start();
+                return mediaPipe;
+            } catch (Throwable noMediaPipe) {
+                EchidnaLog.w("TRACK", "MediaPipe не поднялся (" + noMediaPipe + "), беру ML Kit");
+            }
+        }
+        final MlKitFaceTracker mlKit = new MlKitFaceTracker(context);
+        mlKit.start();
+        return mlKit;
+    }
+
+    /** Собирает трекер тела: без него нет плеч, наклона и высоты рук. */
+    private FaceTracker buildPoseTracker() {
+        if (!MediaPipePoseTracker.assetAvailable(context)) {
+            return null;
+        }
+        try {
+            final MediaPipePoseTracker pose = new MediaPipePoseTracker(context);
+            pose.start();
+            return pose;
+        } catch (Throwable error) {
+            EchidnaLog.w("TRACK", "трекер тела не поднялся: " + error);
+            return null;
+        }
+    }
+
+    /** Собирает трекер кисти: пальцы, ладонь, рука у подбородка. */
+    private FaceTracker buildHandTracker() {
+        if (!MediaPipeHandTracker.assetAvailable(context)) {
+            return null;
+        }
+        try {
+            final MediaPipeHandTracker hands = new MediaPipeHandTracker(context);
+            hands.start();
+            return hands;
+        } catch (Throwable error) {
+            EchidnaLog.w("TRACK", "трекер кисти не поднялся: " + error);
+            return null;
+        }
     }
 
     /**
@@ -365,6 +500,10 @@ public final class TrackingHub {
 
     /** Picks the best tracker that actually starts on this device. */
     private boolean openTracker() {
+        // Готовые трекеры важнее всего: с ними камера включается мгновенно.
+        if (adoptPreparedTrackers()) {
+            return true;
+        }
         if (tracker != null) {
             tracker.stop();
             tracker = null;
@@ -419,16 +558,19 @@ public final class TrackingHub {
     public void stop() {
         running = false;
         trackersReady = false;
+        // Трекеры не выбрасываются, а возвращаются в «заранее поднятые»: второе включение камеры
+        // тогда тоже мгновенное. Держать их стоит немного памяти, зато нет повторной загрузки
+        // двадцати мегабайт моделей.
         if (tracker != null) {
-            tracker.stop();
+            preparedTracker = tracker;
             tracker = null;
         }
         if (poseTracker != null) {
-            poseTracker.stop();
+            preparedPose = poseTracker;
             poseTracker = null;
         }
         if (handTracker != null) {
-            handTracker.stop();
+            preparedHand = handTracker;
             handTracker = null;
         }
         lastPoseSignals = null;
@@ -455,7 +597,24 @@ public final class TrackingHub {
 
     public void release() {
         stop();
+        closePrepared();
         analysisThread.quitSafely();
+    }
+
+    /** Закрывает заранее поднятые трекеры: приложение выгружается. */
+    private void closePrepared() {
+        if (preparedTracker != null) {
+            preparedTracker.stop();
+            preparedTracker = null;
+        }
+        if (preparedPose != null) {
+            preparedPose.stop();
+            preparedPose = null;
+        }
+        if (preparedHand != null) {
+            preparedHand.stop();
+            preparedHand = null;
+        }
     }
 
     // ------------------------------------------------------------------ plumbing
@@ -570,6 +729,7 @@ public final class TrackingHub {
             waitingForFace = SystemClock.elapsedRealtime() - submitStart > 8L;
             if (fresh != null) {
                 lastFaceSignals = fresh;
+                watchFaceOrientation(fresh, now);
             }
             face = lastFaceSignals;
             if (probeDue) {
@@ -612,6 +772,37 @@ public final class TrackingHub {
         if (signalsListener != null) {
             signalsListener.onSignals(signals);
         }
+    }
+
+    /**
+     * По самому лицу решает, не приходит ли кадр вверх ногами.
+     *
+     * <p>Этому способу не нужны ни пробы перевёрнутых кадров, ни характеристики камеры: глаза выше
+     * рта у человека и ниже рта у перевёрнутого кадра. Как только лицо несколько раз подряд оказалось
+     * «наоборот», кадр доворачивается на 180 градусов - и в окошке, и в распознавании сразу.</p>
+     */
+    private void watchFaceOrientation(FaceSignals fresh, long now) {
+        if (!fresh.faceUprightKnown) {
+            return;
+        }
+        orientation.record(fresh.faceUpright);
+        final int decision = orientation.decide(now);
+        if (decision == FrameOrientation.UNSURE) {
+            return;
+        }
+        if (decision == FrameOrientation.KEEP) {
+            // Кадр стоит ровно: наблюдения больше не нужны, решение принято само собой.
+            orientation.onConfirmedUpright();
+            return;
+        }
+        final int rotation = (camera.extraRotation() + 180) % 360;
+        camera.setExtraRotation(rotation);
+        orientation.onFlipped(now);
+        resetFlipStats();
+        // Проверка перевёрнутых кадров больше не нужна: лицо уже сказало, как оно стоит.
+        flipDecision.onFlipped(now);
+        addDiagnostic("кадр приходит перевёрнутым (лицо вверх ногами): доворот " + rotation + "°");
+        EchidnaLog.i("TRACK", "кадр повёрнут по лицу: доворот " + rotation + "°");
     }
 
     /**

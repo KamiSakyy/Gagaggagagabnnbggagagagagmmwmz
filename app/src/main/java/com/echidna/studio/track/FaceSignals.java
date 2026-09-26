@@ -35,6 +35,32 @@ public final class FaceSignals {
     /** Face height relative to the frame height. */
     public float scale;
 
+    /**
+     * Положение лица на кадре: у человека глаза выше рта.
+     *
+     * <p>Единственный надёжный признак того, что кадр приходит вверх ногами: по нему приложение
+     * само доворачивает картинку, каким бы ни был угол сенсора.</p>
+     */
+    public boolean faceUpright;
+    /** Известно ли положение лица: у трекера без точек лица оно неизвестно. */
+    public boolean faceUprightKnown;
+    /**
+     * Геометрия лица по 478 точкам: мимика, измеренная линейкой, а не нейросетью.
+     *
+     * <p>Улыбка - это поднятые уголки рта, удивление - поднятые брови, моргание - сомкнутые веки.
+     * Эти величины считаются прямо по точкам лица и не зависят от того, насколько уверенно модель
+     * распознала движение мышцы: там, где коэффициенты мимики молчат, геометрия всё видит.</p>
+     */
+    public boolean geometric;
+    /** Уголки рта относительно середины губ: плюс - улыбка, минус - опущенные губы. */
+    public float smileGeo;
+    /** Раскрытие рта по точкам губ, 0..1. */
+    public float mouthOpenGeo;
+    /** Поднятие бровей над глазами: плюс - вскинуты, минус - сведены. */
+    public float browGeo;
+    /** Раскрытость век по точкам глаз, 0..1: моргание читается даже при слабых коэффициентах. */
+    public float eyeOpenGeo;
+
     /** True when {@link #blendEyeBlinkLeft} and friends hold real data. */
     public boolean blendshapes;
 
@@ -261,6 +287,13 @@ public final class FaceSignals {
         centerY = other.centerY;
         scale = other.scale;
         blendshapes = other.blendshapes;
+        faceUpright = other.faceUpright;
+        faceUprightKnown = other.faceUprightKnown;
+        geometric = other.geometric;
+        smileGeo = other.smileGeo;
+        mouthOpenGeo = other.mouthOpenGeo;
+        browGeo = other.browGeo;
+        eyeOpenGeo = other.eyeOpenGeo;
         blendEyeBlinkLeft = other.blendEyeBlinkLeft;
         blendEyeBlinkRight = other.blendEyeBlinkRight;
         blendJawOpen = other.blendJawOpen;

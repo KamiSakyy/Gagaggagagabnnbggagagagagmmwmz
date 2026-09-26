@@ -167,6 +167,11 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         renderer.setStageListener(this);
         hub = new TrackingHub(this);
         hub.setSignalsListener(this::onSignals);
+        // Модели распознавания поднимаются заранее, пока человек выбирает персонажа: тогда
+        // включение камеры мгновенное. Разрешение к этому моменту обычно уже выдано.
+        if (CameraController.hasPermission(this)) {
+            hub.warmUp();
+        }
         hub.setPreviewListener(this::onPreview);
 
         try {
@@ -1791,6 +1796,9 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
                     out.append("; каналы рук у модели: ").append(renderer.armChannels());
                     out.append("; каналы мимики: ").append(renderer.emotionChannels());
                     out.append("; распознавание: ").append(hub.trackersReady() ? "готово" : "загружается");
+                    // Сколько раз кадр доворачивался сам: по этому видно, врал ли производитель с
+                    // углом сенсора.
+                    out.append("; доворотов по лицу: ").append(hub.cameraFlips());
                     out.append("; микрофон: не используется");
                     out.append("; сенсор камеры ").append(hub.camera().sensorOrientation())
                             .append("°");
@@ -1859,6 +1867,11 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             }
         }
         permissionText.setVisibility(cameraGranted ? View.GONE : View.VISIBLE);
+        if (cameraGranted) {
+            // Разрешение только что выдано: модели распознавания поднимаются сразу, чтобы первое
+            // нажатие «камера» сработало без задержки.
+            hub.warmUp();
+        }
         if (cameraGranted && cameraMode) {
             startCamera();
         }

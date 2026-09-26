@@ -30,8 +30,15 @@ public final class CameraRotation {
     public static int base(boolean front, int sensorOrientation, int deviceRotation) {
         final int sensor = normalize(sensorOrientation);
         final int device = normalize(deviceRotation);
-        // Фронтальная камера: поворот телефона прибавляется к углу сенсора. Основная: вычитается.
-        return front ? (sensor + device) % 360 : (sensor - device + 360) % 360;
+        // Фронтальная камера смотрит на пользователя, поэтому кадр разворачивается в другую
+        // сторону: угол сенсора берётся с обратным знаком. Основная камера - как есть.
+        //
+        // Проверено на телефоне: правило с обратным знаком даёт ровный кадр, правило с прямым -
+        // перевёрнутый вверх ногами (разница ровно 180 градусов, потому что у сенсоров 90 и 270
+        // эти два правила расходятся на пол-оборота). Если телефон всё-таки отдаёт кадр вверх
+        // ногами, приложение это замечает по самому лицу и доворачивает кадр само - см.
+        // FrameOrientation.
+        return front ? (360 - sensor + device) % 360 : (sensor - device + 360) % 360;
     }
 
     /**

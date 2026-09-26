@@ -28,47 +28,57 @@ public class CameraRotationTest {
     }
 
     @Test
-    public void theFrontCameraAddsTheDeviceRotation() {
-        assertEquals("сенсор 270, телефон вертикально", 270,
+    public void theFrontCameraTurnsTheOtherWay() {
+        // Сенсор 270 (так стоит фронтальная камера почти на всех телефонах): кадр поворачивается на
+        // 90 градусов. Такое правило проверено на телефоне и даёт ровную картинку.
+        assertEquals("сенсор 270, телефон вертикально", 90,
                 CameraRotation.upright(true, 270, 0, 0));
-        assertEquals("сенсор 90, телефон вертикально", 90,
+        assertEquals("сенсор 90, телефон вертикально", 270,
                 CameraRotation.upright(true, 90, 0, 0));
-        assertEquals("сенсор 90 и телефон на 90 градусов", 180,
-                CameraRotation.upright(true, 90, 90, 0));
-        assertEquals("сенсор 270 и телефон на 90 градусов", 0,
+        assertEquals("сенсор 270 и телефон на 90 градусов", 180,
                 CameraRotation.upright(true, 270, 90, 0));
-        // Телефон лежит на боку на 180 градусов: кадр доворачивается на те же 180.
-        assertEquals(90, CameraRotation.upright(true, 270, 180, 0));
+        assertEquals("сенсор 90 и телефон на 90 градусов", 0,
+                CameraRotation.upright(true, 90, 90, 0));
     }
 
     @Test
-    public void atEqualSensorAnglesTheTwoCamerasMatchOnlyAccidentally() {
-        // Сенсор 90: фронтальная камера даёт 90, основная - тоже 90.
-        assertEquals(CameraRotation.upright(false, 90, 0, 0),
-                CameraRotation.upright(true, 90, 0, 0));
-        // Сенсор 270: фронтальная даёт 270, основная - 270.
-        assertEquals(CameraRotation.upright(false, 270, 0, 0),
-                CameraRotation.upright(true, 270, 0, 0));
-        // А вот при повёрнутом телефоне знак разный: фронтальная прибавляет, основная вычитает.
-        assertEquals(180, CameraRotation.upright(true, 90, 90, 0));
-        assertEquals(0, CameraRotation.upright(false, 90, 90, 0));
+    public void theTwoCamerasDifferByHalfATurn() {
+        // Именно из-за этой разницы в 180 градусов кадр и уезжал вверх ногами: правило основной
+        // камеры, применённое к фронтальной (или наоборот), переворачивает картинку.
+        // Расходятся именно «настоящие» сенсоры: 90 и 270 градусов - так стоят камеры у всех
+        // телефонов. При нулевом угле правила совпадают, и это тоже проверяется.
+        final int[] sensors = {90, 270};
+        for (int i = 0; i < sensors.length; i++) {
+            final int sensor = sensors[i];
+            final int front = CameraRotation.upright(true, sensor, 0, 0);
+            final int back = CameraRotation.upright(false, sensor, 0, 0);
+            assertEquals("сенсор " + sensor, 180, CameraRotation.normalize(back - front));
+        }
+        assertEquals("при сенсоре 0 правила совпадают",
+                CameraRotation.upright(false, 0, 0, 0), CameraRotation.upright(true, 0, 0, 0));
     }
 
+
+
     @Test
-    public void theRealmeStyleCameraGetsTherightTurn() {
-        // realme RMX3624 и большинство телефонов: фронтальный сенсор 270. Раньше приложение
-        // поворачивало такой кадр на 90 градусов - ровно вверх ногами.
-        final int old = CameraRotation.normalize(360 - 270);
-        final int now = CameraRotation.upright(true, 270, 0, 0);
-        assertEquals("правильный поворот", 270, now);
-        assertEquals("старая ошибка отличалась на 180 градусов", 180,
-                CameraRotation.normalize(now - old));
+    public void theWrongRuleFlippedTheCameraByHalfATurn() {
+        // Так выглядела ошибка, которая дважды доезжала до телефона: то же самое, но с прямым
+        // знаком у фронтальной камеры. Разница с правильным правилом - ровно 180 градусов.
+        final int[] sensors = {90, 270};
+        for (int i = 0; i < sensors.length; i++) {
+            final int sensor = sensors[i];
+            final int wrong = sensor;
+            final int right = CameraRotation.upright(true, sensor, 0, 0);
+            assertEquals("сенсор " + sensor, 180, CameraRotation.normalize(wrong - right));
+        }
     }
 
     @Test
     public void theManualTurnIsAddedOnTop() {
-        assertEquals(90, CameraRotation.upright(true, 270, 0, 180));
-        assertEquals(0, CameraRotation.upright(true, 90, 0, 270));
+        // Кнопка «камера: перевернуть» доворачивает кадр на 180 градусов и обратно.
+        assertEquals(270, CameraRotation.upright(true, 270, 0, 180));
+        assertEquals(90, CameraRotation.upright(true, 270, 0, 360));
+        assertEquals(0, CameraRotation.upright(true, 270, 0, 270));
         assertEquals(90, CameraRotation.upright(false, 90, 0, 360));
         assertEquals(350, CameraRotation.upright(false, 90, 0, 260));
     }

@@ -178,6 +178,47 @@ public class EmotionDetectorTest {
         assertEquals(EmotionDetector.JOY, detector.emotion());
     }
 
+    /** Слабое, но настоящее выражение тоже должно распознаваться: сеть часто занижает оценки. */
+    @Test
+    public void aWeakSmileIsStillReadAsJoy() {
+        final EmotionDetector detector = new EmotionDetector();
+        final FaceSignals s = neutral();
+        s.blendMouthSmileLeft = 0.35f;
+        s.blendMouthSmileRight = 0.35f;
+        s.blendCheekSquintLeft = 0.3f;
+        s.blendCheekSquintRight = 0.3f;
+        s.smile = 0.35f;
+        feed(detector, s, 1.5f);
+        assertEquals("даже сдержанную улыбку видно", EmotionDetector.JOY, detector.emotion());
+    }
+
+    /** Улыбка, измеренная по точкам лица, работает и без коэффициентов мимики. */
+    @Test
+    public void aGeometricSmileCountsAsJoy() {
+        final EmotionDetector detector = new EmotionDetector();
+        final FaceSignals s = neutral();
+        s.geometric = true;
+        s.smileGeo = 0.55f;
+        s.eyeOpenGeo = 1.0f;
+        s.blendMouthSmileLeft = 0.1f;
+        s.blendMouthSmileRight = 0.1f;
+        feed(detector, s, 1.2f);
+        assertEquals(EmotionDetector.JOY, detector.emotion());
+    }
+
+    /** Вскинутые брови, измеренные по точкам, дают удивление даже при слабых коэффициентах. */
+    @Test
+    public void geometricBrowsGiveSurprise() {
+        final EmotionDetector detector = new EmotionDetector();
+        final FaceSignals s = neutral();
+        s.geometric = true;
+        s.browGeo = 0.9f;
+        s.mouthOpenGeo = 0.7f;
+        s.blendBrowInnerUp = 0.2f;
+        feed(detector, s, 1.2f);
+        assertEquals(EmotionDetector.SURPRISE, detector.emotion());
+    }
+
     @Test
     public void everyEmotionHasARussianName() {
         for (int i = 0; i < EmotionDetector.COUNT; i++) {

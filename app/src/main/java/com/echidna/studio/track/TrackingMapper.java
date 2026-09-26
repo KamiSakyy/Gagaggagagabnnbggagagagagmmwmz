@@ -387,8 +387,14 @@ public final class TrackingMapper {
         // щеками и прищуром, а грусть или злость забирают улыбку обратно.
         emotions.update(s, dt);
         updateFaceChannels(s, dt);
-        smile.update(s.smile, dt);
-        mouth.update(s.mouthOpen, dt);
+        // Улыбка и раскрытие рта берутся из самого сильного из трёх источников: поля трекера,
+        // коэффициентов мимики и измерения по точкам лица. Так мимика не теряется там, где
+        // нейросеть не уверена, а линейка по точкам всё ещё видит движение.
+        final float smileFromBlend = (s.blendMouthSmileLeft + s.blendMouthSmileRight) * 0.5f;
+        final float smileFromGeo = Math.max(0.0f, s.smileGeo);
+        smile.update(Math.max(s.smile, Math.max(smileFromBlend, smileFromGeo)), dt);
+        final float mouthFromGeo = s.geometric ? s.mouthOpenGeo : 0.0f;
+        mouth.update(Math.max(s.mouthOpen, Math.max(s.blendJawOpen, mouthFromGeo)), dt);
         centerX.update(s.centerX - neutralCenterX, dt);
         centerY.update(s.centerY - neutralCenterY, dt);
         // Only a sensible face size feeds the zoom; a half closed frame would jump otherwise.
@@ -436,14 +442,17 @@ public final class TrackingMapper {
         // Брови: высота складывается из поднятых внутренних и внешних концов минус сведённые.
         final float browUp = (s.blendBrowInnerUp + s.blendBrowOuterUpLeft + s.blendBrowOuterUpRight) / 3.0f;
         final float browDown = (s.blendBrowDownLeft + s.blendBrowDownRight) * 0.5f;
-        browHeight.update(Pose.clamp(browUp - browDown * 0.8f, -1.0f, 1.0f), dt);
+        // К коэффициентам добавляется измеренная высота бровей: она видна и на слабых движениях.
+        final float browGeo = s.geometric ? s.browGeo * 0.7f : 0.0f;
+        browHeight.update(Pose.clamp(browUp - browDown * 0.8f + browGeo, -1.0f, 1.0f), dt);
         // Наклон бровей: внутренние концы вверх - это грусть и мольба, вниз - злость и упрямство.
         browAngle.update(Pose.clamp(s.blendBrowInnerUp - browDown, -1.0f, 1.0f), dt);
         // Форма: сведённые брови образуют складку между ними.
         browForm.update(Pose.clamp(browDown - s.blendBrowInnerUp * 0.5f, -1.0f, 1.0f), dt);
 
         final float wide = (s.blendEyeWideLeft + s.blendEyeWideRight) * 0.5f;
-        eyeWide.update(Pose.clamp(wide, 0.0f, 1.0f), dt);
+        eyeWide.update(Pose.clamp(wide + (s.geometric ? Math.max(0.0f, s.browGeo) * 0.5f : 0.0f),
+                0.0f, 1.0f), dt);
         final float squint = (s.blendEyeSquintLeft + s.blendEyeSquintRight) * 0.5f;
         final float sneer = (s.blendNoseSneerLeft + s.blendNoseSneerRight) * 0.5f;
         // «Злые глаза»: сведённые брови вместе с прищуром - это взгляд исподлобья.

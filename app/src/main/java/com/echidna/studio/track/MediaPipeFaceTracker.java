@@ -264,6 +264,20 @@ public final class MediaPipeFaceTracker implements FaceTracker {
         signals.found = true;
         final List<?> firstFace = FacePose.asList(landmarks.get(0));
 
+        // Геометрия лица: улыбка, раскрытие рта, брови и веки, измеренные по точкам. Она не
+        // зависит от уверенности нейросети в отдельных движениях мышц и служит второй опорой для
+        // мимики и эмоций - а заодно говорит, не приходит ли кадр вверх ногами.
+        final FaceGeometry.Readings geometry = FaceGeometry.read(firstFace);
+        if (geometry != null) {
+            signals.geometric = true;
+            signals.faceUprightKnown = true;
+            signals.faceUpright = geometry.upright;
+            signals.smileGeo = geometry.smile;
+            signals.mouthOpenGeo = geometry.mouthOpen;
+            signals.browGeo = geometry.brow;
+            signals.eyeOpenGeo = geometry.eyeOpen;
+        }
+
         // Head pose.
         final List<?> matrices = FacePose.asList(invoke(result, "facialTransformationMatrixes"));
         if (!matrices.isEmpty()) {
@@ -292,8 +306,13 @@ public final class MediaPipeFaceTracker implements FaceTracker {
                 // Eyes: a blink is reported as a probability; the eyelid of the model follows it
                 // almost one to one, and a squint is folded in so that a smile reaches the eyes.
                 final float squint = (signals.blendEyeSquintLeft + signals.blendEyeSquintRight) * 0.5f;
-                signals.eyeLeft = clamp01(1.0f - signals.blendEyeBlinkLeft * 1.35f - squint * 0.15f);
-                signals.eyeRight = clamp01(1.0f - signals.blendEyeBlinkRight * 1.35f - squint * 0.15f);
+                final float byBlendLeft = clamp01(1.0f - signals.blendEyeBlinkLeft * 1.35f - squint * 0.15f);
+                final float byBlendRight = clamp01(1.0f - signals.blendEyeBlinkRight * 1.35f - squint * 0.15f);
+                // Измерение по векам точнее коэффициента моргания (у человека веко закрывается
+                // мгновенно, а сеть успевает его «увидеть» не всегда), поэтому берётся более
+                // закрытый глаз из двух оценок: так моргание не теряется.
+                signals.eyeLeft = geometry != null ? Math.min(byBlendLeft, geometry.eyeOpen) : byBlendLeft;
+                signals.eyeRight = geometry != null ? Math.min(byBlendRight, geometry.eyeOpen) : byBlendRight;
                 // Mouth: the jaw opening is the main channel, the pucker and the closed lips make it
                 // narrower, which is what keeps the model from looking like it only says "a".
                 final float jaw = signals.blendJawOpen;
