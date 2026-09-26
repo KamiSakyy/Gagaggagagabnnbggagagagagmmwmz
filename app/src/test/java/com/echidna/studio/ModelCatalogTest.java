@@ -22,7 +22,7 @@ public class ModelCatalogTest {
     @Test
     public void theCatalogCarriesEveryCharacter() {
         final List<ModelCatalog.ModelSpec> all = ModelCatalog.all();
-        assertEquals("персонажей в каталоге", 5, all.size());
+        assertEquals("персонажей в каталоге", 6, all.size());
 
         final Set<String> ids = new HashSet<String>();
         for (int i = 0; i < all.size(); i++) {
@@ -34,9 +34,14 @@ public class ModelCatalogTest {
             assertTrue("у " + spec.id + " нет значка", spec.emoji != null && !spec.emoji.isEmpty());
             assertTrue("пустое описание у " + spec.id,
                     spec.blurb != null && spec.blurb.length() > 8);
-            assertTrue("каталог ссылается не на live2d: " + spec.assetDir,
-                    spec.assetDir.startsWith("live2d/") && spec.assetDir.endsWith("/"));
-            assertEquals("файл модели у " + spec.id, "model3.json", spec.modelJson);
+            assertTrue("путь модели сломан: " + spec.assetDir, spec.assetDir.endsWith("/")
+                    && (spec.assetDir.startsWith("live2d/") || spec.assetDir.startsWith("three/")));
+            if (spec.threeD) {
+                assertTrue("у 3D модели должен быть .vrm: " + spec.modelJson,
+                        spec.modelJson.endsWith(".vrm"));
+            } else {
+                assertEquals("файл модели у " + spec.id, "model3.json", spec.modelJson);
+            }
         }
     }
 
@@ -64,11 +69,25 @@ public class ModelCatalogTest {
         }
     }
 
+    /** Ровно один персонаж каталога — объёмный. */
+    @Test
+    public void exactlyOneCharacterIsThreeDimensional() {
+        int threeD = 0;
+        final List<ModelCatalog.ModelSpec> all = ModelCatalog.all();
+        for (int i = 0; i < all.size(); i++) {
+            if (all.get(i).threeD) {
+                threeD++;
+            }
+        }
+        assertEquals("объёмных персонажей в каталоге", 1, threeD);
+    }
+
     /** Все персонажи, обещанные пользователю, лежат в каталоге под своими именами. */
     @Test
     public void everyPromisedCharacterIsInTheCatalog() {
         final String[] promised = {
-                "echidna", "echidna_valentine", "emilia_bunny", "emilia_swimsuit", "nahida_genshin"
+                "echidna", "echidna_valentine", "emilia_bunny", "emilia_swimsuit", "nahida_genshin",
+                "vrm_sample"
         };
         for (int i = 0; i < promised.length; i++) {
             boolean found = false;

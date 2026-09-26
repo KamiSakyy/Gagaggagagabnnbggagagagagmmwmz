@@ -8,6 +8,7 @@ import android.opengl.GLUtils;
 
 import com.echidna.studio.anim.ParamLimits;
 import com.echidna.studio.anim.Pose;
+import com.echidna.studio.three.Model3DStage;
 import com.live2d.sdk.cubism.framework.CubismFramework;
 import com.live2d.sdk.cubism.framework.id.CubismId;
 import com.live2d.sdk.cubism.framework.id.CubismIdManager;
@@ -142,6 +143,9 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         pendingCommand = CMD_RANDOM;
     }
 
+    /** Сцена объёмного персонажа: у приложения есть и 2D, и 3D модели. */
+    private Model3DStage model3d;
+
     public void requestCamera() {
         pendingCommand = CMD_CAMERA;
     }
@@ -274,15 +278,9 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
             }
             initPreview();
 
-            model = new EchidnaModel(assets, selectedModel);
-            model.load();
-            stage.attach(model, stageListener);
-            resetFraming();
-            ready.set(true);
-            EchidnaLog.MODEL_NOTE = model.loadReport();
-            EchidnaLog.i("GL", "модель готова: " + model.loadReport());
-            if (statusListener != null) {
-                statusListener.onModelReady(model.loadReport());
+            buildSelectedModel();
+            if (!ready.get()) {
+                return;
             }
             // Start with something alive on screen instead of a frozen pose.
             stage.startShow(com.echidna.studio.anim.ShowLibrary.byId(
@@ -379,7 +377,15 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
 
         drawPreview();
 
-        if (ready.get() && model != null && model.getModel() != null) {
+        if (ready.get() && model3d != null && model3d.isReady()) {
+            final Pose pose3d = stopRequested ? null : stage.tick(dt);
+            model3d.update(dt, pose3d, stage.isAutoBlink());
+            drawModel3d();
+            if (now - lastParameterSummaryNanos > 200_000_000L) {
+                lastParameterSummaryNanos = now;
+                parameterSummary = model3d.report();
+            }
+        } else if (ready.get() && model != null && model.getModel() != null) {
             if (lookAtTouch && idTouchAngleX != null) {
                 // Touch steers the character like a cursor: drag and the head follows.
                 model.getModel().setParameterValue(idTouchAngleX, touchX * 30.0f, 0.35f);
@@ -456,26 +462,74 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
     /** Drops the current model and builds it again on the GL thread. */
     private void reloadModel() {
         try {
-            if (model != null) {
-                releaseModel();
-            }
+            releaseAll();
             lastError = "";
             consecutiveErrors = 0;
             pendingModel = null;
-            model = new EchidnaModel(assets, selectedModel);
-            model.load();
-            stage.attach(model, stageListener);
-            resetFraming();
-            ready.set(true);
-            EchidnaLog.MODEL_NOTE = model.loadReport();
-            parameterSummary = "модель загружена";
-            EchidnaLog.i("GL", "модель перезагружена: " + model.loadReport());
-            if (statusListener != null) {
-                statusListener.onModelReady(model.loadReport());
-            }
+            buildSelectedModel();
         } catch (Throwable error) {
             fail("повторная загрузка не удалась: " + describe(error));
         }
+    }
+
+    /**
+     * Loads either a Live2D model or a 3D character, whichever the user picked.
+     *
+     * <p>Both paths end in the same {@link ModelStage}, which is what keeps the shows, the idle
+     * behaviour, the camera tracking and the five animations working for the 3D character exactly as
+     * they do for the 2D ones.</p>
+     */
+    private void buildSelectedModel() throws java.io.IOException {
+        if (selectedModel != null && selectedModel.threeD) {
+            model = null;
+            model3d = new Model3DStage(assets);
+            final boolean loaded = model3d.load(selectedModel.assetDir + selectedModel.modelJson);
+            if (!loaded) {
+                fail(model3d.report());
+                return;
+            }
+            stage.attach(null, stageListener);
+            resetFraming();
+            ready.set(true);
+            parameterSummary = "3D модель загружена";
+            EchidnaLog.MODEL_NOTE = model3d.report();
+            if (statusListener != null) {
+                statusListener.onModelReady(model3d.report());
+            }
+            return;
+        }
+        model = new EchidnaModel(assets, selectedModel);
+        model.load();
+        stage.attach(model, stageListener);
+        resetFraming();
+        ready.set(true);
+        EchidnaLog.MODEL_NOTE = model.loadReport();
+        parameterSummary = "модель загружена";
+        EchidnaLog.i("GL", "модель готова: " + model.loadReport());
+        if (statusListener != null) {
+            statusListener.onModelReady(model.loadReport());
+        }
+    }
+
+    /** Освобождает и 2D, и 3D модель: переключение персонажа не должно течь. */
+    private void releaseAll() {
+        if (model != null) {
+            releaseModel();
+        }
+        if (model3d != null) {
+            model3d.release();
+            model3d = null;
+        }
+    }
+
+    /** Рисует объёмного персонажа: камера сама подбирает кадр под его габариты. */
+    private void drawModel3d() {
+        final float zoom = ParamLimits.zoom(stage.viewZoom()) * Math.max(0.05f, modelScale);
+        final float offsetY = modelOffsetY + stage.viewOffsetY();
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        model3d.draw(surfaceWidth, surfaceHeight, zoom, modelOffsetX + stage.viewOffsetX(),
+                offsetY, previewMirror);
     }
 
     /**
@@ -590,6 +644,10 @@ public final class EchidnaRenderer implements GLSurfaceView.Renderer {
         if (model != null) {
             model.release();
             model = null;
+        }
+        if (model3d != null) {
+            model3d.release();
+            model3d = null;
         }
         ready.set(false);
         if (previewTexture != 0) {

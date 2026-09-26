@@ -22,14 +22,22 @@ public final class ModelCatalog {
         public final String blurb;
         public final String assetDir;
         public final String modelJson;
+        /** True for the 3D character: it is drawn by the VRM stage, not by Live2D. */
+        public final boolean threeD;
 
         ModelSpec(String id, String title, String emoji, String blurb, String assetDir) {
+            this(id, title, emoji, blurb, assetDir, "model3.json", false);
+        }
+
+        ModelSpec(String id, String title, String emoji, String blurb, String assetDir,
+                  String modelJson, boolean threeD) {
             this.id = id;
             this.title = title;
             this.emoji = emoji;
             this.blurb = blurb;
             this.assetDir = assetDir.endsWith("/") ? assetDir : assetDir + "/";
-            this.modelJson = "model3.json";
+            this.modelJson = modelJson;
+            this.threeD = threeD;
         }
 
         @Override
@@ -53,7 +61,11 @@ public final class ModelCatalog {
             new ModelSpec("emilia_swimsuit", "Эмилия (пляж)", "\uD83C\uDF0A",
                     "Купальник, 115 движений", "live2d/emilia_swimsuit"),
             new ModelSpec("nahida_genshin", "Нахида (Genshin)", "\uD83C\uDF43",
-                    "Архонт мудрости с 13 выражениями лица", "live2d/nahida_genshin")
+                    "Архонт мудрости с 13 выражениями лица", "live2d/nahida_genshin"),
+            // Шестой персонаж - настоящая 3D модель: скелет, мимика морфами и физика волос.
+            new ModelSpec("vrm_sample", "3D модель (VRM)", "\uD83E\uDDCD",
+                    "Объёмная девушка с живым скелетом, мимикой и физикой волос", "three",
+                    "character.vrm", true)
     ));
 
     private ModelCatalog() {

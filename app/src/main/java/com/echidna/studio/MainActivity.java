@@ -377,7 +377,11 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
             return;
         }
         modelRow.removeAllViews();
-        final List<ModelCatalog.ModelSpec> all = ModelCatalog.all();
+        // В списке только те персонажи, чьи файлы действительно есть в сборке.
+        List<ModelCatalog.ModelSpec> all = ModelCatalog.available(getAssets());
+        if (all.isEmpty()) {
+            all = ModelCatalog.all();
+        }
         for (int i = 0; i < all.size(); i++) {
             final ModelCatalog.ModelSpec spec = all.get(i);
             final Button button = new Button(this);
