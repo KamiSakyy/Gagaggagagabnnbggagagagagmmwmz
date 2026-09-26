@@ -180,15 +180,31 @@ public final class ModelStage implements Motions {
         if (model == null || name == null) {
             return;
         }
-        if (!model.hasMotion(name)) {
+        // Кнопка галереи может звать мошен по имени, которого у этой модели нет (у Валентины
+        // набор короче, у Нахиды движений нет вообще) - тогда берём ближайшее или мимику.
+        final String resolved = model.hasMotion(name)
+                ? name
+                : com.echidna.studio.anim.MotionPicker.resolve(model.motionNames(), name);
+        if (resolved == null) {
+            final String expression = com.echidna.studio.anim.ExpressionPicker
+                    .resolve(knownExpressions(), name);
+            if (expression == null) {
+                EchidnaLog.w("STAGE", "нет мошена " + name);
+                return;
+            }
+            playExpression(expression);
+            EchidnaLog.i("STAGE", "мошен " + name + " сыгран выражением " + expression);
+            return;
+        }
+        if (!model.hasMotion(resolved)) {
             EchidnaLog.w("STAGE", "нет мошена " + name);
             return;
         }
-        manualMotion = name;
+        manualMotion = resolved;
         manualTime = 0.0f;
-        model.playMotion(name, 0.3f, FORCE);
+        model.playMotion(resolved, 0.3f, FORCE);
         switchTo(Mode.MANUAL);
-        EchidnaLog.i("STAGE", "ручной мошен " + name);
+        EchidnaLog.i("STAGE", "ручной мошен " + resolved);
     }
 
     public void randomMotion() {
@@ -396,6 +412,16 @@ public final class ModelStage implements Motions {
         final String resolved = com.echidna.studio.anim.MotionPicker.resolve(model.motionNames(), name);
         if (resolved != null) {
             model.playMotion(resolved, fadeIn, priority);
+            return;
+        }
+        // У объёмной модели и у рига вроде Нахиды движений нет: единственное, чем они умеют
+        // «играть», - мимика. Название движения переводится в выражение, и шоу продолжает жить.
+        if (model.motionNames().isEmpty()) {
+            final String expression = com.echidna.studio.anim.ExpressionPicker
+                    .resolve(knownExpressions(), name);
+            if (expression != null) {
+                playExpression(expression);
+            }
         }
     }
 

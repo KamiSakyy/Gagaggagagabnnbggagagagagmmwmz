@@ -90,6 +90,11 @@ public final class TrackingMapper {
      * прямо). Тесты отключают его, когда проверяют само отображение углов.
      */
     private boolean autoCalibrate = true;
+    /**
+     * Направление поворота головы. У кого-то камера стоит зеркально, у кого-то нет, поэтому
+     * направление поворота можно перевернуть кнопкой в интерфейсе, не трогая остальное.
+     */
+    private boolean turnInverted;
     private volatile boolean mirrored = true;
     private float lostFor = 10.0f;
     private float demoBlend = 1.0f;
@@ -135,6 +140,15 @@ public final class TrackingMapper {
         demoBlend = 1.0f;
         clock = 0.0f;
         forgetNeutral();
+    }
+
+    /** Меняет направление поворота головы модели. */
+    public void setTurnInverted(boolean value) {
+        turnInverted = value;
+    }
+
+    public boolean isTurnInverted() {
+        return turnInverted;
     }
 
     /** Автоматический съём нейтрали при первом уверенном трекинге. */
@@ -365,8 +379,12 @@ public final class TrackingMapper {
         final float pitchValue = Pose.clamp(pitch.value(), -26.0f, 26.0f);
         final float rollValue = Pose.clamp(roll.value(), -26.0f, 26.0f);
 
-        tracked.angleY = ParamLimits.angleY(yawValue * YAW_GAIN);
-        tracked.angleX = ParamLimits.angleX(-pitchValue * PITCH_GAIN);
+        // У ригов Live2D поворот головы влево-вправо - это ParamAngleX, а кивок - ParamAngleY
+        // (сама модель это подтверждает: в её анимациях кивок act_unazuku идёт по AngleY, а
+        // покачивание головой face_nayamu - по AngleX). Раньше эти оси были перепутаны, и человек
+        // поворачивал голову, а модель кивала.
+        tracked.angleX = ParamLimits.angleX(yawValue * YAW_GAIN * (turnInverted ? -1.0f : 1.0f));
+        tracked.angleY = ParamLimits.angleY(-pitchValue * PITCH_GAIN);
         tracked.angleZ = ParamLimits.angleZ(rollValue * ROLL_GAIN);
 
         // The body follows the shoulders when the pose tracker sees them (a real turn of the body),

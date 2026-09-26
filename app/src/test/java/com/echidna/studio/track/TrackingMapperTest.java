@@ -55,7 +55,10 @@ public class TrackingMapperTest {
         final FaceSignals signals = signals();
         signals.yaw = 25.0f;
         final Pose pose = settle(mapper, signals, 1.5f);
-        assertTrue("модель не повернула голову: " + pose.angleY, Math.abs(pose.angleY) > 12.0f);
+        assertTrue("модель не повернула голову в сторону: " + pose.angleX,
+                Math.abs(pose.angleX) > 12.0f);
+        assertTrue("поворот ушёл в вертикальную ось: " + pose.angleY,
+                Math.abs(pose.angleY) < Math.abs(pose.angleX));
         assertTrue("корпус не подключился: " + pose.bodyX, Math.abs(pose.bodyX) > 2.0f);
         assertTrue("зрачки не поехали: " + pose.eyeBallX, Math.abs(pose.eyeBallX) > 0.2f);
     }
@@ -72,7 +75,7 @@ public class TrackingMapperTest {
         final Pose plainPose = settle(plain, signals, 1.0f);
 
         assertEquals("зеркальный режим должен менять знак поворота",
-                -mirroredPose.angleY, plainPose.angleY, 0.5f);
+                -mirroredPose.angleX, plainPose.angleX, 0.5f);
     }
 
     @Test
@@ -82,7 +85,9 @@ public class TrackingMapperTest {
         signals.pitch = 20.0f;
         final Pose pose = settle(mapper, signals, 1.5f);
         // The model's X axis points down, so looking up has to move the head up.
-        assertTrue("модель не наклонила голову: " + pose.angleX, pose.angleX < -8.0f);
+        assertTrue("модель не кивнула: " + pose.angleY, pose.angleY < -8.0f);
+        assertTrue("кивок уехал в горизонтальную ось: " + pose.angleX,
+                Math.abs(pose.angleX) < Math.abs(pose.angleY));
     }
 
     @Test
@@ -181,7 +186,7 @@ public class TrackingMapperTest {
         assertTrue("вес демо должен быть нулевым при живом лице: " + mapper.demoBlend(),
                 mapper.demoBlend() < 0.05f);
         assertTrue(mapper.faceLive());
-        final float trackedYaw = pose.angleY;
+        final float trackedYaw = pose.angleX;
 
         // The face disappears.
         final FaceSignals lost = new FaceSignals();
@@ -190,8 +195,8 @@ public class TrackingMapperTest {
         assertFalse("трекер должен понимать, что лицо потеряно", mapper.faceLive());
         assertTrue("демо-режим не включился: " + mapper.demoBlend(), mapper.demoBlend() > 0.9f);
         assertTrue("модель застыла в последней позе",
-                Math.abs(pose.angleY - trackedYaw) > 0.5f
-                        || Math.abs(pose.angleX) > 0.2f);
+                Math.abs(pose.angleX - trackedYaw) > 0.5f
+                        || Math.abs(pose.angleY) > 0.2f);
     }
 
     @Test
@@ -199,9 +204,9 @@ public class TrackingMapperTest {
         final TrackingMapper mapper = plain(new TrackingMapper(true));
         final FaceSignals signals = signals();
         final Pose first = settle(mapper, signals, 2.0f);
-        final float yaw = first.angleY;
+        final float yaw = first.angleX;
         final Pose later = settle(mapper, signals, 1.0f);
-        assertEquals("модель должна стоять спокойно", yaw, later.angleY, 0.2f);
+        assertEquals("модель должна стоять спокойно", yaw, later.angleX, 0.2f);
     }
 
     @Test
@@ -307,7 +312,7 @@ public class TrackingMapperTest {
 
         assertTrue("корпус не поехал за плечами: " + pose.bodyX, Math.abs(pose.bodyX) > 6.0f);
         assertTrue("наклон тела не передался: " + pose.bodyZ, Math.abs(pose.bodyZ) > 2.0f);
-        assertTrue("смещение тела потерялось", Math.abs(pose.bodyX) > Math.abs(pose.angleY));
+        assertTrue("смещение тела потерялось", Math.abs(pose.bodyX) > Math.abs(pose.angleX));
     }
 
     /** Поднятая рука не остаётся незамеченной: у моделей нет рук, поэтому отвечает лицо. */
@@ -347,16 +352,16 @@ public class TrackingMapperTest {
         assertTrue("нейтраль должна сняться за секунду", mapper.isCalibrated());
 
         final Pose pose = settle(mapper, bias, 1.0f);
-        assertTrue("модель осталась повёрнутой из-за позы человека: " + pose.angleY,
-                Math.abs(pose.angleY) < 2.0f);
+        assertTrue("модель осталась повёрнутой из-за позы человека: " + pose.angleX,
+                Math.abs(pose.angleX) < 2.0f);
 
         // А теперь человек реально поворачивает голову: уже относительно своей нейтрали.
         final FaceSignals turned = signals();
         turned.scale = 0.34f;
         turned.yaw = 37.0f;
         final Pose turnedPose = settle(mapper, turned, 1.5f);
-        assertTrue("поворот относительно нейтрали не сработал: " + turnedPose.angleY,
-                Math.abs(turnedPose.angleY) > 12.0f);
+        assertTrue("поворот относительно нейтрали не сработал: " + turnedPose.angleX,
+                Math.abs(turnedPose.angleX) > 12.0f);
     }
 
     /** Пока лицо не найдено, нейтраль не снимается: снимать её не с чего. */
@@ -413,7 +418,7 @@ public class TrackingMapperTest {
         final Pose pose = settle(mapper, bodyOnly, 1.5f);
 
         assertTrue("без лица корпус не двигает модель: " + pose.bodyX, Math.abs(pose.bodyX) > 4.0f);
-        assertTrue("голова не пошла за телом: " + pose.angleY, Math.abs(pose.angleY) > 8.0f);
+        assertTrue("голова не пошла за телом: " + pose.angleX, Math.abs(pose.angleX) > 8.0f);
         assertTrue("демо-покачивание перебило живого человека: " + mapper.demoBlend(),
                 mapper.demoBlend() < 0.2f);
     }

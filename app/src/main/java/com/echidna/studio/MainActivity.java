@@ -97,10 +97,12 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
     private Button modelsButton;
     private Button previewWindowButton;
     private Button calibrateButton;
+    private Button turnButton;
     private Button expressionsButton;
     private LinearLayout expressionRow;
     private String modelId = ModelCatalog.DEFAULT_ID;
     private boolean previewFullScreen;
+    private boolean turnInverted;
     private boolean expressionsVisible;
     private boolean modelsPanelVisible;
     private LinearLayout topBar;
@@ -317,9 +319,18 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         calibrateButton.setTextColor(0xFFD8CCFF);
         calibrateButton.setOnClickListener(v -> calibrate());
         calibrateButton.setVisibility(View.GONE);
+        turnButton = new Button(this);
+        turnButton.setTextSize(12);
+        turnButton.setAllCaps(false);
+        turnButton.setBackground(rounded(0x99140F22, 16));
+        turnButton.setTextColor(0xFFD8CCFF);
+        turnButton.setVisibility(View.GONE);
+        turnButton.setOnClickListener(v -> toggleTurnDirection());
         cameraRow.addView(previewWindowButton, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)));
         cameraRow.addView(calibrateButton, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)));
+        cameraRow.addView(turnButton, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)));
         modelPanel.addView(cameraRow);
 
@@ -462,6 +473,28 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         }
         stage.calibrate();
         toast("Смотри прямо в камеру пару секунд — снимаю нейтраль");
+    }
+
+    private void updateTurnButtonText() {
+        if (turnButton == null) {
+            return;
+        }
+        turnButton.setText(turnInverted ? "↔ поворот: наоборот" : "↔ поворот: обычно");
+    }
+
+    /**
+     * Направление поворота головы.
+     *
+     * <p>Кто-то сидит перед камерой так, что поворот головы уходит в другую сторону: у камер
+     * телефонов и у разных версий трекера знак поворота отличается. Кнопка меняет направление, не
+     * трогая зеркалирование превью, и запоминается.</p>
+     */
+    private void toggleTurnDirection() {
+        turnInverted = !turnInverted;
+        stage.mapper().setTurnInverted(turnInverted);
+        saveSetting("turn-invert", turnInverted);
+        updateTurnButtonText();
+        toast(turnInverted ? "Поворот головы: в другую сторону" : "Поворот головы: как обычно");
     }
 
     private void togglePreviewWindow() {
@@ -700,6 +733,8 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         previewMirror = prefs.getBoolean("mirror", true);
         modelId = prefs.getString(ModelCatalog.PREF_KEY, ModelCatalog.DEFAULT_ID);
         previewFullScreen = prefs.getBoolean("preview-fullscreen", false);
+        turnInverted = prefs.getBoolean("turn-invert", false);
+        stage.mapper().setTurnInverted(turnInverted);
         renderer.setPreviewFullScreen(previewFullScreen);
         renderer.requestModel(modelId);
         final int scale = prefs.getInt("scale", 100);
@@ -1000,6 +1035,10 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         if (calibrateButton != null) {
             calibrateButton.setVisibility(View.VISIBLE);
         }
+        if (turnButton != null) {
+            turnButton.setVisibility(View.VISIBLE);
+            updateTurnButtonText();
+        }
         micButton.setText(micEnabled ? "\uD83D\uDD34" : "\uD83C\uDFA4");
         toast(ModelCatalog.byId(modelId).title + " повторяет твою мимику и повороты тела");
         EchidnaLog.i("APP", "режим камеры включён, трекер " + hub.trackerName());
@@ -1017,6 +1056,9 @@ public final class MainActivity extends Activity implements ModelStage.Listener,
         }
         if (calibrateButton != null) {
             calibrateButton.setVisibility(View.GONE);
+        }
+        if (turnButton != null) {
+            turnButton.setVisibility(View.GONE);
         }
         toast("Режим камеры выключен");
     }

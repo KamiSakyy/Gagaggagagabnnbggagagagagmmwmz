@@ -390,8 +390,10 @@ public final class Model3DStage {
      * makes the character look like it is moving rather than gliding.</p>
      */
     private void applyPose(Pose pose) {
-        final float yaw = Pose.safe(pose.angleY);
-        final float pitch = Pose.safe(pose.angleX);
+        // В позе сцены поворот головы влево-вправо лежит в angleX, кивок - в angleY: это
+        // соглашение самого рига Live2D, и 3D персонаж следует ему же.
+        final float yaw = Pose.safe(pose.angleX);
+        final float pitch = Pose.safe(pose.angleY);
         final float roll = Pose.safe(pose.angleZ);
 
         final int head = model.humanoid("head");
@@ -425,6 +427,7 @@ public final class Model3DStage {
     private void idle() {
         final float breath = (float) Math.sin(clock * 1.35f);
         final float sway = (float) Math.sin(clock * 0.42f);
+        // Первый угол - поворот (ось Y модели), второй - кивок (ось X).
         model.addRotation(model.humanoid("chest"), sway * 2.4f, -breath * 1.6f, sway * 1.8f);
         model.addRotation(model.humanoid("neck"), -sway * 2.0f, breath * 1.2f, -sway * 1.4f);
         model.addRotation(model.humanoid("head"), sway * 3.4f, breath * 1.6f, -sway * 2.6f);
